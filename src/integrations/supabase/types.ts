@@ -79,6 +79,7 @@ export type Database = {
           decision_note: string
           disbursed_at: string | null
           id: string
+          interest_rate: number | null
           purpose: string
           reviewed_at: string | null
           reviewed_by: string | null
@@ -94,6 +95,7 @@ export type Database = {
           decision_note?: string
           disbursed_at?: string | null
           id?: string
+          interest_rate?: number | null
           purpose?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -109,6 +111,7 @@ export type Database = {
           decision_note?: string
           disbursed_at?: string | null
           id?: string
+          interest_rate?: number | null
           purpose?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -163,6 +166,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          data: Json | null
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -213,8 +249,10 @@ export type Database = {
           buyer_id: string
           created_at: string
           id: string
+          loan_id: string | null
           momo_provider: string
           momo_reference: string
+          payment_method: string | null
           status: string
           total: number
           updated_at: string
@@ -223,8 +261,10 @@ export type Database = {
           buyer_id: string
           created_at?: string
           id?: string
+          loan_id?: string | null
           momo_provider?: string
           momo_reference?: string
+          payment_method?: string | null
           status?: string
           total: number
           updated_at?: string
@@ -233,11 +273,51 @@ export type Database = {
           buyer_id?: string
           created_at?: string
           id?: string
+          loan_id?: string | null
           momo_provider?: string
           momo_reference?: string
+          payment_method?: string | null
           status?: string
           total?: number
           updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_requests: {
+        Row: {
+          created_at: string | null
+          estimated_price: number | null
+          id: string
+          note: string | null
+          product_name: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          estimated_price?: number | null
+          id?: string
+          note?: string | null
+          product_name: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          estimated_price?: number | null
+          id?: string
+          note?: string | null
+          product_name?: string
+          status?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -282,27 +362,42 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
+          bio: string | null
           business_name: string
+          business_type: string | null
           clip_score: number
           created_at: string
           display_name: string
           id: string
+          location: string | null
+          phone_number: string | null
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
           business_name?: string
+          business_type?: string | null
           clip_score?: number
           created_at?: string
           display_name?: string
           id: string
+          location?: string | null
+          phone_number?: string | null
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
           business_name?: string
+          business_type?: string | null
           clip_score?: number
           created_at?: string
           display_name?: string
           id?: string
+          location?: string | null
+          phone_number?: string | null
           updated_at?: string
         }
         Relationships: []
