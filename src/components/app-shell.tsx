@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile, useMyRoles } from "@/lib/app-queries";
 import { Button } from "@/components/ui/button";
 
-const baseNav = [
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+const baseNav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/income", label: "Income", icon: TrendingUp },
   { to: "/app/expenses", label: "Expenses", icon: Receipt },
@@ -16,7 +17,7 @@ const baseNav = [
   { to: "/app/loans", label: "Loans", icon: Banknote },
   { to: "/app/market", label: "Market", icon: Store },
   { to: "/app/orders", label: "Orders", icon: ShoppingBag },
-] as const;
+];
 
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
   const profile = useProfile();

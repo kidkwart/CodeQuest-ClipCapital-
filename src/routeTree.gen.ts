@@ -12,13 +12,17 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedDemoRouteImport } from './routes/_authenticated/demo'
-import { Route as AuthenticatedDemoIndexRouteImport } from './routes/_authenticated/demo.index'
-import { Route as AuthenticatedDemoSusuRouteImport } from './routes/_authenticated/demo.susu'
-import { Route as AuthenticatedDemoMarketRouteImport } from './routes/_authenticated/demo.market'
-import { Route as AuthenticatedDemoLoansRouteImport } from './routes/_authenticated/demo.loans'
-import { Route as AuthenticatedDemoIncomeRouteImport } from './routes/_authenticated/demo.income'
-import { Route as AuthenticatedDemoExpensesRouteImport } from './routes/_authenticated/demo.expenses'
+import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
+import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as AuthenticatedAppSusuRouteImport } from './routes/_authenticated/app.susu'
+import { Route as AuthenticatedAppOrdersRouteImport } from './routes/_authenticated/app.orders'
+import { Route as AuthenticatedAppMarketRouteImport } from './routes/_authenticated/app.market'
+import { Route as AuthenticatedAppLoansRouteImport } from './routes/_authenticated/app.loans'
+import { Route as AuthenticatedAppIncomeRouteImport } from './routes/_authenticated/app.income'
+import { Route as AuthenticatedAppExpensesRouteImport } from './routes/_authenticated/app.expenses'
+import { Route as AuthenticatedAppAdminRouteImport } from './routes/_authenticated/app.admin'
+import { Route as AuthenticatedAppSusuGroupIdRouteImport } from './routes/_authenticated/app.susu.$groupId'
+import { Route as AuthenticatedAppMarketCartRouteImport } from './routes/_authenticated/app.market.cart'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -34,111 +38,157 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDemoRoute = AuthenticatedDemoRouteImport.update({
-  id: '/demo',
-  path: '/demo',
+const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDemoIndexRoute = AuthenticatedDemoIndexRouteImport.update({
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedDemoRoute,
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
-const AuthenticatedDemoSusuRoute = AuthenticatedDemoSusuRouteImport.update({
+const AuthenticatedAppSusuRoute = AuthenticatedAppSusuRouteImport.update({
   id: '/susu',
   path: '/susu',
-  getParentRoute: () => AuthenticatedDemoRoute,
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
-const AuthenticatedDemoMarketRoute = AuthenticatedDemoMarketRouteImport.update({
+const AuthenticatedAppOrdersRoute = AuthenticatedAppOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppMarketRoute = AuthenticatedAppMarketRouteImport.update({
   id: '/market',
   path: '/market',
-  getParentRoute: () => AuthenticatedDemoRoute,
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
-const AuthenticatedDemoLoansRoute = AuthenticatedDemoLoansRouteImport.update({
+const AuthenticatedAppLoansRoute = AuthenticatedAppLoansRouteImport.update({
   id: '/loans',
   path: '/loans',
-  getParentRoute: () => AuthenticatedDemoRoute,
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
-const AuthenticatedDemoIncomeRoute = AuthenticatedDemoIncomeRouteImport.update({
+const AuthenticatedAppIncomeRoute = AuthenticatedAppIncomeRouteImport.update({
   id: '/income',
   path: '/income',
-  getParentRoute: () => AuthenticatedDemoRoute,
+  getParentRoute: () => AuthenticatedAppRoute,
 } as any)
-const AuthenticatedDemoExpensesRoute =
-  AuthenticatedDemoExpensesRouteImport.update({
+const AuthenticatedAppExpensesRoute =
+  AuthenticatedAppExpensesRouteImport.update({
     id: '/expenses',
     path: '/expenses',
-    getParentRoute: () => AuthenticatedDemoRoute,
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppAdminRoute = AuthenticatedAppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppSusuGroupIdRoute =
+  AuthenticatedAppSusuGroupIdRouteImport.update({
+    id: '/$groupId',
+    path: '/$groupId',
+    getParentRoute: () => AuthenticatedAppSusuRoute,
+  } as any)
+const AuthenticatedAppMarketCartRoute =
+  AuthenticatedAppMarketCartRouteImport.update({
+    id: '/cart',
+    path: '/cart',
+    getParentRoute: () => AuthenticatedAppMarketRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/demo': typeof AuthenticatedDemoRouteWithChildren
-  '/demo/expenses': typeof AuthenticatedDemoExpensesRoute
-  '/demo/income': typeof AuthenticatedDemoIncomeRoute
-  '/demo/loans': typeof AuthenticatedDemoLoansRoute
-  '/demo/market': typeof AuthenticatedDemoMarketRoute
-  '/demo/susu': typeof AuthenticatedDemoSusuRoute
-  '/demo/': typeof AuthenticatedDemoIndexRoute
+  '/app': typeof AuthenticatedAppRouteWithChildren
+  '/app/admin': typeof AuthenticatedAppAdminRoute
+  '/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/app/income': typeof AuthenticatedAppIncomeRoute
+  '/app/loans': typeof AuthenticatedAppLoansRoute
+  '/app/market': typeof AuthenticatedAppMarketRouteWithChildren
+  '/app/orders': typeof AuthenticatedAppOrdersRoute
+  '/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
+  '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/market/cart': typeof AuthenticatedAppMarketCartRoute
+  '/app/susu/$groupId': typeof AuthenticatedAppSusuGroupIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/demo/expenses': typeof AuthenticatedDemoExpensesRoute
-  '/demo/income': typeof AuthenticatedDemoIncomeRoute
-  '/demo/loans': typeof AuthenticatedDemoLoansRoute
-  '/demo/market': typeof AuthenticatedDemoMarketRoute
-  '/demo/susu': typeof AuthenticatedDemoSusuRoute
-  '/demo': typeof AuthenticatedDemoIndexRoute
+  '/app/admin': typeof AuthenticatedAppAdminRoute
+  '/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/app/income': typeof AuthenticatedAppIncomeRoute
+  '/app/loans': typeof AuthenticatedAppLoansRoute
+  '/app/market': typeof AuthenticatedAppMarketRouteWithChildren
+  '/app/orders': typeof AuthenticatedAppOrdersRoute
+  '/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
+  '/app': typeof AuthenticatedAppIndexRoute
+  '/app/market/cart': typeof AuthenticatedAppMarketCartRoute
+  '/app/susu/$groupId': typeof AuthenticatedAppSusuGroupIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/demo': typeof AuthenticatedDemoRouteWithChildren
-  '/_authenticated/demo/expenses': typeof AuthenticatedDemoExpensesRoute
-  '/_authenticated/demo/income': typeof AuthenticatedDemoIncomeRoute
-  '/_authenticated/demo/loans': typeof AuthenticatedDemoLoansRoute
-  '/_authenticated/demo/market': typeof AuthenticatedDemoMarketRoute
-  '/_authenticated/demo/susu': typeof AuthenticatedDemoSusuRoute
-  '/_authenticated/demo/': typeof AuthenticatedDemoIndexRoute
+  '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
+  '/_authenticated/app/admin': typeof AuthenticatedAppAdminRoute
+  '/_authenticated/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/_authenticated/app/income': typeof AuthenticatedAppIncomeRoute
+  '/_authenticated/app/loans': typeof AuthenticatedAppLoansRoute
+  '/_authenticated/app/market': typeof AuthenticatedAppMarketRouteWithChildren
+  '/_authenticated/app/orders': typeof AuthenticatedAppOrdersRoute
+  '/_authenticated/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
+  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/market/cart': typeof AuthenticatedAppMarketCartRoute
+  '/_authenticated/app/susu/$groupId': typeof AuthenticatedAppSusuGroupIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
-    | '/demo'
-    | '/demo/expenses'
-    | '/demo/income'
-    | '/demo/loans'
-    | '/demo/market'
-    | '/demo/susu'
-    | '/demo/'
+    | '/app'
+    | '/app/admin'
+    | '/app/expenses'
+    | '/app/income'
+    | '/app/loans'
+    | '/app/market'
+    | '/app/orders'
+    | '/app/susu'
+    | '/app/'
+    | '/app/market/cart'
+    | '/app/susu/$groupId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/demo/expenses'
-    | '/demo/income'
-    | '/demo/loans'
-    | '/demo/market'
-    | '/demo/susu'
-    | '/demo'
+    | '/app/admin'
+    | '/app/expenses'
+    | '/app/income'
+    | '/app/loans'
+    | '/app/market'
+    | '/app/orders'
+    | '/app/susu'
+    | '/app'
+    | '/app/market/cart'
+    | '/app/susu/$groupId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/demo'
-    | '/_authenticated/demo/expenses'
-    | '/_authenticated/demo/income'
-    | '/_authenticated/demo/loans'
-    | '/_authenticated/demo/market'
-    | '/_authenticated/demo/susu'
-    | '/_authenticated/demo/'
+    | '/_authenticated/app'
+    | '/_authenticated/app/admin'
+    | '/_authenticated/app/expenses'
+    | '/_authenticated/app/income'
+    | '/_authenticated/app/loans'
+    | '/_authenticated/app/market'
+    | '/_authenticated/app/orders'
+    | '/_authenticated/app/susu'
+    | '/_authenticated/app/'
+    | '/_authenticated/app/market/cart'
+    | '/_authenticated/app/susu/$groupId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -170,85 +220,142 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/demo': {
-      id: '/_authenticated/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof AuthenticatedDemoRouteImport
+    '/_authenticated/app': {
+      id: '/_authenticated/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AuthenticatedAppRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/demo/': {
-      id: '/_authenticated/demo/'
+    '/_authenticated/app/': {
+      id: '/_authenticated/app/'
       path: '/'
-      fullPath: '/demo/'
-      preLoaderRoute: typeof AuthenticatedDemoIndexRouteImport
-      parentRoute: typeof AuthenticatedDemoRoute
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/demo/susu': {
-      id: '/_authenticated/demo/susu'
+    '/_authenticated/app/susu': {
+      id: '/_authenticated/app/susu'
       path: '/susu'
-      fullPath: '/demo/susu'
-      preLoaderRoute: typeof AuthenticatedDemoSusuRouteImport
-      parentRoute: typeof AuthenticatedDemoRoute
+      fullPath: '/app/susu'
+      preLoaderRoute: typeof AuthenticatedAppSusuRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/demo/market': {
-      id: '/_authenticated/demo/market'
+    '/_authenticated/app/orders': {
+      id: '/_authenticated/app/orders'
+      path: '/orders'
+      fullPath: '/app/orders'
+      preLoaderRoute: typeof AuthenticatedAppOrdersRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/market': {
+      id: '/_authenticated/app/market'
       path: '/market'
-      fullPath: '/demo/market'
-      preLoaderRoute: typeof AuthenticatedDemoMarketRouteImport
-      parentRoute: typeof AuthenticatedDemoRoute
+      fullPath: '/app/market'
+      preLoaderRoute: typeof AuthenticatedAppMarketRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/demo/loans': {
-      id: '/_authenticated/demo/loans'
+    '/_authenticated/app/loans': {
+      id: '/_authenticated/app/loans'
       path: '/loans'
-      fullPath: '/demo/loans'
-      preLoaderRoute: typeof AuthenticatedDemoLoansRouteImport
-      parentRoute: typeof AuthenticatedDemoRoute
+      fullPath: '/app/loans'
+      preLoaderRoute: typeof AuthenticatedAppLoansRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/demo/income': {
-      id: '/_authenticated/demo/income'
+    '/_authenticated/app/income': {
+      id: '/_authenticated/app/income'
       path: '/income'
-      fullPath: '/demo/income'
-      preLoaderRoute: typeof AuthenticatedDemoIncomeRouteImport
-      parentRoute: typeof AuthenticatedDemoRoute
+      fullPath: '/app/income'
+      preLoaderRoute: typeof AuthenticatedAppIncomeRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
     }
-    '/_authenticated/demo/expenses': {
-      id: '/_authenticated/demo/expenses'
+    '/_authenticated/app/expenses': {
+      id: '/_authenticated/app/expenses'
       path: '/expenses'
-      fullPath: '/demo/expenses'
-      preLoaderRoute: typeof AuthenticatedDemoExpensesRouteImport
-      parentRoute: typeof AuthenticatedDemoRoute
+      fullPath: '/app/expenses'
+      preLoaderRoute: typeof AuthenticatedAppExpensesRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/admin': {
+      id: '/_authenticated/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AuthenticatedAppAdminRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/susu/$groupId': {
+      id: '/_authenticated/app/susu/$groupId'
+      path: '/$groupId'
+      fullPath: '/app/susu/$groupId'
+      preLoaderRoute: typeof AuthenticatedAppSusuGroupIdRouteImport
+      parentRoute: typeof AuthenticatedAppSusuRoute
+    }
+    '/_authenticated/app/market/cart': {
+      id: '/_authenticated/app/market/cart'
+      path: '/cart'
+      fullPath: '/app/market/cart'
+      preLoaderRoute: typeof AuthenticatedAppMarketCartRouteImport
+      parentRoute: typeof AuthenticatedAppMarketRoute
     }
   }
 }
 
-interface AuthenticatedDemoRouteChildren {
-  AuthenticatedDemoExpensesRoute: typeof AuthenticatedDemoExpensesRoute
-  AuthenticatedDemoIncomeRoute: typeof AuthenticatedDemoIncomeRoute
-  AuthenticatedDemoLoansRoute: typeof AuthenticatedDemoLoansRoute
-  AuthenticatedDemoMarketRoute: typeof AuthenticatedDemoMarketRoute
-  AuthenticatedDemoSusuRoute: typeof AuthenticatedDemoSusuRoute
-  AuthenticatedDemoIndexRoute: typeof AuthenticatedDemoIndexRoute
+interface AuthenticatedAppMarketRouteChildren {
+  AuthenticatedAppMarketCartRoute: typeof AuthenticatedAppMarketCartRoute
 }
 
-const AuthenticatedDemoRouteChildren: AuthenticatedDemoRouteChildren = {
-  AuthenticatedDemoExpensesRoute: AuthenticatedDemoExpensesRoute,
-  AuthenticatedDemoIncomeRoute: AuthenticatedDemoIncomeRoute,
-  AuthenticatedDemoLoansRoute: AuthenticatedDemoLoansRoute,
-  AuthenticatedDemoMarketRoute: AuthenticatedDemoMarketRoute,
-  AuthenticatedDemoSusuRoute: AuthenticatedDemoSusuRoute,
-  AuthenticatedDemoIndexRoute: AuthenticatedDemoIndexRoute,
+const AuthenticatedAppMarketRouteChildren: AuthenticatedAppMarketRouteChildren =
+  {
+    AuthenticatedAppMarketCartRoute: AuthenticatedAppMarketCartRoute,
+  }
+
+const AuthenticatedAppMarketRouteWithChildren =
+  AuthenticatedAppMarketRoute._addFileChildren(
+    AuthenticatedAppMarketRouteChildren,
+  )
+
+interface AuthenticatedAppSusuRouteChildren {
+  AuthenticatedAppSusuGroupIdRoute: typeof AuthenticatedAppSusuGroupIdRoute
 }
 
-const AuthenticatedDemoRouteWithChildren =
-  AuthenticatedDemoRoute._addFileChildren(AuthenticatedDemoRouteChildren)
+const AuthenticatedAppSusuRouteChildren: AuthenticatedAppSusuRouteChildren = {
+  AuthenticatedAppSusuGroupIdRoute: AuthenticatedAppSusuGroupIdRoute,
+}
+
+const AuthenticatedAppSusuRouteWithChildren =
+  AuthenticatedAppSusuRoute._addFileChildren(AuthenticatedAppSusuRouteChildren)
+
+interface AuthenticatedAppRouteChildren {
+  AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRoute
+  AuthenticatedAppExpensesRoute: typeof AuthenticatedAppExpensesRoute
+  AuthenticatedAppIncomeRoute: typeof AuthenticatedAppIncomeRoute
+  AuthenticatedAppLoansRoute: typeof AuthenticatedAppLoansRoute
+  AuthenticatedAppMarketRoute: typeof AuthenticatedAppMarketRouteWithChildren
+  AuthenticatedAppOrdersRoute: typeof AuthenticatedAppOrdersRoute
+  AuthenticatedAppSusuRoute: typeof AuthenticatedAppSusuRouteWithChildren
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+}
+
+const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
+  AuthenticatedAppAdminRoute: AuthenticatedAppAdminRoute,
+  AuthenticatedAppExpensesRoute: AuthenticatedAppExpensesRoute,
+  AuthenticatedAppIncomeRoute: AuthenticatedAppIncomeRoute,
+  AuthenticatedAppLoansRoute: AuthenticatedAppLoansRoute,
+  AuthenticatedAppMarketRoute: AuthenticatedAppMarketRouteWithChildren,
+  AuthenticatedAppOrdersRoute: AuthenticatedAppOrdersRoute,
+  AuthenticatedAppSusuRoute: AuthenticatedAppSusuRouteWithChildren,
+  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+}
+
+const AuthenticatedAppRouteWithChildren =
+  AuthenticatedAppRoute._addFileChildren(AuthenticatedAppRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedDemoRoute: typeof AuthenticatedDemoRouteWithChildren
+  AuthenticatedAppRoute: typeof AuthenticatedAppRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedDemoRoute: AuthenticatedDemoRouteWithChildren,
+  AuthenticatedAppRoute: AuthenticatedAppRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
