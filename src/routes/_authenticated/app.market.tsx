@@ -234,11 +234,6 @@ function Market() {
                     <div className="bg-background/90 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold text-primary flex items-center gap-1 border border-primary/20">
                       <ShieldCheck className="w-3 h-3" /> VERIFIED
                     </div>
-                    {p.is_featured && (
-                      <div className="bg-gold/90 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1">
-                        BEST SELLER
-                      </div>
-                    )}
                   </div>
                 </div>
 

@@ -79,13 +79,12 @@ export type Database = {
           decision_note: string
           disbursed_at: string | null
           id: string
-          interest_rate: number
+          interest_rate: number | null
           purpose: string
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
           term_months: number
-          total_payable: number
           updated_at: string
           user_id: string
         }
@@ -96,13 +95,12 @@ export type Database = {
           decision_note?: string
           disbursed_at?: string | null
           id?: string
-          interest_rate?: number
+          interest_rate?: number | null
           purpose?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           term_months: number
-          total_payable?: number
           updated_at?: string
           user_id: string
         }
@@ -113,13 +111,12 @@ export type Database = {
           decision_note?: string
           disbursed_at?: string | null
           id?: string
-          interest_rate?: number
+          interest_rate?: number | null
           purpose?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           term_months?: number
-          total_payable?: number
           updated_at?: string
           user_id?: string
         }
@@ -173,7 +170,7 @@ export type Database = {
         Row: {
           body: string
           created_at: string
-          data: Json
+          data: Json | null
           id: string
           read: boolean
           title: string
@@ -183,7 +180,7 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
-          data?: Json
+          data?: Json | null
           id?: string
           read?: boolean
           title: string
@@ -193,7 +190,7 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
-          data?: Json
+          data?: Json | null
           id?: string
           read?: boolean
           title?: string
@@ -294,15 +291,43 @@ export type Database = {
           },
         ]
       }
+      product_requests: {
+        Row: {
+          created_at: string | null
+          estimated_price: number | null
+          id: string
+          note: string | null
+          product_name: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          estimated_price?: number | null
+          id?: string
+          note?: string | null
+          product_name: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          estimated_price?: number | null
+          id?: string
+          note?: string | null
+          product_name?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           active: boolean
-          category: string | null
           created_at: string
           description: string
           id: string
           image_url: string
-          is_featured: boolean | null
           name: string
           price: number
           stock: number
@@ -311,12 +336,10 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          category?: string | null
           created_at?: string
           description?: string
           id?: string
           image_url?: string
-          is_featured?: boolean | null
           name: string
           price: number
           stock?: number
@@ -325,12 +348,10 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          category?: string | null
           created_at?: string
           description?: string
           id?: string
           image_url?: string
-          is_featured?: boolean | null
           name?: string
           price?: number
           stock?: number
