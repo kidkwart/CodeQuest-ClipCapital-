@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/demo")({
+export const Route = createFileRoute("/_authenticated/demo")({
   head: () => ({
     meta: [
       { title: "ClipCapital Demo — Try the app" },
