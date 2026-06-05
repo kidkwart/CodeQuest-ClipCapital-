@@ -157,16 +157,16 @@ function Dashboard() {
         <div className="space-y-6">
           <h2 className="font-display font-semibold mb-4">Quick actions</h2>
           <div className="grid gap-3">
-            {[
-              ["Detailed Income", "/app/income", TrendingUp],
-              ["Manage Expenses", "/app/expenses", Receipt],
-              ["Credit & Loans", "/app/loans", Wallet],
-              ["ClipMarket Shop", "/app/market", Store],
-            ].map(([label, to, Icon]) => (
-              <Link key={to} to={to as string} className="flex items-center justify-between rounded-xl bg-surface border border-border hover:border-primary/50 p-4 transition shadow-sm hover:shadow-md group">
+            {([
+              { label: "Detailed Income", to: "/app/income", icon: TrendingUp },
+              { label: "Manage Expenses", to: "/app/expenses", icon: Receipt },
+              { label: "Credit & Loans", to: "/app/loans", icon: Wallet },
+              { label: "ClipMarket Shop", to: "/app/market", icon: Store },
+            ] as const).map(({ label, to, icon: Icon }) => (
+              <Link key={to} to={to} className="flex items-center justify-between rounded-xl bg-surface border border-border hover:border-primary/50 p-4 transition shadow-sm hover:shadow-md group">
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                    {Icon && <Icon className="w-4 h-4" />}
+                    <Icon className="w-4 h-4" />
                   </div>
                   <div className="font-semibold text-sm">{label}</div>
                 </div>
