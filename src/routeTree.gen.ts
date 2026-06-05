@@ -9,18 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DemoRouteImport } from './routes/demo'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoIndexRouteImport } from './routes/demo.index'
-import { Route as DemoSusuRouteImport } from './routes/demo.susu'
-import { Route as DemoMarketRouteImport } from './routes/demo.market'
-import { Route as DemoLoansRouteImport } from './routes/demo.loans'
-import { Route as DemoIncomeRouteImport } from './routes/demo.income'
-import { Route as DemoExpensesRouteImport } from './routes/demo.expenses'
+import { Route as AuthenticatedDemoRouteImport } from './routes/_authenticated/demo'
+import { Route as AuthenticatedDemoIndexRouteImport } from './routes/_authenticated/demo.index'
+import { Route as AuthenticatedDemoSusuRouteImport } from './routes/_authenticated/demo.susu'
+import { Route as AuthenticatedDemoMarketRouteImport } from './routes/_authenticated/demo.market'
+import { Route as AuthenticatedDemoLoansRouteImport } from './routes/_authenticated/demo.loans'
+import { Route as AuthenticatedDemoIncomeRouteImport } from './routes/_authenticated/demo.income'
+import { Route as AuthenticatedDemoExpensesRouteImport } from './routes/_authenticated/demo.expenses'
 
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo',
-  path: '/demo',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -28,71 +34,82 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoIndexRoute = DemoIndexRouteImport.update({
+const AuthenticatedDemoRoute = AuthenticatedDemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDemoIndexRoute = AuthenticatedDemoIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DemoRoute,
+  getParentRoute: () => AuthenticatedDemoRoute,
 } as any)
-const DemoSusuRoute = DemoSusuRouteImport.update({
+const AuthenticatedDemoSusuRoute = AuthenticatedDemoSusuRouteImport.update({
   id: '/susu',
   path: '/susu',
-  getParentRoute: () => DemoRoute,
+  getParentRoute: () => AuthenticatedDemoRoute,
 } as any)
-const DemoMarketRoute = DemoMarketRouteImport.update({
+const AuthenticatedDemoMarketRoute = AuthenticatedDemoMarketRouteImport.update({
   id: '/market',
   path: '/market',
-  getParentRoute: () => DemoRoute,
+  getParentRoute: () => AuthenticatedDemoRoute,
 } as any)
-const DemoLoansRoute = DemoLoansRouteImport.update({
+const AuthenticatedDemoLoansRoute = AuthenticatedDemoLoansRouteImport.update({
   id: '/loans',
   path: '/loans',
-  getParentRoute: () => DemoRoute,
+  getParentRoute: () => AuthenticatedDemoRoute,
 } as any)
-const DemoIncomeRoute = DemoIncomeRouteImport.update({
+const AuthenticatedDemoIncomeRoute = AuthenticatedDemoIncomeRouteImport.update({
   id: '/income',
   path: '/income',
-  getParentRoute: () => DemoRoute,
+  getParentRoute: () => AuthenticatedDemoRoute,
 } as any)
-const DemoExpensesRoute = DemoExpensesRouteImport.update({
-  id: '/expenses',
-  path: '/expenses',
-  getParentRoute: () => DemoRoute,
-} as any)
+const AuthenticatedDemoExpensesRoute =
+  AuthenticatedDemoExpensesRouteImport.update({
+    id: '/expenses',
+    path: '/expenses',
+    getParentRoute: () => AuthenticatedDemoRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/demo': typeof DemoRouteWithChildren
-  '/demo/expenses': typeof DemoExpensesRoute
-  '/demo/income': typeof DemoIncomeRoute
-  '/demo/loans': typeof DemoLoansRoute
-  '/demo/market': typeof DemoMarketRoute
-  '/demo/susu': typeof DemoSusuRoute
-  '/demo/': typeof DemoIndexRoute
+  '/auth': typeof AuthRoute
+  '/demo': typeof AuthenticatedDemoRouteWithChildren
+  '/demo/expenses': typeof AuthenticatedDemoExpensesRoute
+  '/demo/income': typeof AuthenticatedDemoIncomeRoute
+  '/demo/loans': typeof AuthenticatedDemoLoansRoute
+  '/demo/market': typeof AuthenticatedDemoMarketRoute
+  '/demo/susu': typeof AuthenticatedDemoSusuRoute
+  '/demo/': typeof AuthenticatedDemoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/demo/expenses': typeof DemoExpensesRoute
-  '/demo/income': typeof DemoIncomeRoute
-  '/demo/loans': typeof DemoLoansRoute
-  '/demo/market': typeof DemoMarketRoute
-  '/demo/susu': typeof DemoSusuRoute
-  '/demo': typeof DemoIndexRoute
+  '/auth': typeof AuthRoute
+  '/demo/expenses': typeof AuthenticatedDemoExpensesRoute
+  '/demo/income': typeof AuthenticatedDemoIncomeRoute
+  '/demo/loans': typeof AuthenticatedDemoLoansRoute
+  '/demo/market': typeof AuthenticatedDemoMarketRoute
+  '/demo/susu': typeof AuthenticatedDemoSusuRoute
+  '/demo': typeof AuthenticatedDemoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/demo': typeof DemoRouteWithChildren
-  '/demo/expenses': typeof DemoExpensesRoute
-  '/demo/income': typeof DemoIncomeRoute
-  '/demo/loans': typeof DemoLoansRoute
-  '/demo/market': typeof DemoMarketRoute
-  '/demo/susu': typeof DemoSusuRoute
-  '/demo/': typeof DemoIndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/demo': typeof AuthenticatedDemoRouteWithChildren
+  '/_authenticated/demo/expenses': typeof AuthenticatedDemoExpensesRoute
+  '/_authenticated/demo/income': typeof AuthenticatedDemoIncomeRoute
+  '/_authenticated/demo/loans': typeof AuthenticatedDemoLoansRoute
+  '/_authenticated/demo/market': typeof AuthenticatedDemoMarketRoute
+  '/_authenticated/demo/susu': typeof AuthenticatedDemoSusuRoute
+  '/_authenticated/demo/': typeof AuthenticatedDemoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/demo'
     | '/demo/expenses'
     | '/demo/income'
@@ -103,6 +120,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/demo/expenses'
     | '/demo/income'
     | '/demo/loans'
@@ -112,27 +130,37 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/demo'
-    | '/demo/expenses'
-    | '/demo/income'
-    | '/demo/loans'
-    | '/demo/market'
-    | '/demo/susu'
-    | '/demo/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/demo'
+    | '/_authenticated/demo/expenses'
+    | '/_authenticated/demo/income'
+    | '/_authenticated/demo/loans'
+    | '/_authenticated/demo/market'
+    | '/_authenticated/demo/susu'
+    | '/_authenticated/demo/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DemoRoute: typeof DemoRouteWithChildren
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/demo': {
-      id: '/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof DemoRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -142,85 +170,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/': {
-      id: '/demo/'
+    '/_authenticated/demo': {
+      id: '/_authenticated/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof AuthenticatedDemoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/demo/': {
+      id: '/_authenticated/demo/'
       path: '/'
       fullPath: '/demo/'
-      preLoaderRoute: typeof DemoIndexRouteImport
-      parentRoute: typeof DemoRoute
+      preLoaderRoute: typeof AuthenticatedDemoIndexRouteImport
+      parentRoute: typeof AuthenticatedDemoRoute
     }
-    '/demo/susu': {
-      id: '/demo/susu'
+    '/_authenticated/demo/susu': {
+      id: '/_authenticated/demo/susu'
       path: '/susu'
       fullPath: '/demo/susu'
-      preLoaderRoute: typeof DemoSusuRouteImport
-      parentRoute: typeof DemoRoute
+      preLoaderRoute: typeof AuthenticatedDemoSusuRouteImport
+      parentRoute: typeof AuthenticatedDemoRoute
     }
-    '/demo/market': {
-      id: '/demo/market'
+    '/_authenticated/demo/market': {
+      id: '/_authenticated/demo/market'
       path: '/market'
       fullPath: '/demo/market'
-      preLoaderRoute: typeof DemoMarketRouteImport
-      parentRoute: typeof DemoRoute
+      preLoaderRoute: typeof AuthenticatedDemoMarketRouteImport
+      parentRoute: typeof AuthenticatedDemoRoute
     }
-    '/demo/loans': {
-      id: '/demo/loans'
+    '/_authenticated/demo/loans': {
+      id: '/_authenticated/demo/loans'
       path: '/loans'
       fullPath: '/demo/loans'
-      preLoaderRoute: typeof DemoLoansRouteImport
-      parentRoute: typeof DemoRoute
+      preLoaderRoute: typeof AuthenticatedDemoLoansRouteImport
+      parentRoute: typeof AuthenticatedDemoRoute
     }
-    '/demo/income': {
-      id: '/demo/income'
+    '/_authenticated/demo/income': {
+      id: '/_authenticated/demo/income'
       path: '/income'
       fullPath: '/demo/income'
-      preLoaderRoute: typeof DemoIncomeRouteImport
-      parentRoute: typeof DemoRoute
+      preLoaderRoute: typeof AuthenticatedDemoIncomeRouteImport
+      parentRoute: typeof AuthenticatedDemoRoute
     }
-    '/demo/expenses': {
-      id: '/demo/expenses'
+    '/_authenticated/demo/expenses': {
+      id: '/_authenticated/demo/expenses'
       path: '/expenses'
       fullPath: '/demo/expenses'
-      preLoaderRoute: typeof DemoExpensesRouteImport
-      parentRoute: typeof DemoRoute
+      preLoaderRoute: typeof AuthenticatedDemoExpensesRouteImport
+      parentRoute: typeof AuthenticatedDemoRoute
     }
   }
 }
 
-interface DemoRouteChildren {
-  DemoExpensesRoute: typeof DemoExpensesRoute
-  DemoIncomeRoute: typeof DemoIncomeRoute
-  DemoLoansRoute: typeof DemoLoansRoute
-  DemoMarketRoute: typeof DemoMarketRoute
-  DemoSusuRoute: typeof DemoSusuRoute
-  DemoIndexRoute: typeof DemoIndexRoute
+interface AuthenticatedDemoRouteChildren {
+  AuthenticatedDemoExpensesRoute: typeof AuthenticatedDemoExpensesRoute
+  AuthenticatedDemoIncomeRoute: typeof AuthenticatedDemoIncomeRoute
+  AuthenticatedDemoLoansRoute: typeof AuthenticatedDemoLoansRoute
+  AuthenticatedDemoMarketRoute: typeof AuthenticatedDemoMarketRoute
+  AuthenticatedDemoSusuRoute: typeof AuthenticatedDemoSusuRoute
+  AuthenticatedDemoIndexRoute: typeof AuthenticatedDemoIndexRoute
 }
 
-const DemoRouteChildren: DemoRouteChildren = {
-  DemoExpensesRoute: DemoExpensesRoute,
-  DemoIncomeRoute: DemoIncomeRoute,
-  DemoLoansRoute: DemoLoansRoute,
-  DemoMarketRoute: DemoMarketRoute,
-  DemoSusuRoute: DemoSusuRoute,
-  DemoIndexRoute: DemoIndexRoute,
+const AuthenticatedDemoRouteChildren: AuthenticatedDemoRouteChildren = {
+  AuthenticatedDemoExpensesRoute: AuthenticatedDemoExpensesRoute,
+  AuthenticatedDemoIncomeRoute: AuthenticatedDemoIncomeRoute,
+  AuthenticatedDemoLoansRoute: AuthenticatedDemoLoansRoute,
+  AuthenticatedDemoMarketRoute: AuthenticatedDemoMarketRoute,
+  AuthenticatedDemoSusuRoute: AuthenticatedDemoSusuRoute,
+  AuthenticatedDemoIndexRoute: AuthenticatedDemoIndexRoute,
 }
 
-const DemoRouteWithChildren = DemoRoute._addFileChildren(DemoRouteChildren)
+const AuthenticatedDemoRouteWithChildren =
+  AuthenticatedDemoRoute._addFileChildren(AuthenticatedDemoRouteChildren)
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDemoRoute: typeof AuthenticatedDemoRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDemoRoute: AuthenticatedDemoRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DemoRoute: DemoRouteWithChildren,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

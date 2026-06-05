@@ -1,24 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { products, useDemo } from "@/lib/demo-store";
+import { products, useAddToCart, useCart, useClearCart } from "@/lib/demo-queries";
 
-export const Route = createFileRoute("/demo/market")({
+export const Route = createFileRoute("/_authenticated/demo/market")({
   component: MarketPage,
 });
 
 function MarketPage() {
-  const { cart, addToCart, clearCart } = useDemo();
+  const { data: cart = [] } = useCart();
+  const addToCart = useAddToCart();
+  const clearCart = useClearCart();
   const [toast, setToast] = useState<string | null>(null);
-  const cartTotal = cart.reduce((s, c) => {
-    const p = products.find((p) => p.id === c.productId);
-    return s + (p?.price ?? 0) * c.qty;
-  }, 0);
+
+  const cartTotal = cart.reduce((s, c) => s + Number(c.price) * c.qty, 0);
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
 
-  function add(id: string, name: string) {
-    addToCart(id);
-    setToast(`Added ${name}`);
-    setTimeout(() => setToast(null), 1500);
+  function add(p: typeof products[number]) {
+    addToCart.mutate(p, {
+      onSuccess: () => {
+        setToast(`Added ${p.name}`);
+        setTimeout(() => setToast(null), 1500);
+      },
+    });
   }
 
   return (
@@ -30,7 +33,7 @@ function MarketPage() {
         </div>
         {cartCount > 0 && (
           <div className="text-xs rounded-full bg-primary/20 border border-primary/30 px-3 py-1.5 font-semibold">
-            🛒 {cartCount} · GH₵ {cartTotal}
+            🛒 {cartCount} · GH₵ {cartTotal.toFixed(0)}
           </div>
         )}
       </div>
@@ -46,7 +49,7 @@ function MarketPage() {
               <div className="text-[10px] text-muted-foreground mt-0.5">{p.vendor}</div>
               <div className="mt-auto pt-2 flex items-center justify-between">
                 <div className="text-sm font-bold text-gold">GH₵ {p.price}</div>
-                <button onClick={() => add(p.id, p.name)} className="text-[10px] rounded-full bg-primary text-primary-foreground font-semibold px-3 py-1.5">Add</button>
+                <button onClick={() => add(p)} disabled={addToCart.isPending} className="text-[10px] rounded-full bg-primary text-primary-foreground font-semibold px-3 py-1.5 disabled:opacity-60">Add</button>
               </div>
             </div>
           </div>
@@ -57,11 +60,11 @@ function MarketPage() {
         <div className="rounded-2xl bg-gradient-to-br from-primary/20 to-gold/10 border border-primary/30 p-4 space-y-2">
           <div className="flex items-center justify-between">
             <div className="text-xs font-semibold uppercase tracking-wider">Order summary</div>
-            <button onClick={clearCart} className="text-[10px] text-muted-foreground">Clear</button>
+            <button onClick={() => clearCart.mutate()} className="text-[10px] text-muted-foreground">Clear</button>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal ({cartCount} items)</span>
-            <span className="font-bold">GH₵ {cartTotal}</span>
+            <span className="font-bold">GH₵ {cartTotal.toFixed(0)}</span>
           </div>
           <div className="flex justify-between text-[11px]">
             <span className="text-gold">Loyalty points</span>
