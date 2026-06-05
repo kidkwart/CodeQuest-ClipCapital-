@@ -14,7 +14,185 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cart_items: {
+        Row: {
+          created_at: string
+          id: string
+          price: number
+          product_id: string
+          product_name: string
+          qty: number
+          user_id: string
+          vendor: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          price: number
+          product_id: string
+          product_name: string
+          qty?: number
+          user_id: string
+          vendor: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          price?: number
+          product_id?: string
+          product_name?: string
+          qty?: number
+          user_id?: string
+          vendor?: string
+        }
+        Relationships: []
+      }
+      expense_entries: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          entry_date: string
+          id: string
+          note: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      income_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          entry_date: string
+          id: string
+          note: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          business_name: string
+          clip_score: number
+          created_at: string
+          display_name: string
+          id: string
+          loan_balance: number
+          updated_at: string
+        }
+        Insert: {
+          business_name?: string
+          clip_score?: number
+          created_at?: string
+          display_name?: string
+          id: string
+          loan_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string
+          clip_score?: number
+          created_at?: string
+          display_name?: string
+          id?: string
+          loan_balance?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      susu_groups: {
+        Row: {
+          contribution: number
+          created_at: string
+          frequency: string
+          id: string
+          members_count: number
+          name: string
+          pot: number
+        }
+        Insert: {
+          contribution: number
+          created_at?: string
+          frequency: string
+          id?: string
+          members_count?: number
+          name: string
+          pot?: number
+        }
+        Update: {
+          contribution?: number
+          created_at?: string
+          frequency?: string
+          id?: string
+          members_count?: number
+          name?: string
+          pot?: number
+        }
+        Relationships: []
+      }
+      susu_memberships: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "susu_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "susu_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
