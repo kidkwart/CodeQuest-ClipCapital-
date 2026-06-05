@@ -9,29 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DemoRouteImport } from './routes/demo'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoIndexRouteImport } from './routes/demo.index'
 import { Route as DemoSusuRouteImport } from './routes/demo.susu'
 import { Route as DemoMarketRouteImport } from './routes/demo.market'
 import { Route as DemoLoansRouteImport } from './routes/demo.loans'
 import { Route as DemoIncomeRouteImport } from './routes/demo.income'
 import { Route as DemoExpensesRouteImport } from './routes/demo.expenses'
+import { Route as AuthenticatedDemoRouteImport } from './routes/_authenticated/demo'
+import { Route as AuthenticatedDemoIndexRouteImport } from './routes/_authenticated/demo.index'
 
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo',
-  path: '/demo',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const DemoIndexRoute = DemoIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DemoRoute,
 } as any)
 const DemoSusuRoute = DemoSusuRouteImport.update({
   id: '/susu',
@@ -58,16 +48,26 @@ const DemoExpensesRoute = DemoExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => DemoRoute,
 } as any)
+const AuthenticatedDemoRoute = AuthenticatedDemoRouteImport.update({
+  id: '/_authenticated/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDemoIndexRoute = AuthenticatedDemoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedDemoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/demo': typeof DemoRouteWithChildren
+  '/demo': typeof AuthenticatedDemoRouteWithChildren
   '/demo/expenses': typeof DemoExpensesRoute
   '/demo/income': typeof DemoIncomeRoute
   '/demo/loans': typeof DemoLoansRoute
   '/demo/market': typeof DemoMarketRoute
   '/demo/susu': typeof DemoSusuRoute
-  '/demo/': typeof DemoIndexRoute
+  '/demo/': typeof AuthenticatedDemoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,18 +76,18 @@ export interface FileRoutesByTo {
   '/demo/loans': typeof DemoLoansRoute
   '/demo/market': typeof DemoMarketRoute
   '/demo/susu': typeof DemoSusuRoute
-  '/demo': typeof DemoIndexRoute
+  '/demo': typeof AuthenticatedDemoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/demo': typeof DemoRouteWithChildren
+  '/_authenticated/demo': typeof AuthenticatedDemoRouteWithChildren
   '/demo/expenses': typeof DemoExpensesRoute
   '/demo/income': typeof DemoIncomeRoute
   '/demo/loans': typeof DemoLoansRoute
   '/demo/market': typeof DemoMarketRoute
   '/demo/susu': typeof DemoSusuRoute
-  '/demo/': typeof DemoIndexRoute
+  '/_authenticated/demo/': typeof AuthenticatedDemoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -112,42 +112,28 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/demo'
+    | '/_authenticated/demo'
     | '/demo/expenses'
     | '/demo/income'
     | '/demo/loans'
     | '/demo/market'
     | '/demo/susu'
-    | '/demo/'
+    | '/_authenticated/demo/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DemoRoute: typeof DemoRouteWithChildren
+  AuthenticatedDemoRoute: typeof AuthenticatedDemoRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/demo': {
-      id: '/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof DemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/demo/': {
-      id: '/demo/'
-      path: '/'
-      fullPath: '/demo/'
-      preLoaderRoute: typeof DemoIndexRouteImport
-      parentRoute: typeof DemoRoute
     }
     '/demo/susu': {
       id: '/demo/susu'
@@ -184,33 +170,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoExpensesRouteImport
       parentRoute: typeof DemoRoute
     }
+    '/_authenticated/demo': {
+      id: '/_authenticated/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof AuthenticatedDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/demo/': {
+      id: '/_authenticated/demo/'
+      path: '/'
+      fullPath: '/demo/'
+      preLoaderRoute: typeof AuthenticatedDemoIndexRouteImport
+      parentRoute: typeof AuthenticatedDemoRoute
+    }
   }
 }
 
-interface DemoRouteChildren {
-  DemoExpensesRoute: typeof DemoExpensesRoute
-  DemoIncomeRoute: typeof DemoIncomeRoute
-  DemoLoansRoute: typeof DemoLoansRoute
-  DemoMarketRoute: typeof DemoMarketRoute
-  DemoSusuRoute: typeof DemoSusuRoute
-  DemoIndexRoute: typeof DemoIndexRoute
+interface AuthenticatedDemoRouteChildren {
+  AuthenticatedDemoIndexRoute: typeof AuthenticatedDemoIndexRoute
 }
 
-const DemoRouteChildren: DemoRouteChildren = {
-  DemoExpensesRoute: DemoExpensesRoute,
-  DemoIncomeRoute: DemoIncomeRoute,
-  DemoLoansRoute: DemoLoansRoute,
-  DemoMarketRoute: DemoMarketRoute,
-  DemoSusuRoute: DemoSusuRoute,
-  DemoIndexRoute: DemoIndexRoute,
+const AuthenticatedDemoRouteChildren: AuthenticatedDemoRouteChildren = {
+  AuthenticatedDemoIndexRoute: AuthenticatedDemoIndexRoute,
 }
 
-const DemoRouteWithChildren = DemoRoute._addFileChildren(DemoRouteChildren)
+const AuthenticatedDemoRouteWithChildren =
+  AuthenticatedDemoRoute._addFileChildren(AuthenticatedDemoRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DemoRoute: DemoRouteWithChildren,
+  AuthenticatedDemoRoute: AuthenticatedDemoRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

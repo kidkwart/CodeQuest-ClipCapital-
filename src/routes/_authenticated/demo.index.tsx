@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useDemo } from "@/lib/demo-store";
 import { ClipScoreGauge } from "@/components/clip-score-gauge";
 
-export const Route = createFileRoute("/demo/")({
+export const Route = createFileRoute("/_authenticated/demo/")({
   component: DemoHome,
 });
 
