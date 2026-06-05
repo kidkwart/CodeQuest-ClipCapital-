@@ -1,13 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useDemo } from "@/lib/demo-store";
+import { computeClipScore, useIncome, useProfile } from "@/lib/demo-queries";
 
-export const Route = createFileRoute("/demo/loans")({
+export const Route = createFileRoute("/_authenticated/demo/loans")({
   component: LoansPage,
 });
 
 function LoansPage() {
-  const { loanBalance, clipScore } = useDemo();
+  const { data: profile } = useProfile();
+  const { data: income = [] } = useIncome();
+  const loanBalance = Number(profile?.loan_balance ?? 0);
+  const clipScore = computeClipScore(income.length);
+
   const [requested, setRequested] = useState(2000);
   const eligible = clipScore >= 650;
   const dailyRepay = Math.ceil((requested * 1.06) / 90);
@@ -18,22 +22,19 @@ function LoansPage() {
 
       <div className="rounded-2xl bg-gradient-to-br from-gold/20 to-primary/10 border border-gold/30 p-5">
         <div className="text-xs text-muted-foreground">Current loan balance</div>
-        <div className="text-3xl font-display font-bold mt-1">GH₵ {loanBalance}</div>
-        <div className="mt-3 flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Due today</span>
-          <span className="font-bold text-foreground">GH₵ 12.50</span>
-        </div>
-        <div className="mt-3 h-2 rounded-full bg-background overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-primary to-gold" style={{ width: "32%" }} />
-        </div>
-        <div className="mt-2 text-[10px] text-muted-foreground">32% repaid · 61 days remaining</div>
+        <div className="text-3xl font-display font-bold mt-1">GH₵ {loanBalance.toFixed(0)}</div>
+        {loanBalance > 0 ? (
+          <div className="mt-3 text-[10px] text-muted-foreground">Repayments auto-deduct from your MoMo wallet.</div>
+        ) : (
+          <div className="mt-3 text-[10px] text-muted-foreground">No active loan. Apply below to get started.</div>
+        )}
       </div>
 
       <div className="rounded-2xl bg-surface-elevated border border-border p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Apply for new loan</div>
           <span className={`text-[10px] font-bold rounded-full px-2 py-1 ${eligible ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"}`}>
-            {eligible ? "Eligible" : "Not eligible yet"}
+            {eligible ? "Eligible" : "Build score"}
           </span>
         </div>
         <div className="text-3xl font-display font-bold">GH₵ {requested.toLocaleString()}</div>
@@ -59,7 +60,7 @@ function LoansPage() {
         </div>
 
         <button disabled={!eligible} className="mt-4 w-full rounded-xl bg-primary text-primary-foreground font-semibold py-3 text-sm hover:bg-primary/90 transition disabled:opacity-40 disabled:cursor-not-allowed">
-          {eligible ? "Apply via MTN MoMo" : `Need ClipScore ≥ 650 (you have ${clipScore})`}
+          {eligible ? "Apply via MTN MoMo" : `Log more income to grow your score (you have ${clipScore})`}
         </button>
       </div>
 
