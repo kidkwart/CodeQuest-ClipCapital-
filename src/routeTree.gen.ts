@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDemoRouteImport } from './routes/_authenticated/demo'
 import { Route as AuthenticatedDemoIndexRouteImport } from './routes/_authenticated/demo.index'
@@ -18,15 +20,24 @@ import { Route as AuthenticatedDemoLoansRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDemoIncomeRouteImport } from './routes/_authenticated/demo.income'
 import { Route as AuthenticatedDemoExpensesRouteImport } from './routes/_authenticated/demo.expenses'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDemoRoute = AuthenticatedDemoRouteImport.update({
-  id: '/_authenticated/demo',
+  id: '/demo',
   path: '/demo',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDemoIndexRoute = AuthenticatedDemoIndexRouteImport.update({
   id: '/',
@@ -62,6 +73,7 @@ const AuthenticatedDemoExpensesRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/demo': typeof AuthenticatedDemoRouteWithChildren
   '/demo/expenses': typeof AuthenticatedDemoExpensesRoute
   '/demo/income': typeof AuthenticatedDemoIncomeRoute
@@ -72,6 +84,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/demo/expenses': typeof AuthenticatedDemoExpensesRoute
   '/demo/income': typeof AuthenticatedDemoIncomeRoute
   '/demo/loans': typeof AuthenticatedDemoLoansRoute
@@ -82,6 +95,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/_authenticated/demo': typeof AuthenticatedDemoRouteWithChildren
   '/_authenticated/demo/expenses': typeof AuthenticatedDemoExpensesRoute
   '/_authenticated/demo/income': typeof AuthenticatedDemoIncomeRoute
@@ -94,6 +109,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/demo'
     | '/demo/expenses'
     | '/demo/income'
@@ -104,6 +120,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/demo/expenses'
     | '/demo/income'
     | '/demo/loans'
@@ -113,6 +130,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
+    | '/auth'
     | '/_authenticated/demo'
     | '/_authenticated/demo/expenses'
     | '/_authenticated/demo/income'
@@ -124,11 +143,26 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedDemoRoute: typeof AuthenticatedDemoRouteWithChildren
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -141,7 +175,7 @@ declare module '@tanstack/react-router' {
       path: '/demo'
       fullPath: '/demo'
       preLoaderRoute: typeof AuthenticatedDemoRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/demo/': {
       id: '/_authenticated/demo/'
@@ -209,9 +243,21 @@ const AuthenticatedDemoRouteChildren: AuthenticatedDemoRouteChildren = {
 const AuthenticatedDemoRouteWithChildren =
   AuthenticatedDemoRoute._addFileChildren(AuthenticatedDemoRouteChildren)
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDemoRoute: typeof AuthenticatedDemoRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDemoRoute: AuthenticatedDemoRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedDemoRoute: AuthenticatedDemoRouteWithChildren,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
