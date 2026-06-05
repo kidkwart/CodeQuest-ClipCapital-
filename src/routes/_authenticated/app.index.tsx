@@ -3,7 +3,7 @@ import { AppShell, StatCard, Card, EmptyState } from "@/components/app-shell";
 import { ClipScoreGauge } from "@/components/clip-score-gauge";
 import { useClipScore, useIncome, useExpenses, useMyLoans, useAddIncome } from "@/lib/app-queries";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, Zap, Loader2 } from "lucide-react";
+import { Plus, Receipt, Store, TrendingUp, Wallet, Zap, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useState } from "react";
