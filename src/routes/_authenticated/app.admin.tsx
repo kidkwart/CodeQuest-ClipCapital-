@@ -4,8 +4,12 @@ import { AppShell, Card, EmptyState } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMyRoles, usePendingLoans, useReviewLoan } from "@/lib/app-queries";
+import {
+  useMyRoles, usePendingLoans, useReviewLoan,
+  useAllProducts, useCreateProduct, useUpdateProduct, useDeleteProduct,
+} from "@/lib/app-queries";
 import { toast } from "sonner";
+import { Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app/admin")({
   component: Admin,
@@ -20,7 +24,80 @@ function Admin() {
     <AppShell title="Admin">
       <h3 className="font-display font-semibold mb-3">Loan applications</h3>
       <LoanQueue />
+      <h3 className="font-display font-semibold mt-10 mb-3">Marketplace products</h3>
+      <ProductManager />
     </AppShell>
+  );
+}
+
+function ProductManager() {
+  const list = useAllProducts();
+  const create = useCreateProduct();
+  const update = useUpdateProduct();
+  const del = useDeleteProduct();
+  const [form, setForm] = useState({ name: "", description: "", price: "", image_url: "", stock: "1" });
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    const price = Number(form.price); const stock = Number(form.stock);
+    if (!form.name.trim() || !price) { toast.error("Name and price required"); return; }
+    try {
+      await create.mutateAsync({ name: form.name, description: form.description, price, image_url: form.image_url, stock });
+      setForm({ name: "", description: "", price: "", image_url: "", stock: "1" });
+      toast.success("Product added");
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-6">
+      <Card>
+        <h4 className="font-display font-semibold mb-3">Add product</h4>
+        <form onSubmit={add} className="space-y-3">
+          <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
+          <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><Label>Price (GH₵)</Label><Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required /></div>
+            <div><Label>Stock</Label><Input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
+          </div>
+          <div><Label>Image URL</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://…" /></div>
+          <Button type="submit" disabled={create.isPending} className="w-full">Add product</Button>
+        </form>
+      </Card>
+      <Card className="lg:col-span-2">
+        <h4 className="font-display font-semibold mb-3">All products ({list.data?.length ?? 0})</h4>
+        {(list.data ?? []).length === 0 ? (
+          <EmptyState title="No products" />
+        ) : (
+          <ul className="divide-y divide-border max-h-[600px] overflow-y-auto">
+            {list.data!.map((p) => (
+              <li key={p.id} className="py-3 flex items-center gap-3">
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="w-12 h-12 object-cover rounded" />
+                ) : (
+                  <div className="w-12 h-12 rounded bg-surface-elevated" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{p.name}</div>
+                  <div className="text-xs text-muted-foreground">GH₵ {Number(p.price).toLocaleString()}</div>
+                </div>
+                <Input type="number" min="0" defaultValue={p.stock} className="w-20"
+                  onBlur={(e) => {
+                    const stock = Number(e.target.value);
+                    if (stock !== p.stock) update.mutate({ id: p.id, stock });
+                  }} />
+                <Button size="sm" variant={p.active ? "outline" : "default"}
+                  onClick={() => update.mutate({ id: p.id, active: !p.active })}>
+                  {p.active ? "Hide" : "Show"}
+                </Button>
+                <Button size="icon" variant="ghost" onClick={() => {
+                  if (confirm(`Delete ${p.name}?`)) del.mutate(p.id);
+                }}><Trash2 className="w-4 h-4" /></Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
   );
 }
 

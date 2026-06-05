@@ -333,6 +333,48 @@ export function useCreateProduct() {
   });
 }
 
+export function useAllProducts() {
+  return useQuery({
+    queryKey: ["all-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUpdateProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; price?: number; stock?: number; active?: boolean; name?: string; description?: string; image_url?: string }) => {
+      const { id, ...patch } = v;
+      const { error } = await supabase.from("products").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["all-products"] });
+      qc.invalidateQueries({ queryKey: ["my-products"] });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["all-products"] });
+      qc.invalidateQueries({ queryKey: ["my-products"] });
+    },
+  });
+}
+
 // ---------- Orders ----------
 export type CartItem = { product_id: string; vendor_id: string; name: string; price: number; qty: number };
 
