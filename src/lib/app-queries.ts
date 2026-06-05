@@ -146,20 +146,13 @@ export function useCreateGroup() {
 
 export function useJoinGroup() {
   const qc = useQueryClient();
-  const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (inviteCode: string) => {
-      const { data: group, error } = await supabase.from("susu_groups")
-        .select("id, members_count").eq("invite_code", inviteCode.trim()).maybeSingle();
-      if (error) throw error;
-      if (!group) throw new Error("Invalid invite code");
-      const newOrder = (group.members_count ?? 0) + 1;
-      const { error: mErr } = await supabase.from("susu_memberships").insert({
-        group_id: group.id, user_id: user!.id, payout_order: newOrder,
+      const { data, error } = await supabase.rpc("join_susu_by_invite", {
+        _invite: inviteCode.trim(),
       });
-      if (mErr) throw mErr;
-      await supabase.from("susu_groups").update({ members_count: newOrder }).eq("id", group.id);
-      return group.id;
+      if (error) throw error;
+      return data as string;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["susu-groups"] }),
   });
