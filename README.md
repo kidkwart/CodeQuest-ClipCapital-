@@ -96,7 +96,29 @@ The dev server will start on `http://localhost:8080` by default. VS Code may pro
 
 ---
 
-## 6. Sign in and start using the app
+## 6. Build and preview the production app
+
+To test the app exactly as it will run when published:
+
+1. Build the app for production:
+
+```bash
+bun run build
+```
+
+2. Preview the production build locally:
+
+```bash
+bun run preview
+```
+
+This serves the optimized production bundle on `http://localhost:3000` by default (or another port if 3000 is busy). It runs the full SSR/SSG pipeline, so it is the best way to verify that production features (server functions, protected routes, database calls) work before publishing.
+
+> **Tip:** The preview server uses the same `.env` variables as the dev server. Make sure your Supabase credentials are set before running either command.
+
+---
+
+## 7. Sign in and start using the app
 
 1. Open `http://localhost:8080` in your browser.
 2. Go to `/auth` and create an account.
