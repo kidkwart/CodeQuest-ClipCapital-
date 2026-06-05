@@ -93,7 +93,8 @@ export function useAdminStats() {
         loans,
         allLoans,
         allOrders,
-        allIncome
+        allIncome,
+        users
       ] = await Promise.all([
         supabase.from("income_entries").select("amount").gte("created_at", today),
         supabase.from("expense_entries").select("amount").gte("created_at", today),
@@ -102,8 +103,10 @@ export function useAdminStats() {
         supabase.from("loan_applications").select("amount, status"),
         supabase.from("orders").select("total"),
         supabase.from("income_entries").select("amount"),
+        supabase.from("profiles").select("id", { count: 'exact', head: true }),
       ]);
 
+      const totalUsers = users.count ?? 0;
       const dailyIncome = income.data?.reduce((s, i) => s + Number(i.amount), 0) ?? 0;
       const dailyExpenses = expenses.data?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
       const dailySales = orders.data?.reduce((s, o) => s + Number(o.total), 0) ?? 0;
@@ -128,7 +131,8 @@ export function useAdminStats() {
         totalVolume: dailyIncome + dailySales,
         totalCash: totalSales + totalIncome,
         activeRisk,
-        approvalRate: Math.round(approvalRate)
+        approvalRate: Math.round(approvalRate),
+        totalUsers,
       };
     },
   });

@@ -211,7 +211,7 @@ function DailyReport() {
   if (stats.isLoading) return <div className="h-32 rounded-xl bg-muted animate-pulse" />;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       <Card className="bg-emerald-500/10 border-emerald-500/20">
         <div className="text-[10px] uppercase font-bold text-emerald-600">User Income</div>
         <div className="text-xl font-display font-bold">GH₵ {stats.data?.dailyIncome.toLocaleString() || 0}</div>
@@ -227,6 +227,10 @@ function DailyReport() {
       <Card className="bg-primary/10 border-primary/20">
         <div className="text-[10px] uppercase font-bold text-primary">Total Volume</div>
         <div className="text-xl font-display font-bold text-primary">GH₵ {stats.data?.totalVolume.toLocaleString() || 0}</div>
+      </Card>
+      <Card className="bg-purple-500/10 border-purple-500/20">
+        <div className="text-[10px] uppercase font-bold text-purple-600">Total Users</div>
+        <div className="text-xl font-display font-bold text-purple-600">{stats.data?.totalUsers || 0}</div>
       </Card>
     </div>
   );
