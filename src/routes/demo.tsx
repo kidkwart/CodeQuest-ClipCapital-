@@ -13,14 +13,14 @@ export const Route = createFileRoute("/demo")({
   component: DemoShell,
 });
 
-const tabs = [
+const tabs: { to: string; label: string; icon: string; exact?: boolean }[] = [
   { to: "/demo", label: "Home", icon: "🏠", exact: true },
   { to: "/demo/income", label: "Income", icon: "📈" },
   { to: "/demo/expenses", label: "Expenses", icon: "🧾" },
   { to: "/demo/susu", label: "Susu", icon: "🤝" },
   { to: "/demo/loans", label: "Loans", icon: "💰" },
   { to: "/demo/market", label: "Market", icon: "🛒" },
-] as const;
+];
 
 function DemoShell() {
   const { pathname } = useLocation();
