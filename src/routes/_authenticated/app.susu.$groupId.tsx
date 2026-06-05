@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { MomoFields, useMomo } from "@/components/momo-form";
 import { useGroup, useGroupContributions, useGroupMembers, useRecordContribution } from "@/lib/app-queries";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { ArrowLeft, Copy, MessageSquare, Share2, Users, Wallet } from "lucide-react";
+import { ArrowLeft, Check, Clock, Copy, MessageSquare, Share2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 

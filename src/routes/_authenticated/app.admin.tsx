@@ -296,7 +296,7 @@ function ProductRequestQueue() {
             </div>
             {r.estimated_price && <div className="text-sm font-semibold mb-1">Target Price: GH₵ {r.estimated_price}</div>}
             {r.note && <div className="text-xs bg-background p-2 rounded border border-gold/10 italic">"{r.note}"</div>}
-            <div className="mt-3 text-[10px] text-muted-foreground uppercase">{new Date(r.created_at).toLocaleDateString()}</div>
+            <div className="mt-3 text-[10px] text-muted-foreground uppercase">{new Date(r.created_at ?? Date.now()).toLocaleDateString()}</div>
           </Card>
         );
       })}

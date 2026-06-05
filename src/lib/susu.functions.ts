@@ -4,10 +4,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const joinSusuByInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((data: unknown) =>
+  .inputValidator((data: unknown) =>
     z.object({ invite: z.string().trim().min(1).max(64) }).parse(data),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }: { data: { invite: string }; context: { userId: string } }) => {
     const { userId } = context;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
