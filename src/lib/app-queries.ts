@@ -326,18 +326,37 @@ export function useCreateGroup() {
   const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (v: { name: string; contribution: number; frequency: string }) => {
+      // Ensure frequency is Capitalized to match DB constraint if migration wasn't run
+      const freq = v.frequency.charAt(0).toUpperCase() + v.frequency.slice(1).toLowerCase();
+
+      // Manual invite code fallback in case DB trigger/default isn't applied yet
+      const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
       const { data: group, error } = await supabase.from("susu_groups").insert({
-        name: v.name, contribution: v.contribution, frequency: v.frequency,
-        owner_id: user!.id, members_count: 1,
+        name: v.name,
+        contribution: v.contribution,
+        frequency: freq,
+        owner_id: user!.id,
+        members_count: 1,
+        pot: 0,
+        status: 'active',
+        invite_code: inviteCode
       }).select().single();
+
       if (error) throw error;
+
       const { error: mErr } = await supabase.from("susu_memberships").insert({
-        group_id: group.id, user_id: user!.id, payout_order: 1,
+        group_id: group.id,
+        user_id: user!.id,
+        payout_order: 1,
       });
+
       if (mErr) throw mErr;
       return group;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["susu-groups"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["susu-groups"] });
+    },
   });
 }
 

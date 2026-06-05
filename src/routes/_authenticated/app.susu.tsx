@@ -25,15 +25,21 @@ function SusuList() {
   const join = useJoinGroup();
   const [name, setName] = useState("");
   const [contribution, setContribution] = useState("");
-  const [frequency, setFrequency] = useState("weekly");
+  const [frequency, setFrequency] = useState("Weekly");
   const [invite, setInvite] = useState("");
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     const amount = Number(contribution);
     if (!name.trim() || !amount) { toast.error("Name and contribution required"); return; }
-    try { await create.mutateAsync({ name, contribution: amount, frequency }); setName(""); setContribution(""); toast.success("Group created"); }
-    catch (e) { toast.error((e as Error).message); }
+    try {
+      await create.mutateAsync({ name, contribution: amount, frequency });
+      setName(""); setContribution("");
+      toast.success("Group created successfully!");
+    }
+    catch (e) {
+      toast.error("Failed to create group: " + (e as Error).message);
+    }
   }
 
   async function onJoin(e: React.FormEvent) {
@@ -48,18 +54,20 @@ function SusuList() {
         <Card>
           <h3 className="font-display font-semibold mb-3">Start a new group</h3>
           <form onSubmit={onCreate} className="space-y-3">
-            <div><Label>Group name</Label><Input value={name} onChange={(e) => setName(e.target.value)} required /></div>
-            <div><Label>Contribution (GH₵)</Label><Input type="number" min="1" value={contribution} onChange={(e) => setContribution(e.target.value)} required /></div>
+            <div><Label>Group name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Madina Barber Savings" required /></div>
+            <div><Label>Contribution (GH₵)</Label><Input type="number" min="1" value={contribution} onChange={(e) => setContribution(e.target.value)} placeholder="50" required /></div>
             <div>
               <Label>Frequency</Label>
               <select value={frequency} onChange={(e) => setFrequency(e.target.value)}
                 className="mt-1 w-full h-11 rounded-xl border border-input bg-background px-3 text-sm font-bold focus:ring-1 focus:ring-primary outline-none">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
+                <option value="Daily">Daily</option>
+                <option value="Weekly">Weekly</option>
+                <option value="Monthly">Monthly</option>
               </select>
             </div>
-            <Button type="submit" disabled={create.isPending} className="w-full">Create group</Button>
+            <Button type="submit" disabled={create.isPending} className="w-full h-11 font-bold">
+              {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create group"}
+            </Button>
           </form>
         </Card>
 
