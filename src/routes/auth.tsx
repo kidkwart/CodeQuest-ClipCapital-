@@ -36,7 +36,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/demo" });
+      if (data.user) navigate({ to: "/app" });
     });
   }, [navigate]);
 
@@ -57,7 +57,7 @@ function AuthPage() {
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/demo`,
+            emailRedirectTo: `${window.location.origin}/app`,
             data: {
               display_name: parsed.data.displayName,
               business_name: parsed.data.businessName ?? "",
@@ -66,7 +66,7 @@ function AuthPage() {
         });
         if (error) throw error;
       }
-      navigate({ to: "/demo" });
+      navigate({ to: "/app" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
