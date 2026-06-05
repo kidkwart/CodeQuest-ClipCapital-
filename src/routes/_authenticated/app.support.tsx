@@ -71,7 +71,11 @@ function SupportPage() {
               <div className="font-bold text-sm">Emergency Support</div>
             </div>
             <p className="text-xs text-muted-foreground mb-4">If you have an urgent issue with a payment, you can also reach us via WhatsApp.</p>
-            <Button variant="outline" className="w-full font-bold h-10 text-xs border-primary/30 text-primary hover:bg-primary hover:text-white transition-all">
+            <Button
+              variant="outline"
+              className="w-full font-bold h-10 text-xs border-primary/30 text-primary hover:bg-primary hover:text-white transition-all"
+              onClick={() => window.open('https://wa.me/233509511256', '_blank')}
+            >
               Message on WhatsApp
             </Button>
           </Card>
