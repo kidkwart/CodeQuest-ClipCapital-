@@ -53,8 +53,10 @@ function SusuList() {
             <div>
               <Label>Frequency</Label>
               <select value={frequency} onChange={(e) => setFrequency(e.target.value)}
-                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm">
-                <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+                className="mt-1 w-full h-11 rounded-xl border border-input bg-background px-3 text-sm font-bold focus:ring-1 focus:ring-primary outline-none">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
               </select>
             </div>
             <Button type="submit" disabled={create.isPending} className="w-full">Create group</Button>

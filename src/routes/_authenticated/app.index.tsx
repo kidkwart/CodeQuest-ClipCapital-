@@ -21,6 +21,7 @@ function Dashboard() {
   const addIncome = useAddIncome();
   const activity = useRecentActivity(8);
 
+  const [incomeNote, setIncomeNote] = useState("");
   const [customAmount, setCustomAmount] = useState("");
   const [activeQuickLog, setActiveQuickLog] = useState<number | null>(null);
 
@@ -35,15 +36,16 @@ function Dashboard() {
     .reduce((s, l) => s + Number(l.balance), 0);
   const maxLoan = Math.max(200, Math.min(5000, Math.round((score - 100) * 8)));
 
-  const quickLog = async (amt: number) => {
+  const quickLog = async (amt: number, note = "Daily Income") => {
     setActiveQuickLog(amt);
     try {
       await addIncome.mutateAsync({
         amount: amt,
-        note: "Quick log",
+        note: note,
         entry_date: new Date().toISOString().split('T')[0]
       });
       toast.success(`GH₵ ${amt} logged!`);
+      setIncomeNote("");
     } catch (e) {
       console.error("Log error:", e);
       toast.error("Failed to save. Check your connection.");
@@ -56,7 +58,7 @@ function Dashboard() {
     e.preventDefault();
     const amt = parseFloat(customAmount);
     if (isNaN(amt) || amt <= 0) return;
-    await quickLog(amt);
+    await quickLog(amt, incomeNote || "Daily Income");
     setCustomAmount("");
   };
 
@@ -93,7 +95,7 @@ function Dashboard() {
           <Card className="border-primary/20 bg-primary/5">
             <div className="flex items-center gap-2 mb-4">
               <Zap className="w-4 h-4 text-primary fill-primary" />
-              <h3 className="font-display font-bold text-sm uppercase tracking-tight">Quick Log Income</h3>
+              <h3 className="font-display font-bold text-sm uppercase tracking-tight">Log Daily Income</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {[10, 20, 50, 100].map((amt) => (
@@ -113,17 +115,25 @@ function Dashboard() {
                 </motion.div>
               ))}
             </div>
-            <form onSubmit={handleCustomSubmit} className="flex gap-2">
+            <form onSubmit={handleCustomSubmit} className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  placeholder="Amount (GH₵)..."
+                  className="h-10 bg-background flex-1"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                />
+                <Button type="submit" size="sm" className="px-6 h-10 font-bold" disabled={addIncome.isPending || !customAmount}>
+                  {addIncome.isPending && !activeQuickLog ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />} Log Income
+                </Button>
+              </div>
               <Input
-                type="number"
-                placeholder="Custom amount..."
-                className="h-10 bg-background"
-                value={customAmount}
-                onChange={(e) => setCustomAmount(e.target.value)}
+                placeholder="What did you earn this from? (Optional)"
+                className="h-9 text-xs bg-background/50 border-dashed"
+                value={incomeNote}
+                onChange={(e) => setIncomeNote(e.target.value)}
               />
-              <Button type="submit" size="sm" className="px-4" disabled={addIncome.isPending || !customAmount}>
-                {addIncome.isPending && !activeQuickLog ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />} Log
-              </Button>
             </form>
           </Card>
         </div>

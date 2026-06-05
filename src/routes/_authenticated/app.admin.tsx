@@ -12,7 +12,7 @@ import {
 } from "@/lib/app-queries";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
-import { Trash2, Loader2, Banknote, MessageSquarePlus, ShieldCheck, ShoppingCart, Package, ExternalLink, Users, TrendingUp, DollarSign } from "lucide-react";
+import { Trash2, Loader2, Banknote, MessageSquarePlus, ShieldCheck, Package, ExternalLink, Users, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/admin")({
@@ -27,7 +27,7 @@ function Admin() {
   if (roles.isLoading || userLoading) {
     return (
       <AppShell title="Admin">
-        <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="flex items-center gap-2 text-muted-foreground p-8">
           <Loader2 className="w-4 h-4 animate-spin" />
           Checking permissions...
         </div>
@@ -44,77 +44,45 @@ function Admin() {
 
   return (
     <AppShell title="Admin Control Center">
-      <div className="space-y-10">
+      <div className="space-y-12 pb-20">
+        {/* 1. Daily Performance */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-emerald-500" />
-            <h3 className="font-display font-bold text-xl">Daily Business Report</h3>
+            <h3 className="font-display font-bold text-xl uppercase tracking-tight">System Health</h3>
           </div>
           <DailyReport />
         </section>
 
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" />
-              <h3 className="font-display font-bold text-xl">Incoming Orders</h3>
+        {/* 2. Urgent Queues */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Banknote className="w-5 h-5 text-primary" />
+              <h3 className="font-display font-bold text-xl">Loan Queue</h3>
             </div>
-          </div>
-          <OrderQueue />
-        </section>
+            <LoanQueue />
+          </section>
 
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-blue-500" />
-            <h3 className="font-display font-bold text-xl">User Directory</h3>
-          </div>
-          <UserDirectory />
-        </section>
-
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Banknote className="w-5 h-5 text-primary" />
-            <h3 className="font-display font-bold text-xl">Loan Applications</h3>
-          </div>
-          <LoanQueue />
-        </section>
-
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+          <section>
+            <div className="flex items-center gap-2 mb-4">
               <Package className="w-5 h-5 text-primary" />
-              <h3 className="font-display font-bold text-xl">Incoming Orders</h3>
+              <h3 className="font-display font-bold text-xl">Order Management</h3>
             </div>
-          </div>
-          <OrderQueue />
-        </section>
+            <OrderQueue />
+          </section>
+        </div>
 
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-blue-500" />
-            <h3 className="font-display font-bold text-xl">User Directory</h3>
-          </div>
-          <UserDirectory />
-        </section>
-
+        {/* 3. Product Requests */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <MessageSquarePlus className="w-5 h-5 text-gold" />
-            <h3 className="font-display font-bold text-xl">User Product Requests</h3>
+            <h3 className="font-display font-bold text-xl">Custom Requests</h3>
           </div>
           <ProductRequestQueue />
         </section>
 
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" />
-              <h3 className="font-display font-bold text-xl">Incoming Orders</h3>
-            </div>
-          </div>
-          <OrderQueue />
-        </section>
-
+        {/* 4. User Base */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Users className="w-5 h-5 text-blue-500" />
@@ -123,6 +91,7 @@ function Admin() {
           <UserDirectory />
         </section>
 
+        {/* 5. Inventory */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="w-5 h-5 text-primary" />
@@ -146,55 +115,48 @@ function OrderQueue() {
     <div className="grid gap-4">
       {orders.data!.map((o) => (
         <Card key={o.id} className="border-border/50">
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="font-bold text-lg">Order #{o.id.slice(0, 8)}</div>
-                <div className={cn(
-                  "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase",
-                  o.status === "paid" ? "bg-emerald-500/10 text-emerald-600" :
-                  o.status === "delivered" ? "bg-blue-500/10 text-blue-600" :
-                  "bg-orange-500/10 text-orange-600"
-                )}>
-                  {o.status}
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="font-bold text-base">Order #{o.id.slice(0, 8)}</div>
+                <div className="text-xs text-muted-foreground">
+                  By <span className="font-semibold">{(o as any).profiles?.display_name}</span>
                 </div>
               </div>
-              <div className="text-sm mb-4">
-                Customer: <span className="font-semibold">{(o as any).profiles?.display_name}</span>
-                <span className="text-muted-foreground italic"> ({(o as any).profiles?.business_name})</span>
-              </div>
-              <div className="space-y-1">
-                {(o as any).order_items?.map((item: any) => (
-                  <div key={item.id} className="text-sm flex justify-between max-w-md">
-                    <span>{item.qty}x {item.products?.name}</span>
-                    <span className="text-muted-foreground">GH₵ {(item.price * item.qty).toLocaleString()}</span>
-                  </div>
-                ))}
+              <div className={cn(
+                "text-[9px] font-bold px-2 py-0.5 rounded-full uppercase",
+                o.status === "paid" ? "bg-emerald-500/10 text-emerald-600" :
+                o.status === "delivered" ? "bg-blue-500/10 text-blue-600" :
+                "bg-orange-500/10 text-orange-600"
+              )}>
+                {o.status}
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 md:text-right md:min-w-[200px]">
-              <div className="text-2xl font-display font-bold text-gold">GH₵ {Number(o.total).toLocaleString()}</div>
-              <div className="text-xs text-muted-foreground mb-4">
-                Paid via: <span className="font-bold uppercase">{o.payment_method || 'momo'}</span>
-                {o.momo_reference && <div className="mt-0.5">Ref: <code className="bg-muted px-1 rounded">{o.momo_reference}</code></div>}
-              </div>
+            <div className="text-xl font-display font-black text-primary">GH₵ {Number(o.total).toLocaleString()}</div>
 
-              <div className="flex flex-wrap gap-2 md:justify-end">
-                {o.status === "pending" && (
-                  <Button size="sm" className="bg-emerald-600" onClick={() => updateStatus.mutate({ id: o.id, status: "paid" })}>
-                    Mark Paid
-                  </Button>
-                )}
-                {o.status === "paid" && (
-                  <Button size="sm" className="bg-blue-600" onClick={() => updateStatus.mutate({ id: o.id, status: "delivered" })}>
-                    Mark Delivered
-                  </Button>
-                )}
-                <Button size="sm" variant="outline" className="gap-1">
-                  Details <ExternalLink className="w-3 h-3" />
+            <div className="space-y-1">
+              {(o as any).order_items?.map((item: any) => (
+                <div key={item.id} className="text-[11px] flex justify-between text-muted-foreground italic">
+                  <span>{item.qty}x {item.products?.name}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-dashed border-border mt-1">
+              {o.status === "pending" && (
+                <Button size="sm" className="flex-1 bg-emerald-600 h-8 text-[10px]" onClick={() => updateStatus.mutate({ id: o.id, status: "paid" })}>
+                  Mark Paid
                 </Button>
-              </div>
+              )}
+              {o.status === "paid" && (
+                <Button size="sm" className="flex-1 bg-blue-600 h-8 text-[10px]" onClick={() => updateStatus.mutate({ id: o.id, status: "delivered" })}>
+                  Mark Delivered
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="flex-1 h-8 text-[10px]">
+                Details
+              </Button>
             </div>
           </div>
         </Card>
@@ -210,7 +172,7 @@ function UserDirectory() {
   if ((users.data ?? []).length === 0) return <EmptyState title="No users found" />;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {users.data!.map((u) => (
         <Card key={u.id} className="border-blue-500/20 bg-blue-500/5">
           <div className="flex items-center gap-3 mb-3">
@@ -218,8 +180,8 @@ function UserDirectory() {
               {u.display_name?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div>
-              <div className="font-bold text-sm">{u.display_name}</div>
-              <div className="text-[10px] text-muted-foreground uppercase">{u.business_type}</div>
+              <div className="font-bold text-sm leading-none">{u.display_name}</div>
+              <div className="text-[9px] text-muted-foreground uppercase mt-1">{u.business_type || 'User'}</div>
             </div>
           </div>
 
@@ -227,10 +189,6 @@ function UserDirectory() {
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Business:</span>
               <span className="font-medium truncate max-w-[120px]">{u.business_name || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Location:</span>
-              <span className="font-medium">{u.location || 'N/A'}</span>
             </div>
             <div className="flex justify-between text-xs pt-2 border-t border-blue-500/10">
               <span className="text-muted-foreground font-bold">ClipScore:</span>
@@ -287,16 +245,14 @@ function ProductRequestQueue() {
         return (
           <Card key={r.id} className="border-gold/20 bg-gold/5">
             <div className="flex justify-between items-start mb-2">
-              <div className="font-bold text-lg">{r.product_name}</div>
-              <div className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gold/10 text-gold uppercase">{r.status}</div>
+              <div className="font-bold text-base">{r.product_name}</div>
+              <div className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gold/10 text-gold uppercase">{r.status}</div>
             </div>
             <div className="text-xs text-muted-foreground mb-3">
-              Requested by <span className="font-bold text-foreground">{profile?.display_name || "Unknown"}</span>
-              {profile?.business_name && <span className="italic"> ({profile.business_name})</span>}
+              By <span className="font-bold text-foreground">{profile?.display_name || "Unknown"}</span>
             </div>
-            {r.estimated_price && <div className="text-sm font-semibold mb-1">Target Price: GH₵ {r.estimated_price}</div>}
-            {r.note && <div className="text-xs bg-background p-2 rounded border border-gold/10 italic">"{r.note}"</div>}
-            <div className="mt-3 text-[10px] text-muted-foreground uppercase">{new Date(r.created_at).toLocaleDateString()}</div>
+            {r.estimated_price && <div className="text-sm font-semibold mb-1">Target: GH₵ {r.estimated_price}</div>}
+            {r.note && <div className="text-[11px] bg-background p-2 rounded border border-gold/10 italic">"{r.note}"</div>}
           </Card>
         );
       })}
@@ -327,13 +283,13 @@ function ProductManager() {
       <Card>
         <h4 className="font-display font-semibold mb-3">Add product</h4>
         <form onSubmit={add} className="space-y-3">
-          <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
-          <div><Label>Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+          <div><Label className="text-[10px]">Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="h-9 text-sm" /></div>
+          <div><Label className="text-[10px]">Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="h-9 text-sm" /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Price (GH₵)</Label><Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required /></div>
-            <div><Label>Stock</Label><Input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} /></div>
+            <div><Label className="text-[10px]">Price (GH₵)</Label><Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required className="h-9 text-sm" /></div>
+            <div><Label className="text-[10px]">Stock</Label><Input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="h-9 text-sm" /></div>
           </div>
-          <div><Label>Image URL</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://…" /></div>
+          <div><Label className="text-[10px]">Image URL</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://…" className="h-9 text-sm" /></div>
           <Button type="submit" disabled={create.isPending} className="w-full">Add product</Button>
         </form>
       </Card>
@@ -342,30 +298,30 @@ function ProductManager() {
         {(list.data ?? []).length === 0 ? (
           <EmptyState title="No products" />
         ) : (
-          <ul className="divide-y divide-border max-h-[600px] overflow-y-auto">
+          <ul className="divide-y divide-border max-h-[400px] overflow-y-auto pr-2">
             {list.data!.map((p) => (
               <li key={p.id} className="py-3 flex items-center gap-3">
                 {p.image_url ? (
-                  <img src={p.image_url} alt={p.name} className="w-12 h-12 object-cover rounded" />
+                  <img src={p.image_url} alt={p.name} className="w-10 h-10 object-cover rounded" />
                 ) : (
-                  <div className="w-12 h-12 rounded bg-surface-elevated" />
+                  <div className="w-10 h-10 rounded bg-muted flex items-center justify-center text-[10px]">No Img</div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">GH₵ {Number(p.price).toLocaleString()}</div>
+                  <div className="font-semibold truncate text-sm">{p.name}</div>
+                  <div className="text-[10px] text-muted-foreground">GH₵ {Number(p.price).toLocaleString()}</div>
                 </div>
-                <Input type="number" min="0" defaultValue={p.stock} className="w-20"
+                <Input type="number" min="0" defaultValue={p.stock} className="w-16 h-8 text-xs"
                   onBlur={(e) => {
                     const stock = Number(e.target.value);
                     if (stock !== p.stock) update.mutate({ id: p.id, stock });
                   }} />
-                <Button size="sm" variant={p.active ? "outline" : "default"}
+                <Button size="sm" variant={p.active ? "outline" : "default"} className="h-7 text-[10px] px-2"
                   onClick={() => update.mutate({ id: p.id, active: !p.active })}>
                   {p.active ? "Hide" : "Show"}
                 </Button>
-                <Button size="icon" variant="ghost" onClick={() => {
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => {
                   if (confirm(`Delete ${p.name}?`)) del.mutate(p.id);
-                }}><Trash2 className="w-4 h-4" /></Button>
+                }}><Trash2 className="w-3 h-3" /></Button>
               </li>
             ))}
           </ul>
@@ -384,67 +340,62 @@ function LoanQueue() {
   if ((list.data ?? []).length === 0) return <EmptyState title="No applications" />;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {list.data!.map((l) => {
         const profile = (l as { profiles?: { display_name?: string; business_name?: string } | null }).profiles;
         return (
-          <Card key={l.id}>
+          <Card key={l.id} className="border-primary/20">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
-                <div className="font-display font-bold text-lg">{profile?.display_name ?? "User"}</div>
-                <div className="text-sm text-muted-foreground">{profile?.business_name ?? "Independent Professional"}</div>
+                <div className="font-display font-bold text-base">{profile?.display_name ?? "User"}</div>
+                <div className="text-[11px] text-muted-foreground">{profile?.business_name ?? "Independent Professional"}</div>
 
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="mt-4 grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Request</div>
-                    <div className="font-bold">GH₵ {Number(l.amount).toLocaleString()}</div>
+                    <div className="text-[9px] text-muted-foreground uppercase font-black">Request</div>
+                    <div className="font-bold text-lg">GH₵ {Number(l.amount).toLocaleString()}</div>
                   </div>
                   <div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Term</div>
+                    <div className="text-[9px] text-muted-foreground uppercase font-black">Term</div>
                     <div className="font-bold">{l.term_months} Months</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Status</div>
-                    <div className="font-bold text-primary uppercase text-[10px]">{l.status}</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-muted-foreground uppercase">Applied</div>
-                    <div className="font-bold text-[10px]">{new Date(l.created_at).toLocaleDateString()}</div>
                   </div>
                 </div>
 
-                <div className="mt-2 text-sm">
-                  <span className="text-muted-foreground">Purpose:</span> {l.purpose}
+                <div className="mt-3 text-xs p-2 bg-muted/30 rounded border border-border/50">
+                  <span className="text-muted-foreground font-bold">Purpose:</span> {l.purpose}
                 </div>
               </div>
             </div>
 
             {l.status === "pending" && (
-              <div className="mt-6 space-y-4 border-t border-border pt-4 bg-muted/20 -mx-5 px-5 pb-4 rounded-b-xl">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Interest Rate (%)</Label>
+              <div className="mt-6 space-y-4 border-t border-dashed border-border pt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold">Interest (%)</Label>
                     <Input
                       type="number"
                       placeholder="5.0"
                       step="0.1"
+                      className="h-8 text-xs"
                       value={interestById[l.id] ?? "5.0"}
                       onChange={(e) => setInterestById({ ...interestById, [l.id]: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Decision Note</Label>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold">Note</Label>
                     <Input
-                      placeholder="Reason for approval/rejection"
+                      placeholder="Reason"
+                      className="h-8 text-xs"
                       value={noteById[l.id] ?? ""}
                       onChange={(e) => setNoteById({ ...noteById, [l.id]: e.target.value })}
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   <Button
-                    className="flex-1 bg-primary hover:bg-primary/90"
+                    size="sm"
+                    className="flex-1 bg-emerald-600 h-9 text-[10px] font-bold"
                     disabled={review.isPending}
                     onClick={async () => {
                       try {
@@ -456,19 +407,19 @@ function LoanQueue() {
                         });
                         toast.promise(promise, {
                           loading: 'Processing MoMo Payout...',
-                          success: 'Loan Approved & GH₵ ' + l.amount + ' Sent!',
-                          error: 'Payout failed. Please try again.',
+                          success: 'Loan Approved!',
+                          error: 'Payout failed.',
                         });
                         await promise;
                       } catch (e) { /* error handled by toast */ }
                     }}
                   >
-                    {review.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Approve & Disburse
+                    Approve
                   </Button>
                   <Button
+                    size="sm"
                     variant="outline"
-                    className="flex-1 border-destructive text-destructive hover:bg-destructive/10"
+                    className="flex-1 border-destructive text-destructive h-9 text-[10px] font-bold"
                     disabled={review.isPending}
                     onClick={async () => {
                       try {
@@ -481,15 +432,16 @@ function LoanQueue() {
                       } catch (e) { toast.error((e as Error).message); }
                     }}
                   >
-                    Reject Application
+                    Reject
                   </Button>
                 </div>
               </div>
             )}
 
-            {l.status !== "pending" && l.decision_note && (
-              <div className="mt-4 p-3 bg-muted/30 rounded-lg text-sm italic text-muted-foreground border-l-2 border-primary/30">
-                <span className="font-semibold not-italic">Admin Note:</span> {l.decision_note}
+            {l.status !== "pending" && (
+              <div className="mt-4 flex justify-between items-center">
+                <span className="text-[10px] font-black uppercase text-primary bg-primary/10 px-2 rounded-full">{l.status}</span>
+                {l.decision_note && <div className="text-[10px] italic text-muted-foreground">"{l.decision_note}"</div>}
               </div>
             )}
           </Card>
