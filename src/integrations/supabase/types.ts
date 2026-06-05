@@ -511,7 +511,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      join_susu_by_invite: { Args: { _invite: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "vendor" | "user"
