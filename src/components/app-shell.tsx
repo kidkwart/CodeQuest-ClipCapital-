@@ -28,8 +28,8 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   const [open, setOpen] = useState(false);
   const loc = useLocation();
 
-  const nav = isAdmin
-    ? [...baseNav, { to: "/app/admin", label: "Admin", icon: ShieldCheck, exact: undefined }]
+  const nav: NavItem[] = isAdmin
+    ? [...baseNav, { to: "/app/admin", label: "Admin", icon: ShieldCheck }]
     : baseNav;
 
   async function signOut() {
