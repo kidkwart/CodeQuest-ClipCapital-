@@ -148,11 +148,9 @@ export function useJoinGroup() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (inviteCode: string) => {
-      const { data, error } = await supabase.rpc("join_susu_by_invite", {
-        _invite: inviteCode.trim(),
-      });
-      if (error) throw error;
-      return data as string;
+      const { joinSusuByInvite } = await import("@/lib/susu.functions");
+      const result = await joinSusuByInvite({ data: { invite: inviteCode.trim() } });
+      return result.groupId;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["susu-groups"] }),
   });
