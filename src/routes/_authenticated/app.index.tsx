@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, StatCard, Card, EmptyState } from "@/components/app-shell";
 import { ClipScoreGauge } from "@/components/clip-score-gauge";
-import { useClipScore, useIncome, useExpenses, useMyLoans, useAddIncome } from "@/lib/app-queries";
+import { useClipScore, useIncome, useExpenses, useMyLoans, useAddIncome, useRecentActivity } from "@/lib/app-queries";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, Zap, Loader2 } from "lucide-react";
+import { Plus, TrendingUp, Zap, Loader2, ArrowUpRight, ArrowDownLeft, Wallet, ShoppingBag, PieChart } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -19,6 +19,7 @@ function Dashboard() {
   const expenses = useExpenses();
   const loans = useMyLoans();
   const addIncome = useAddIncome();
+  const activity = useRecentActivity(8);
 
   const [customAmount, setCustomAmount] = useState("");
   const [activeQuickLog, setActiveQuickLog] = useState<number | null>(null);
@@ -32,7 +33,7 @@ function Dashboard() {
   const profit = monthIncome - monthExpense;
   const outstanding = (loans.data ?? []).filter((l) => l.status === "approved" || l.status === "repaying")
     .reduce((s, l) => s + Number(l.balance), 0);
-  const maxLoan = Math.max(200, Math.min(5000, Math.round((score - 600) * 20)));
+  const maxLoan = Math.max(200, Math.min(5000, Math.round((score - 100) * 8)));
 
   const quickLog = async (amt: number) => {
     setActiveQuickLog(amt);
@@ -57,6 +58,17 @@ function Dashboard() {
     if (isNaN(amt) || amt <= 0) return;
     await quickLog(amt);
     setCustomAmount("");
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case "income": return { icon: ArrowUpRight, color: "text-emerald-500 bg-emerald-500/10", label: "Income" };
+      case "expense": return { icon: ArrowDownLeft, color: "text-red-500 bg-red-500/10", label: "Expense" };
+      case "loan_repayment": return { icon: PieChart, color: "text-blue-500 bg-blue-500/10", label: "Loan Pay" };
+      case "order": return { icon: ShoppingBag, color: "text-purple-500 bg-purple-500/10", label: "Order" };
+      case "susu_contribution": return { icon: Wallet, color: "text-gold bg-gold/10", label: "Susu" };
+      default: return { icon: TrendingUp, color: "text-primary bg-primary/10", label: "Activity" };
+    }
   };
 
   return (
@@ -123,33 +135,51 @@ function Dashboard() {
             <TrendingUp className="w-5 h-5 text-primary" />
             Recent Activity
           </h2>
-          {income.isLoading ? (
+          {activity.isLoading ? (
             <div className="space-y-3">
               {[1,2,3].map(i => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}
             </div>
-          ) : (income.data ?? []).length === 0 ? (
+          ) : (activity.data ?? []).length === 0 ? (
             <EmptyState title="No activity yet" hint="Start logging your daily income to build your ClipScore." />
           ) : (
             <Card className="p-0 overflow-hidden">
               <ul className="divide-y divide-border text-sm">
-                {(income.data ?? []).slice(0, 8).map((i) => (
-                  <li key={i.id} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-foreground">Income Entry</span>
-                      <span className="text-[10px] text-muted-foreground uppercase">{new Date(i.entry_date).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}</span>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="font-bold text-primary">+ GH₵ {Number(i.amount).toLocaleString()}</span>
-                      <span className="text-[10px] text-muted-foreground italic truncate max-w-[150px]">{i.note}</span>
-                    </div>
-                  </li>
-                ))}
+                {(activity.data ?? []).map((i) => {
+                  const { icon: Icon, color, label } = getActivityIcon(i.type);
+                  const isPositive = i.type === "income";
+
+                  return (
+                    <li key={`${i.type}-${i.id}`} className="p-4 flex justify-between items-center hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-foreground leading-none mb-1">{i.note}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                            {label} · {new Date(i.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className={`font-black text-base ${isPositive ? 'text-emerald-600' : 'text-foreground'}`}>
+                          {isPositive ? '+' : '-'} GH₵ {i.amount.toLocaleString()}
+                        </span>
+                        {i.status && (
+                          <span className={`text-[9px] font-black uppercase px-1.5 rounded-full ${
+                            i.status === 'confirmed' || i.status === 'paid' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-orange-500/10 text-orange-600'
+                          }`}>
+                            {i.status}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
-              {income.data && income.data.length > 8 && (
-                <Link to="/app/income" className="block p-3 text-center text-xs font-bold text-primary hover:bg-primary/5 border-t border-border">
-                  View all history →
-                </Link>
-              )}
+              <Link to="/app/income" className="block p-3 text-center text-xs font-bold text-primary hover:bg-primary/5 border-t border-border">
+                View detailed history →
+              </Link>
             </Card>
           )}
         </div>
@@ -158,15 +188,20 @@ function Dashboard() {
           <h2 className="font-display font-semibold mb-4">Quick actions</h2>
           <div className="grid gap-3">
             {[
-              ["Detailed Income", "/app/income", TrendingUp],
-              ["Manage Expenses", "/app/expenses", TrendingUp],
-              ["Credit & Loans", "/app/loans", TrendingUp],
-              ["ClipMarket Shop", "/app/market", TrendingUp],
-            ].map(([label, to]) => (
-              <Link key={to} to={to as string} className="flex items-center justify-between rounded-xl bg-surface border border-border hover:border-primary/50 p-4 transition shadow-sm hover:shadow-md group">
+              ["Detailed Income", "/app/income", TrendingUp, "emerald"],
+              ["Manage Expenses", "/app/expenses", ArrowDownLeft, "red"],
+              ["Credit & Loans", "/app/loans", PieChart, "blue"],
+              ["ClipMarket Shop", "/app/market", ShoppingBag, "purple"],
+            ].map(([label, to, Icon, color]) => (
+              <Link key={to as string} to={to as string} className="flex items-center justify-between rounded-xl bg-surface border border-border hover:border-primary/50 p-4 transition shadow-sm hover:shadow-md group">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                    <TrendingUp className="w-4 h-4" />
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${
+                    color === 'emerald' ? 'bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-600' :
+                    color === 'red' ? 'bg-red-500/10 text-red-600 group-hover:bg-red-600' :
+                    color === 'blue' ? 'bg-blue-500/10 text-blue-600 group-hover:bg-blue-600' :
+                    'bg-purple-500/10 text-purple-600 group-hover:bg-purple-600'
+                  } group-hover:text-white`}>
+                    <Icon className="w-4 h-4" />
                   </div>
                   <div className="font-semibold text-sm">{label}</div>
                 </div>

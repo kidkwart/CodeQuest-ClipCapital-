@@ -390,11 +390,25 @@ export function useRecordContribution() {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   return useMutation({
-    mutationFn: async (v: { group_id: string; amount: number; momo_provider: string; momo_reference: string }) => {
-      const { error } = await supabase.from("susu_contributions").insert({ ...v, user_id: user!.id });
+    mutationFn: async (v: {
+      group_id: string;
+      amount: number;
+      momo_provider: string;
+      momo_reference: string;
+      status?: string;
+    }) => {
+      const { error } = await supabase.from("susu_contributions").insert({
+        ...v,
+        user_id: user!.id,
+        status: v.status || "pending"
+      });
       if (error) throw error;
     },
-    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ["susu-contributions", v.group_id] }),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["susu-contributions", v.group_id] });
+      qc.invalidateQueries({ queryKey: ["susu-groups"] });
+      qc.invalidateQueries({ queryKey: ["susu-group", v.group_id] });
+    },
   });
 }
 
@@ -711,6 +725,7 @@ export function usePlaceOrder() {
       momo_reference?: string;
       payment_method: "momo" | "loan";
       loan_id?: string;
+      status?: string;
     }) => {
       const total = v.items.reduce((s, i) => s + i.price * i.qty, 0);
       const { data: order, error } = await supabase.from("orders").insert({
@@ -720,7 +735,7 @@ export function usePlaceOrder() {
         momo_reference: v.momo_reference ?? "",
         payment_method: v.payment_method,
         loan_id: v.loan_id,
-        status: v.payment_method === "loan" ? "paid" : "pending"
+        status: v.status || (v.payment_method === "loan" ? "paid" : "pending")
       }).select().single();
 
       if (error) throw error;
@@ -897,6 +912,48 @@ export function useReplyToUser() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["all-admin-messages"] }),
+  });
+}
+
+// ---------- Unified Activity ----------
+export type ActivityItem = {
+  id: string;
+  type: "income" | "expense" | "loan_repayment" | "order" | "susu_contribution";
+  amount: number;
+  note: string;
+  date: string;
+  status?: string;
+};
+
+export function useRecentActivity(limit = 10) {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["recent-activity", user?.id, limit],
+    enabled: !!user,
+    queryFn: async () => {
+      // We fetch from multiple tables and merge.
+      // In a larger app, we'd use a unified 'transactions' table or a database view.
+
+      const [income, expense, repayments, orders, susu] = await Promise.all([
+        supabase.from("income_entries").select("*").eq("user_id", user!.id).order("entry_date", { ascending: false }).limit(limit),
+        supabase.from("expense_entries").select("*").eq("user_id", user!.id).order("entry_date", { ascending: false }).limit(limit),
+        supabase.from("loan_repayments").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
+        supabase.from("orders").select("*").eq("buyer_id", user!.id).order("created_at", { ascending: false }).limit(limit),
+        supabase.from("susu_contributions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
+      ]);
+
+      const merged: ActivityItem[] = [
+        ...(income.data ?? []).map(i => ({ id: i.id, type: "income" as const, amount: Number(i.amount), note: i.note || "Income Entry", date: i.entry_date })),
+        ...(expense.data ?? []).map(e => ({ id: e.id, type: "expense" as const, amount: Number(e.amount), note: e.category || "Expense Entry", date: e.entry_date })),
+        ...(repayments.data ?? []).map(r => ({ id: r.id, type: "loan_repayment" as const, amount: Number(r.amount), note: "Loan Repayment", date: r.created_at, status: r.status })),
+        ...(orders.data ?? []).map(o => ({ id: o.id, type: "order" as const, amount: Number(o.total), note: "Market Purchase", date: o.created_at, status: o.status })),
+        ...(susu.data ?? []).map(s => ({ id: s.id, type: "susu_contribution" as const, amount: Number(s.amount), note: "Susu Contribution", date: s.created_at, status: s.status })),
+      ];
+
+      return merged
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, limit);
+    },
   });
 }
 

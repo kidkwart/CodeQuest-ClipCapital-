@@ -3,7 +3,10 @@ CREATE OR REPLACE FUNCTION public.handle_loan_repayment_automation()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   -- If status is 'confirmed' (from Paystack)
-  IF (NEW.status = 'confirmed') THEN
+  -- Only deduct if it's a new confirmed record, or a status change to confirmed
+  IF (TG_OP = 'INSERT' AND NEW.status = 'confirmed') OR
+     (TG_OP = 'UPDATE' AND (OLD.status IS DISTINCT FROM 'confirmed') AND NEW.status = 'confirmed') THEN
+
     -- 1. Deduct from the loan balance
     UPDATE public.loan_applications
     SET

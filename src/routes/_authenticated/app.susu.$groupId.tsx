@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MomoFields, useMomo } from "@/components/momo-form";
-import { useGroup, useGroupContributions, useGroupMembers, useRecordContribution } from "@/lib/app-queries";
+import { useGroup, useGroupContributions, useGroupMembers, useRecordContribution, useDisburseSusuPot } from "@/lib/app-queries";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { ArrowLeft, Copy, MessageSquare, Share2, Users, Wallet } from "lucide-react";
+import { ArrowLeft, Copy, MessageSquare, Share2, Users, Wallet, Check, Clock, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { usePaystack } from "@/lib/paystack";
 
 export const Route = createFileRoute("/_authenticated/app/susu/$groupId")({
   component: GroupPage,
@@ -22,20 +23,56 @@ function GroupPage() {
   const members = useGroupMembers(groupId);
   const contributions = useGroupContributions(groupId);
   const record = useRecordContribution();
+  const disburse = useDisburseSusuPot();
+  const { initializePayment } = usePaystack();
   const [amount, setAmount] = useState("");
-  const [momo, setMomo] = useMomo();
 
   const isOwner = group.data?.owner_id === user?.id;
 
-  async function submit(e: React.FormEvent) {
+  async function handlePay(e: React.FormEvent) {
     e.preventDefault();
     const amt = Number(amount);
-    if (!amt || !momo.momo_reference) { toast.error("Amount and MoMo reference required"); return; }
+    if (!amt) { toast.error("Amount required"); return; }
+    if (!user?.email) return;
+
+    initializePayment({
+      email: user.email,
+      amount: amt,
+      onSuccess: async (reference) => {
+        try {
+          await record.mutateAsync({
+            group_id: groupId,
+            amount: amt,
+            momo_provider: "paystack",
+            momo_reference: reference,
+            status: "paid"
+          });
+          setAmount("");
+          toast.success("Contribution successful! Pot updated.");
+        } catch (err) {
+          toast.error("Payment received but failed to update pot. Please contact Support with Ref: " + reference);
+        }
+      },
+      onClose: () => {
+        toast.error("Payment window closed.");
+      }
+    });
+  }
+
+  async function handleDisburse(memberId: string, memberName: string) {
+    if (!group.data?.pot) return;
+    if (!confirm(`Are you sure you want to disburse GH₵ ${Number(group.data.pot).toLocaleString()} to ${memberName}?`)) return;
+
     try {
-      await record.mutateAsync({ group_id: groupId, amount: amt, ...momo });
-      setAmount(""); setMomo({ ...momo, momo_reference: "" });
-      toast.success("Contribution recorded — awaiting owner confirmation");
-    } catch (e) { toast.error((e as Error).message); }
+      await disburse.mutateAsync({
+        group_id: groupId,
+        user_id: memberId,
+        amount: Number(group.data.pot)
+      });
+      toast.success(`Pot disbursed to ${memberName}!`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
 
   const shareToWhatsApp = () => {
@@ -108,23 +145,38 @@ function GroupPage() {
             Pay Your Contribution
           </h3>
           <Card className="shadow-sm">
-            <form onSubmit={submit} className="space-y-4">
+            <form onSubmit={handlePay} className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-muted-foreground">Amount to send (GH₵)</Label>
-                <Input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)}
-                  placeholder={String(group.data.contribution)} className="h-12 text-lg font-bold" required />
+                <Label className="text-xs font-bold uppercase text-muted-foreground ml-1">Contribution Amount (GH₵)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder={String(group.data.contribution)}
+                  className="h-12 text-lg font-bold rounded-xl bg-muted/30 border-border/50"
+                  required
+                />
               </div>
-              <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
-                <MomoFields value={momo} onChange={setMomo} />
+
+              <div className="bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-2xl flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-600">
+                  <Wallet className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-black uppercase text-emerald-700">Instant MoMo Pay</div>
+                  <p className="text-[10px] text-emerald-600 font-medium">Funds are instantly added to the pot via Paystack.</p>
+                </div>
               </div>
-              <Button type="submit" disabled={record.isPending} className="w-full h-12 font-bold text-lg shadow-lg shadow-primary/20">
-                {record.isPending ? "Submitting..." : "Send Contribution"}
+
+              <Button type="submit" disabled={record.isPending} className="w-full h-12 font-black text-lg shadow-lg shadow-emerald-500/10 rounded-xl">
+                {record.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Pay via Mobile Money"}
               </Button>
+
               <div className="flex items-start gap-2 p-3 bg-blue-500/5 rounded-lg border border-blue-500/10">
                 <Share2 className="w-4 h-4 text-blue-500 mt-0.5" />
                 <p className="text-[10px] text-blue-700 font-medium leading-relaxed">
-                  Pay the total to 0244123456 (ClipCapital Susu) then enter your transaction ID.
-                  {isOwner ? " You can confirm this payment as the owner." : " Your group owner will confirm once received."}
+                  Your contribution helps grow the group pot. ClipCapital ensures secure, transparent savings for all members.
                 </p>
               </div>
             </form>
@@ -191,15 +243,28 @@ function GroupPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex items-center gap-2">
                         {m.has_received ? (
                           <div className="flex items-center gap-1 text-emerald-600 font-bold text-[10px] uppercase">
                             <Check className="w-3 h-3" /> Payout Received
                           </div>
                         ) : (
-                          <div className="text-muted-foreground font-bold text-[10px] uppercase italic">
-                            Waiting
-                          </div>
+                          <>
+                            {isOwner && isNext && Number(group.data.pot) > 0 && (
+                              <Button
+                                size="sm"
+                                className="h-7 px-2 text-[10px] font-black uppercase bg-emerald-600 hover:bg-emerald-700 gap-1 rounded-lg shadow-md shadow-emerald-600/20"
+                                onClick={() => handleDisburse(m.user_id, profile?.display_name ?? "Member")}
+                                disabled={disburse.isPending}
+                              >
+                                {disburse.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                Disburse Pot
+                              </Button>
+                            )}
+                            <div className="text-muted-foreground font-bold text-[10px] uppercase italic">
+                              Waiting
+                            </div>
+                          </>
                         )}
                       </div>
                     </li>
