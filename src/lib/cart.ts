@@ -29,18 +29,28 @@ export function useCart() {
     add(item: CartItem) {
       const next = [...read()];
       const idx = next.findIndex((i) => i.product_id === item.product_id);
-      if (idx >= 0) next[idx].qty += item.qty;
-      else next.push(item);
+      if (idx >= 0) {
+        next[idx] = { ...next[idx], qty: next[idx].qty + item.qty };
+      } else {
+        next.push(item);
+      }
       write(next);
+      setItems(next); // Force immediate local update
     },
     remove(productId: string) {
-      write(read().filter((i) => i.product_id !== productId));
+      const next = read().filter((i) => i.product_id !== productId);
+      write(next);
+      setItems(next);
     },
     setQty(productId: string, qty: number) {
       const next = read().map((i) => i.product_id === productId ? { ...i, qty } : i).filter((i) => i.qty > 0);
       write(next);
+      setItems(next);
     },
-    clear() { write([]); },
+    clear() {
+      write([]);
+      setItems([]);
+    },
     total() { return read().reduce((s, i) => s + i.price * i.qty, 0); },
   };
 }

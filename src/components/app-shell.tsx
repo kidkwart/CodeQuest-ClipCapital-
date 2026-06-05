@@ -1,16 +1,19 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu,
+  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, useMyRoles } from "@/lib/app-queries";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
+import { NotificationTray } from "./notification-tray";
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+type NavItem = { to: string; label: string; icon: any; exact?: boolean };
 const baseNav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/app/history", label: "History", icon: History },
   { to: "/app/income", label: "Income", icon: TrendingUp },
   { to: "/app/expenses", label: "Expenses", icon: Receipt },
   { to: "/app/susu", label: "Susu", icon: Users },
@@ -22,7 +25,11 @@ const baseNav: NavItem[] = [
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
   const profile = useProfile();
   const roles = useMyRoles();
-  const isAdmin = roles.data?.includes("admin");
+  const { user } = useCurrentUser();
+
+  // FORCE ADMIN: If the DB check fails, we check your email
+  const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
+
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -83,7 +90,8 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(!open)}>
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="font-display font-semibold text-lg">{title}</h1>
+          <h1 className="font-display font-semibold text-lg flex-1">{title}</h1>
+          <NotificationTray />
         </header>
         <main className="p-4 md:p-6 max-w-6xl">{children}</main>
       </div>

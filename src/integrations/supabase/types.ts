@@ -79,11 +79,13 @@ export type Database = {
           decision_note: string
           disbursed_at: string | null
           id: string
+          interest_rate: number
           purpose: string
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
           term_months: number
+          total_payable: number
           updated_at: string
           user_id: string
         }
@@ -94,11 +96,13 @@ export type Database = {
           decision_note?: string
           disbursed_at?: string | null
           id?: string
+          interest_rate?: number
           purpose?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           term_months: number
+          total_payable?: number
           updated_at?: string
           user_id: string
         }
@@ -109,11 +113,13 @@ export type Database = {
           decision_note?: string
           disbursed_at?: string | null
           id?: string
+          interest_rate?: number
           purpose?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
           term_months?: number
+          total_payable?: number
           updated_at?: string
           user_id?: string
         }
@@ -162,6 +168,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          data: Json
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          data?: Json
+          id?: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -213,8 +252,10 @@ export type Database = {
           buyer_id: string
           created_at: string
           id: string
+          loan_id: string | null
           momo_provider: string
           momo_reference: string
+          payment_method: string | null
           status: string
           total: number
           updated_at: string
@@ -223,8 +264,10 @@ export type Database = {
           buyer_id: string
           created_at?: string
           id?: string
+          loan_id?: string | null
           momo_provider?: string
           momo_reference?: string
+          payment_method?: string | null
           status?: string
           total: number
           updated_at?: string
@@ -233,21 +276,33 @@ export type Database = {
           buyer_id?: string
           created_at?: string
           id?: string
+          loan_id?: string | null
           momo_provider?: string
           momo_reference?: string
+          payment_method?: string | null
           status?: string
           total?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
           active: boolean
+          category: string | null
           created_at: string
           description: string
           id: string
           image_url: string
+          is_featured: boolean | null
           name: string
           price: number
           stock: number
@@ -256,10 +311,12 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          category?: string | null
           created_at?: string
           description?: string
           id?: string
           image_url?: string
+          is_featured?: boolean | null
           name: string
           price: number
           stock?: number
@@ -268,10 +325,12 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          category?: string | null
           created_at?: string
           description?: string
           id?: string
           image_url?: string
+          is_featured?: boolean | null
           name?: string
           price?: number
           stock?: number
@@ -282,27 +341,42 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
+          bio: string | null
           business_name: string
+          business_type: string | null
           clip_score: number
           created_at: string
           display_name: string
           id: string
+          location: string | null
+          phone_number: string | null
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
+          bio?: string | null
           business_name?: string
+          business_type?: string | null
           clip_score?: number
           created_at?: string
           display_name?: string
           id: string
+          location?: string | null
+          phone_number?: string | null
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
+          bio?: string | null
           business_name?: string
+          business_type?: string | null
           clip_score?: number
           created_at?: string
           display_name?: string
           id?: string
+          location?: string | null
+          phone_number?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -16,6 +16,68 @@ export function useProfile() {
   });
 }
 
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: {
+      display_name?: string;
+      business_name?: string;
+      business_type?: string;
+      location?: string;
+      phone_number?: string;
+      bio?: string;
+      avatar_url?: string;
+    }) => {
+      const { error } = await supabase.from("profiles").update(v).eq("id", user!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile", user?.id] }),
+  });
+}
+
+export function useAllProfiles() {
+  return useQuery({
+    queryKey: ["all-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("profiles")
+        .select("*")
+        .order("clip_score", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useAdminStats() {
+  return useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+
+      const [income, expenses, orders, loans] = await Promise.all([
+        supabase.from("income_entries").select("amount").gte("created_at", today),
+        supabase.from("expense_entries").select("amount").gte("created_at", today),
+        supabase.from("orders").select("total").gte("created_at", today),
+        supabase.from("loan_applications").select("amount").gte("created_at", today).eq("status", "approved"),
+      ]);
+
+      const dailyIncome = income.data?.reduce((s, i) => s + Number(i.amount), 0) ?? 0;
+      const dailyExpenses = expenses.data?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
+      const dailySales = orders.data?.reduce((s, o) => s + Number(o.total), 0) ?? 0;
+      const dailyLoans = loans.data?.reduce((s, l) => s + Number(l.amount), 0) ?? 0;
+
+      return {
+        dailyIncome,
+        dailyExpenses,
+        dailySales,
+        dailyLoans,
+        totalVolume: dailyIncome + dailySales
+      };
+    },
+  });
+}
+
 export function useMyRoles() {
   const { user } = useCurrentUser();
   return useQuery({
@@ -46,13 +108,21 @@ export function useIncome() {
 
 export function useAddIncome() {
   const qc = useQueryClient();
-  const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (v: { amount: number; note: string; entry_date: string }) => {
-      const { error } = await supabase.from("income_entries").insert({ ...v, user_id: user!.id });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Authentication required to log income");
+
+      const { error } = await supabase.from("income_entries").insert({
+        ...v,
+        user_id: user.id
+      });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["income"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["income"] });
+      qc.invalidateQueries({ queryKey: ["profile"] }); // Refresh score
+    },
   });
 }
 
@@ -252,7 +322,7 @@ export function usePendingLoans() {
     queryKey: ["pending-loans"],
     queryFn: async () => {
       const { data, error } = await supabase.from("loan_applications")
-        .select("*, profiles!inner(display_name, business_name)")
+        .select("*, profiles(display_name, business_name)") // Removed !inner to allow loans without profiles to show
         .in("status", ["pending", "approved", "repaying"])
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -265,10 +335,23 @@ export function useReviewLoan() {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   return useMutation({
-    mutationFn: async (v: { id: string; status: "approved" | "rejected"; decision_note: string }) => {
+    mutationFn: async (v: {
+      id: string;
+      status: "approved" | "rejected";
+      decision_note: string;
+      interest_rate?: number;
+    }) => {
+      // Simulate MoMo Payout for approved loans
+      if (v.status === "approved") {
+        console.log("Simulating MoMo Payout...");
+        // In a real app, you would call a MoMo API here (MTN/Vodafone/AirtelTigo)
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
+      }
+
       const { error } = await supabase.from("loan_applications").update({
         status: v.status,
         decision_note: v.decision_note,
+        interest_rate: v.interest_rate ?? 5.0,
         reviewed_by: user!.id,
         reviewed_at: new Date().toISOString(),
         disbursed_at: v.status === "approved" ? new Date().toISOString() : null,
@@ -319,6 +402,7 @@ export function useCreateProduct() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["all-products"] });
       qc.invalidateQueries({ queryKey: ["my-products"] });
     },
   });
@@ -384,36 +468,79 @@ export function useMyOrders() {
   });
 }
 
+export function useAllOrders() {
+  return useQuery({
+    queryKey: ["all-orders"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("orders")
+        .select("*, profiles!inner(display_name, business_name), order_items(*, products(name))")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUpdateOrderStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; status: string }) => {
+      const { error } = await supabase.from("orders").update({ status: v.status }).eq("id", v.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-orders"] });
+      qc.invalidateQueries({ queryKey: ["orders"] });
+    },
+  });
+}
+
 export function usePlaceOrder() {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   return useMutation({
-    mutationFn: async (v: { items: CartItem[]; momo_provider: string; momo_reference: string }) => {
+    mutationFn: async (v: {
+      items: CartItem[];
+      momo_provider?: string;
+      momo_reference?: string;
+      payment_method: "momo" | "loan";
+      loan_id?: string;
+    }) => {
       const total = v.items.reduce((s, i) => s + i.price * i.qty, 0);
       const { data: order, error } = await supabase.from("orders").insert({
-        buyer_id: user!.id, total, momo_provider: v.momo_provider, momo_reference: v.momo_reference,
+        buyer_id: user!.id,
+        total,
+        momo_provider: v.momo_provider ?? "",
+        momo_reference: v.momo_reference ?? "",
+        payment_method: v.payment_method,
+        loan_id: v.loan_id,
+        status: v.payment_method === "loan" ? "paid" : "pending"
       }).select().single();
+
       if (error) throw error;
+
       const items = v.items.map((i) => ({
         order_id: order.id, product_id: i.product_id, vendor_id: i.vendor_id, qty: i.qty, price: i.price,
       }));
       const { error: iErr } = await supabase.from("order_items").insert(items);
       if (iErr) throw iErr;
+
       return order;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["orders"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["loans"] });
+    },
   });
 }
 
-// ---------- ClipScore (derived) ----------
+// ---------- ClipScore (synced from DB) ----------
 export function useClipScore() {
-  const income = useIncome();
-  const loans = useMyLoans();
-  const base = 600;
-  const entries = income.data?.length ?? 0;
-  const onTime = loans.data?.filter((l) => l.status === "closed").length ?? 0;
-  const score = Math.min(850, base + entries * 4 + onTime * 25);
-  return { score, loading: income.isLoading || loans.isLoading };
+  const profile = useProfile();
+  return {
+    score: profile.data?.clip_score ?? 600,
+    loading: profile.isLoading
+  };
 }
 
 // ---------- Admin: role management ----------
@@ -425,5 +552,159 @@ export function useGrantRole() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["roles"] }),
+  });
+}
+
+// ---------- Notifications ----------
+export function useNotifications() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["notifications", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("notifications")
+        .select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useMarkNotificationRead() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("notifications").update({ read: true }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications", user?.id] }),
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("notifications")
+        .update({ read: true }).eq("user_id", user!.id).eq("read", false);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications", user?.id] }),
+  });
+}
+
+// ---------- Product Requests ----------
+export function useMyProductRequests() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["product-requests", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_requests")
+        .select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCreateProductRequest() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: { product_name: string; estimated_price?: number; note?: string }) => {
+      const { error } = await supabase.from("product_requests").insert({ ...v, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["product-requests"] }),
+  });
+}
+
+export function useAllProductRequests() {
+  return useQuery({
+    queryKey: ["all-product-requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_requests")
+        .select("*, profiles!inner(display_name, business_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ---------- Transaction History ----------
+export type Transaction = {
+  id: string;
+  type: "income" | "expense" | "loan_payout" | "loan_repayment" | "order" | "susu_contribution" | "susu_payout";
+  amount: number;
+  date: string;
+  title: string;
+  note?: string;
+  status?: string;
+};
+
+export function useTransactionHistory() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["transaction-history", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const userId = user!.id;
+
+      // Fetch all sources in parallel
+      const [
+        income,
+        expenses,
+        loans,
+        repayments,
+        orders,
+        susu_contribs,
+        susu_payouts,
+      ] = await Promise.all([
+        supabase.from("income_entries").select("*").eq("user_id", userId),
+        supabase.from("expense_entries").select("*").eq("user_id", userId),
+        supabase.from("loan_applications").select("*").eq("user_id", userId).not("disbursed_at", "is", null),
+        supabase.from("loan_repayments").select("*").eq("user_id", userId),
+        supabase.from("orders").select("*").eq("buyer_id", userId),
+        supabase.from("susu_contributions").select("*, susu_groups(name)").eq("user_id", userId),
+        supabase.from("susu_payouts").select("*, susu_groups(name)").eq("user_id", userId),
+      ]);
+
+      const history: Transaction[] = [];
+
+      income.data?.forEach((i) => history.push({
+        id: i.id, type: "income", amount: Number(i.amount), date: i.created_at, title: "Income Entry", note: i.note
+      }));
+
+      expenses.data?.forEach((e) => history.push({
+        id: e.id, type: "expense", amount: -Number(e.amount), date: e.created_at, title: `Expense: ${e.category}`, note: e.note
+      }));
+
+      loans.data?.forEach((l) => history.push({
+        id: l.id, type: "loan_payout", amount: Number(l.amount), date: l.disbursed_at!, title: "Loan Payout", note: l.purpose
+      }));
+
+      repayments.data?.forEach((r) => history.push({
+        id: r.id, type: "loan_repayment", amount: -Number(r.amount), date: r.created_at, title: "Loan Repayment", status: r.status
+      }));
+
+      orders.data?.forEach((o) => history.push({
+        id: o.id, type: "order", amount: -Number(o.total), date: o.created_at, title: "Market Purchase", status: o.status
+      }));
+
+      susu_contribs.data?.forEach((s) => history.push({
+        id: s.id, type: "susu_contribution", amount: -Number(s.amount), date: s.created_at, title: `Susu: ${(s.susu_groups as any)?.name || 'Group'}`, status: s.status
+      }));
+
+      susu_payouts.data?.forEach((p) => history.push({
+        id: p.id, type: "susu_payout", amount: Number(p.amount), date: p.created_at, title: `Susu Payout: ${(p.susu_groups as any)?.name || 'Group'}`
+      }));
+
+      // Sort by date descending
+      return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    },
   });
 }

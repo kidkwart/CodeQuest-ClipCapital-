@@ -19,6 +19,7 @@ import { Route as AuthenticatedAppOrdersRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppMarketRouteImport } from './routes/_authenticated/app.market'
 import { Route as AuthenticatedAppLoansRouteImport } from './routes/_authenticated/app.loans'
 import { Route as AuthenticatedAppIncomeRouteImport } from './routes/_authenticated/app.income'
+import { Route as AuthenticatedAppHistoryRouteImport } from './routes/_authenticated/app.history'
 import { Route as AuthenticatedAppExpensesRouteImport } from './routes/_authenticated/app.expenses'
 import { Route as AuthenticatedAppAdminRouteImport } from './routes/_authenticated/app.admin'
 import { Route as AuthenticatedAppSusuGroupIdRouteImport } from './routes/_authenticated/app.susu.$groupId'
@@ -73,6 +74,11 @@ const AuthenticatedAppIncomeRoute = AuthenticatedAppIncomeRouteImport.update({
   path: '/income',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppHistoryRoute = AuthenticatedAppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppExpensesRoute =
   AuthenticatedAppExpensesRouteImport.update({
     id: '/expenses',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/app/admin': typeof AuthenticatedAppAdminRoute
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/app/history': typeof AuthenticatedAppHistoryRoute
   '/app/income': typeof AuthenticatedAppIncomeRoute
   '/app/loans': typeof AuthenticatedAppLoansRoute
   '/app/market': typeof AuthenticatedAppMarketRouteWithChildren
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/app/admin': typeof AuthenticatedAppAdminRoute
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/app/history': typeof AuthenticatedAppHistoryRoute
   '/app/income': typeof AuthenticatedAppIncomeRoute
   '/app/loans': typeof AuthenticatedAppLoansRoute
   '/app/market': typeof AuthenticatedAppMarketRouteWithChildren
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/app/admin': typeof AuthenticatedAppAdminRoute
   '/_authenticated/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/_authenticated/app/history': typeof AuthenticatedAppHistoryRoute
   '/_authenticated/app/income': typeof AuthenticatedAppIncomeRoute
   '/_authenticated/app/loans': typeof AuthenticatedAppLoansRoute
   '/_authenticated/app/market': typeof AuthenticatedAppMarketRouteWithChildren
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/admin'
     | '/app/expenses'
+    | '/app/history'
     | '/app/income'
     | '/app/loans'
     | '/app/market'
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/app/admin'
     | '/app/expenses'
+    | '/app/history'
     | '/app/income'
     | '/app/loans'
     | '/app/market'
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/_authenticated/app/admin'
     | '/_authenticated/app/expenses'
+    | '/_authenticated/app/history'
     | '/_authenticated/app/income'
     | '/_authenticated/app/loans'
     | '/_authenticated/app/market'
@@ -269,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIncomeRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/history': {
+      id: '/_authenticated/app/history'
+      path: '/history'
+      fullPath: '/app/history'
+      preLoaderRoute: typeof AuthenticatedAppHistoryRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/expenses': {
       id: '/_authenticated/app/expenses'
       path: '/expenses'
@@ -328,6 +347,7 @@ const AuthenticatedAppSusuRouteWithChildren =
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRoute
   AuthenticatedAppExpensesRoute: typeof AuthenticatedAppExpensesRoute
+  AuthenticatedAppHistoryRoute: typeof AuthenticatedAppHistoryRoute
   AuthenticatedAppIncomeRoute: typeof AuthenticatedAppIncomeRoute
   AuthenticatedAppLoansRoute: typeof AuthenticatedAppLoansRoute
   AuthenticatedAppMarketRoute: typeof AuthenticatedAppMarketRouteWithChildren
@@ -339,6 +359,7 @@ interface AuthenticatedAppRouteChildren {
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAdminRoute: AuthenticatedAppAdminRoute,
   AuthenticatedAppExpensesRoute: AuthenticatedAppExpensesRoute,
+  AuthenticatedAppHistoryRoute: AuthenticatedAppHistoryRoute,
   AuthenticatedAppIncomeRoute: AuthenticatedAppIncomeRoute,
   AuthenticatedAppLoansRoute: AuthenticatedAppLoansRoute,
   AuthenticatedAppMarketRoute: AuthenticatedAppMarketRouteWithChildren,

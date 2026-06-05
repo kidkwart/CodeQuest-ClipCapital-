@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { MomoFields, useMomo } from "@/components/momo-form";
 import { useApplyForLoan, useClipScore, useMyLoans, useRecordRepayment } from "@/lib/app-queries";
 import { toast } from "sonner";
+import { LoanCalculator } from "@/components/loan-calculator";
 
 export const Route = createFileRoute("/_authenticated/app/loans")({
   component: Loans,
@@ -61,6 +62,10 @@ function Loans() {
               {apply.isPending ? "Submitting…" : "Submit application"}
             </Button>
           </form>
+
+          <div className="mt-6">
+            <LoanCalculator maxAmount={maxLoan} />
+          </div>
         </Card>
 
         <div className="lg:col-span-2">
