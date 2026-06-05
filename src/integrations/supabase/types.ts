@@ -14,39 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      cart_items: {
-        Row: {
-          created_at: string
-          id: string
-          price: number
-          product_id: string
-          product_name: string
-          qty: number
-          user_id: string
-          vendor: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          price: number
-          product_id: string
-          product_name: string
-          qty?: number
-          user_id: string
-          vendor: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          price?: number
-          product_id?: string
-          product_name?: string
-          qty?: number
-          user_id?: string
-          vendor?: string
-        }
-        Relationships: []
-      }
       expense_entries: {
         Row: {
           amount: number
@@ -104,6 +71,215 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_applications: {
+        Row: {
+          amount: number
+          balance: number
+          created_at: string
+          decision_note: string
+          disbursed_at: string | null
+          id: string
+          purpose: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          term_months: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance?: number
+          created_at?: string
+          decision_note?: string
+          disbursed_at?: string | null
+          id?: string
+          purpose?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          term_months: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance?: number
+          created_at?: string
+          decision_note?: string
+          disbursed_at?: string | null
+          id?: string
+          purpose?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          term_months?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loan_repayments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          loan_id: string
+          momo_provider: string
+          momo_reference: string
+          paid_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          loan_id: string
+          momo_provider?: string
+          momo_reference?: string
+          paid_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          loan_id?: string
+          momo_provider?: string
+          momo_reference?: string
+          paid_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_repayments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          price: number
+          product_id: string
+          qty: number
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          price: number
+          product_id: string
+          qty: number
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          price?: number
+          product_id?: string
+          qty?: number
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          momo_provider: string
+          momo_reference: string
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          momo_provider?: string
+          momo_reference?: string
+          status?: string
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          momo_provider?: string
+          momo_reference?: string
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          id: string
+          image_url: string
+          name: string
+          price: number
+          stock: number
+          updated_at: string
+          vendor_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string
+          name: string
+          price: number
+          stock?: number
+          updated_at?: string
+          vendor_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string
+          name?: string
+          price?: number
+          stock?: number
+          updated_at?: string
+          vendor_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           business_name: string
@@ -111,7 +287,6 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
-          loan_balance: number
           updated_at: string
         }
         Insert: {
@@ -120,7 +295,6 @@ export type Database = {
           created_at?: string
           display_name?: string
           id: string
-          loan_balance?: number
           updated_at?: string
         }
         Update: {
@@ -129,58 +303,128 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
-          loan_balance?: number
           updated_at?: string
         }
         Relationships: []
+      }
+      susu_contributions: {
+        Row: {
+          amount: number
+          created_at: string
+          cycle_index: number
+          group_id: string
+          id: string
+          momo_provider: string
+          momo_reference: string
+          paid_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          cycle_index?: number
+          group_id: string
+          id?: string
+          momo_provider?: string
+          momo_reference?: string
+          paid_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          cycle_index?: number
+          group_id?: string
+          id?: string
+          momo_provider?: string
+          momo_reference?: string
+          paid_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "susu_contributions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "susu_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       susu_groups: {
         Row: {
           contribution: number
           created_at: string
+          cycle_index: number
           frequency: string
           id: string
+          invite_code: string
           members_count: number
           name: string
+          next_payout_date: string | null
+          owner_id: string
           pot: number
+          start_date: string
+          status: string
         }
         Insert: {
           contribution: number
           created_at?: string
+          cycle_index?: number
           frequency: string
           id?: string
+          invite_code?: string
           members_count?: number
           name: string
+          next_payout_date?: string | null
+          owner_id: string
           pot?: number
+          start_date?: string
+          status?: string
         }
         Update: {
           contribution?: number
           created_at?: string
+          cycle_index?: number
           frequency?: string
           id?: string
+          invite_code?: string
           members_count?: number
           name?: string
+          next_payout_date?: string | null
+          owner_id?: string
           pot?: number
+          start_date?: string
+          status?: string
         }
         Relationships: []
       }
       susu_memberships: {
         Row: {
           group_id: string
+          has_received: boolean
           id: string
           joined_at: string
+          payout_order: number
           user_id: string
         }
         Insert: {
           group_id: string
+          has_received?: boolean
           id?: string
           joined_at?: string
+          payout_order?: number
           user_id: string
         }
         Update: {
           group_id?: string
+          has_received?: boolean
           id?: string
           joined_at?: string
+          payout_order?: number
           user_id?: string
         }
         Relationships: [
@@ -193,15 +437,83 @@ export type Database = {
           },
         ]
       }
+      susu_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          cycle_index: number
+          group_id: string
+          id: string
+          momo_reference: string
+          paid_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          cycle_index?: number
+          group_id: string
+          id?: string
+          momo_reference?: string
+          paid_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          cycle_index?: number
+          group_id?: string
+          id?: string
+          momo_reference?: string
+          paid_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "susu_payouts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "susu_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "vendor" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -328,6 +640,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "vendor", "user"],
+    },
   },
 } as const
