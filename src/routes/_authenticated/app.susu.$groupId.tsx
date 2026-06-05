@@ -4,13 +4,12 @@ import { AppShell, Card, EmptyState } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MomoFields, useMomo } from "@/components/momo-form";
 import { useGroup, useGroupContributions, useGroupMembers, useRecordContribution } from "@/lib/app-queries";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { ArrowLeft, Copy, MessageSquare, Share2, Users, Wallet, Check, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, Copy, MessageSquare, Share2, Users, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { usePaystack } from "@/lib/paystack";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/susu/$groupId")({
   component: GroupPage,
@@ -23,39 +22,20 @@ function GroupPage() {
   const members = useGroupMembers(groupId);
   const contributions = useGroupContributions(groupId);
   const record = useRecordContribution();
-  const { initializePayment } = usePaystack();
   const [amount, setAmount] = useState("");
+  const [momo, setMomo] = useMomo();
 
   const isOwner = group.data?.owner_id === user?.id;
 
-  async function handlePayment(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const amt = Number(amount);
-    if (!amt) { toast.error("Amount required"); return; }
-    if (!user?.email) return;
-
-    initializePayment({
-      email: user.email,
-      amount: amt,
-      onSuccess: async (reference) => {
-        try {
-          await record.mutateAsync({
-            group_id: groupId,
-            amount: amt,
-            momo_provider: "paystack",
-            momo_reference: reference,
-            status: "confirmed"
-          });
-          setAmount("");
-          toast.success("Contribution successful!");
-        } catch (err) {
-          toast.error("Payment received but failed to record in group. Please contact Admin with Ref: " + reference);
-        }
-      },
-      onClose: () => {
-        toast.error("Payment window closed.");
-      }
-    });
+    if (!amt || !momo.momo_reference) { toast.error("Amount and MoMo reference required"); return; }
+    try {
+      await record.mutateAsync({ group_id: groupId, amount: amt, ...momo });
+      setAmount(""); setMomo({ ...momo, momo_reference: "" });
+      toast.success("Contribution recorded — awaiting owner confirmation");
+    } catch (e) { toast.error((e as Error).message); }
   }
 
   const shareToWhatsApp = () => {
@@ -125,21 +105,28 @@ function GroupPage() {
         <div className="space-y-6">
           <h3 className="font-display font-bold text-lg flex items-center gap-2">
             <Wallet className="w-5 h-5 text-primary" />
-            Make Contribution
+            Pay Your Contribution
           </h3>
           <Card className="shadow-sm">
-            <form onSubmit={handlePayment} className="space-y-4">
+            <form onSubmit={submit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold uppercase text-muted-foreground ml-1">Amount to send (GH₵)</Label>
+                <Label className="text-xs font-bold uppercase text-muted-foreground">Amount to send (GH₵)</Label>
                 <Input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)}
-                  placeholder={String(group.data.contribution)} className="h-12 text-lg font-bold rounded-xl" required />
+                  placeholder={String(group.data.contribution)} className="h-12 text-lg font-bold" required />
               </div>
-              <div className="p-4 bg-muted/30 rounded-xl border border-border/50 text-center">
-                 <p className="text-[10px] text-muted-foreground font-medium">Real-time MoMo payment powered by Paystack.</p>
+              <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                <MomoFields value={momo} onChange={setMomo} />
               </div>
-              <Button type="submit" disabled={record.isPending} className="w-full h-12 font-bold text-lg shadow-lg shadow-primary/20 rounded-xl">
-                {record.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Pay via Mobile Money"}
+              <Button type="submit" disabled={record.isPending} className="w-full h-12 font-bold text-lg shadow-lg shadow-primary/20">
+                {record.isPending ? "Submitting..." : "Send Contribution"}
               </Button>
+              <div className="flex items-start gap-2 p-3 bg-blue-500/5 rounded-lg border border-blue-500/10">
+                <Share2 className="w-4 h-4 text-blue-500 mt-0.5" />
+                <p className="text-[10px] text-blue-700 font-medium leading-relaxed">
+                  Pay the total to 0244123456 (ClipCapital Susu) then enter your transaction ID.
+                  {isOwner ? " You can confirm this payment as the owner." : " Your group owner will confirm once received."}
+                </p>
+              </div>
             </form>
           </Card>
 
@@ -184,15 +171,14 @@ function GroupPage() {
               <ul className="divide-y divide-border">
                 {members.data.map((m, idx) => {
                   const profile = (m as { profiles?: { display_name?: string } | null }).profiles;
-                  const isNext = !m.has_received && (idx === 0 || (members.data && members.data[idx-1].has_received));
+                  const isNext = !m.has_received && (idx === 0 || members.data![idx-1].has_received);
 
                   return (
-                    <li key={m.id} className={cn("p-4 flex justify-between items-center", isNext ? 'bg-primary/5' : '')}>
+                    <li key={m.id} className={`p-4 flex justify-between items-center ${isNext ? 'bg-primary/5' : ''}`}>
                       <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs",
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs ${
                           m.has_received ? 'bg-muted text-muted-foreground' : 'bg-primary/20 text-primary'
-                        )}>
+                        }`}>
                           {m.payout_order}
                         </div>
                         <div>
