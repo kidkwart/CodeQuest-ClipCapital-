@@ -36,6 +36,37 @@ export function useUpdateProfile() {
   });
 }
 
+export function useUploadAvatar() {
+  const { user } = useCurrentUser();
+  const updateProfile = useUpdateProfile();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      if (!user) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      // Upload file to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new URL
+      await updateProfile.mutateAsync({ avatar_url: publicUrl });
+
+      return publicUrl;
+    }
+  });
+}
+
 export function useAllProfiles() {
   return useQuery({
     queryKey: ["all-profiles"],
@@ -55,11 +86,22 @@ export function useAdminStats() {
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
 
-      const [income, expenses, orders, loans] = await Promise.all([
+      const [
+        income,
+        expenses,
+        orders,
+        loans,
+        allLoans,
+        allOrders,
+        allIncome
+      ] = await Promise.all([
         supabase.from("income_entries").select("amount").gte("created_at", today),
         supabase.from("expense_entries").select("amount").gte("created_at", today),
         supabase.from("orders").select("total").gte("created_at", today),
         supabase.from("loan_applications").select("amount").gte("created_at", today).eq("status", "approved"),
+        supabase.from("loan_applications").select("amount, status"),
+        supabase.from("orders").select("total"),
+        supabase.from("income_entries").select("amount"),
       ]);
 
       const dailyIncome = income.data?.reduce((s, i) => s + Number(i.amount), 0) ?? 0;
@@ -67,14 +109,95 @@ export function useAdminStats() {
       const dailySales = orders.data?.reduce((s, o) => s + Number(o.total), 0) ?? 0;
       const dailyLoans = loans.data?.reduce((s, l) => s + Number(l.amount), 0) ?? 0;
 
+      const totalSales = allOrders.data?.reduce((s, o) => s + Number(o.total), 0) ?? 0;
+      const totalIncome = allIncome.data?.reduce((s, i) => s + Number(i.amount), 0) ?? 0;
+
+      const activeRisk = allLoans.data
+        ?.filter(l => l.status === 'approved' || l.status === 'repaying')
+        .reduce((s, l) => s + Number(l.amount), 0) ?? 0;
+
+      const approvedCount = allLoans.data?.filter(l => l.status === 'approved' || l.status === 'repaying').length ?? 0;
+      const totalApplications = allLoans.data?.length ?? 0;
+      const approvalRate = totalApplications > 0 ? (approvedCount / totalApplications) * 100 : 0;
+
       return {
         dailyIncome,
         dailyExpenses,
         dailySales,
         dailyLoans,
-        totalVolume: dailyIncome + dailySales
+        totalVolume: dailyIncome + dailySales,
+        totalCash: totalSales + totalIncome,
+        activeRisk,
+        approvalRate: Math.round(approvalRate)
       };
     },
+  });
+}
+
+export function useSystemLogs() {
+  return useQuery({
+    queryKey: ["system-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("system_logs")
+        .select("*, profiles(display_name)")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ---------- Admin: User Health & Insights ----------
+export function useUserHealth(userId: string) {
+  return useQuery({
+    queryKey: ["user-health", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const [income, expenses, loans, susu] = await Promise.all([
+        supabase.from("income_entries").select("amount, created_at").eq("user_id", userId),
+        supabase.from("expense_entries").select("amount").eq("user_id", userId),
+        supabase.from("loan_applications").select("status, balance, amount").eq("user_id", userId),
+        supabase.from("susu_memberships").select("*, susu_contributions(*)").eq("user_id", userId),
+      ]);
+
+      const totalIncome = income.data?.reduce((s, i) => s + Number(i.amount), 0) ?? 0;
+      const totalExpense = expenses.data?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
+      const netProfit = totalIncome - totalExpense;
+
+      const totalLoans = loans.data?.length ?? 0;
+      const activeDebt = loans.data?.filter(l => l.status === 'approved' || l.status === 'repaying')
+        .reduce((s, l) => s + Number(l.balance), 0) ?? 0;
+
+      // Calculate Susu reliability
+      let susuReliability = 100;
+      if (susu.data && susu.data.length > 0) {
+        const totalContribs = susu.data.reduce((s, m) => s + (m.susu_contributions as any[]).length, 0);
+        if (totalContribs === 0) susuReliability = 50;
+      }
+
+      return {
+        totalIncome,
+        totalExpense,
+        netProfit,
+        activeDebt,
+        totalLoans,
+        susuReliability,
+        entryCount: income.data?.length ?? 0
+      };
+    },
+  });
+}
+
+export function useAdjustUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { userId: string; clip_score?: number; business_type?: string }) => {
+      const { userId, ...updates } = v;
+      const { error } = await supabase.from("profiles").update(updates).eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["all-profiles"] }),
   });
 }
 
@@ -275,6 +398,52 @@ export function useRecordContribution() {
   });
 }
 
+export function useAllSusuGroups() {
+  return useQuery({
+    queryKey: ["all-susu-groups"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("susu_groups").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useDisburseSusuPot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { group_id: string, user_id: string, amount: number }) => {
+      // 1. Record the payout
+      const { error: pErr } = await supabase.from("susu_payouts").insert({
+        group_id: v.group_id,
+        user_id: v.user_id,
+        amount: v.amount,
+        paid_at: new Date().toISOString(),
+        momo_reference: 'SYS-PAY-' + Math.random().toString(36).substring(7).toUpperCase()
+      });
+      if (pErr) throw pErr;
+
+      // 2. Mark membership as received
+      const { error: mErr } = await supabase.from("susu_memberships")
+        .update({ has_received: true })
+        .eq("group_id", v.group_id)
+        .eq("user_id", v.user_id);
+      if (mErr) throw mErr;
+
+      // 3. Clear group pot for next cycle
+      const { error: gErr } = await supabase.from("susu_groups")
+        .update({ pot: 0, cycle_index: 2 }) // Simple logic: bump cycle
+        .eq("id", v.group_id);
+      if (gErr) throw gErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-susu-groups"] });
+      qc.invalidateQueries({ queryKey: ["susu-group"] });
+      qc.invalidateQueries({ queryKey: ["susu-members"] });
+    }
+  });
+}
+
 // ---------- Loans ----------
 export function useMyLoans() {
   const { user } = useCurrentUser();
@@ -308,11 +477,48 @@ export function useRecordRepayment() {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   return useMutation({
-    mutationFn: async (v: { loan_id: string; amount: number; momo_provider: string; momo_reference: string }) => {
-      const { error } = await supabase.from("loan_repayments").insert({ ...v, user_id: user!.id });
+    mutationFn: async (v: { loan_id: string; amount: number; momo_provider: string; momo_reference: string, status?: string }) => {
+      // If status is confirmed (from Paystack), it triggers the DB logic to deduct balance instantly
+      const { error } = await supabase.from("loan_repayments").insert({
+        ...v,
+        user_id: user!.id,
+        status: v.status || 'pending'
+      });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["loans"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["loans"] });
+      qc.invalidateQueries({ queryKey: ["transaction-history"] });
+    },
+  });
+}
+
+export function usePendingRepayments() {
+  return useQuery({
+    queryKey: ["pending-repayments"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("loan_repayments")
+        .select("*, profiles!inner(display_name, business_name), loan_applications!inner(purpose)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useConfirmRepayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; status: "confirmed" | "rejected" }) => {
+      const { error } = await supabase.from("loan_repayments").update({ status: v.status }).eq("id", v.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending-repayments"] });
+      qc.invalidateQueries({ queryKey: ["loans"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
   });
 }
 
@@ -538,7 +744,7 @@ export function usePlaceOrder() {
 export function useClipScore() {
   const profile = useProfile();
   return {
-    score: profile.data?.clip_score ?? 600,
+    score: profile.data?.clip_score ?? 100,
     loading: profile.isLoading
   };
 }
@@ -635,6 +841,65 @@ export function useAllProductRequests() {
   });
 }
 
+// ---------- Admin Messages / Support ----------
+export function useMyMessages() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["admin-messages", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("admin_messages")
+        .select("*").eq("user_id", user!.id).order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSendMessageToAdmin() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (message: string) => {
+      const { error } = await supabase.from("admin_messages").insert({
+        user_id: user!.id,
+        message,
+        is_from_admin: false
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-messages"] }),
+  });
+}
+
+export function useAllUserMessages() {
+  return useQuery({
+    queryKey: ["all-admin-messages"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("admin_messages")
+        .select("*, profiles!inner(display_name, business_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useReplyToUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { user_id: string, message: string }) => {
+      const { error } = await supabase.from("admin_messages").insert({
+        user_id: v.user_id,
+        message: v.message,
+        is_from_admin: true
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["all-admin-messages"] }),
+  });
+}
+
 // ---------- Transaction History ----------
 export type Transaction = {
   id: string;
@@ -644,6 +909,8 @@ export type Transaction = {
   title: string;
   note?: string;
   status?: string;
+  momo_reference?: string;
+  momo_provider?: string;
 };
 
 export function useTransactionHistory() {
@@ -688,15 +955,15 @@ export function useTransactionHistory() {
       }));
 
       repayments.data?.forEach((r) => history.push({
-        id: r.id, type: "loan_repayment", amount: -Number(r.amount), date: r.created_at, title: "Loan Repayment", status: r.status
+        id: r.id, type: "loan_repayment", amount: -Number(r.amount), date: r.created_at, title: "Loan Repayment", status: r.status, momo_reference: r.momo_reference, momo_provider: r.momo_provider
       }));
 
       orders.data?.forEach((o) => history.push({
-        id: o.id, type: "order", amount: -Number(o.total), date: o.created_at, title: "Market Purchase", status: o.status
+        id: o.id, type: "order", amount: -Number(o.total), date: o.created_at, title: "Market Purchase", status: o.status, momo_reference: o.momo_reference, momo_provider: o.momo_provider
       }));
 
       susu_contribs.data?.forEach((s) => history.push({
-        id: s.id, type: "susu_contribution", amount: -Number(s.amount), date: s.created_at, title: `Susu: ${(s.susu_groups as any)?.name || 'Group'}`, status: s.status
+        id: s.id, type: "susu_contribution", amount: -Number(s.amount), date: s.created_at, title: `Susu: ${(s.susu_groups as any)?.name || 'Group'}`, status: s.status, momo_reference: s.momo_reference, momo_provider: s.momo_provider
       }));
 
       susu_payouts.data?.forEach((p) => history.push({
@@ -706,5 +973,72 @@ export function useTransactionHistory() {
       // Sort by date descending
       return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     },
+  });
+}
+
+// ---------- Account Deletion ----------
+export function useDeleteAccount() {
+  // ... existing code ...
+}
+
+// ---------- Revenue Goals ----------
+export function useRevenueGoal() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["revenue-goal", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("revenue_goals")
+        .select("*").eq("user_id", user!.id).maybeSingle();
+      if (error) throw error;
+      return data || { monthly_target: 1000 };
+    },
+  });
+}
+
+export function useUpdateRevenueGoal() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (target: number) => {
+      const { error } = await supabase.from("revenue_goals").upsert({
+        user_id: user!.id,
+        monthly_target: target,
+        updated_at: new Date().toISOString()
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["revenue-goal"] }),
+  });
+}
+
+// ---------- Referrals ----------
+export function useMyReferrals() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["referrals", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("referrals")
+        .select("*").eq("referrer_id", user!.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCreateReferral() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase.from("referrals").insert({
+        referrer_id: user!.id,
+        referee_email: email,
+        status: 'pending'
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["referrals"] }),
   });
 }

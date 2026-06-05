@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History,
+  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History, Settings, MessageCircle,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,13 +13,15 @@ import { NotificationTray } from "./notification-tray";
 type NavItem = { to: string; label: string; icon: any; exact?: boolean };
 const baseNav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/app/history", label: "History", icon: History },
   { to: "/app/income", label: "Income", icon: TrendingUp },
   { to: "/app/expenses", label: "Expenses", icon: Receipt },
   { to: "/app/susu", label: "Susu", icon: Users },
   { to: "/app/loans", label: "Loans", icon: Banknote },
   { to: "/app/market", label: "Market", icon: Store },
   { to: "/app/orders", label: "Orders", icon: ShoppingBag },
+  { to: "/app/settings", label: "Settings", icon: Settings },
+  { to: "/app/support", label: "Support", icon: MessageCircle },
+  { to: "/app/history", label: "History", icon: History },
 ];
 
 export function AppShell({ children, title }: { children: ReactNode; title: string }) {
@@ -27,7 +29,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   const roles = useMyRoles();
   const { user } = useCurrentUser();
 
-  // FORCE ADMIN: If the DB check fails, we check your email
+  // FORCE ADMIN: Only your specific master email gets access
   const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
 
   const navigate = useNavigate();

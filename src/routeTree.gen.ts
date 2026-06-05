@@ -15,6 +15,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppSusuRouteImport } from './routes/_authenticated/app.susu'
+import { Route as AuthenticatedAppSupportRouteImport } from './routes/_authenticated/app.support'
+import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
 import { Route as AuthenticatedAppOrdersRouteImport } from './routes/_authenticated/app.orders'
 import { Route as AuthenticatedAppMarketRouteImport } from './routes/_authenticated/app.market'
 import { Route as AuthenticatedAppLoansRouteImport } from './routes/_authenticated/app.loans'
@@ -54,6 +56,17 @@ const AuthenticatedAppSusuRoute = AuthenticatedAppSusuRouteImport.update({
   path: '/susu',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppSupportRoute = AuthenticatedAppSupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
+const AuthenticatedAppSettingsRoute =
+  AuthenticatedAppSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppOrdersRoute = AuthenticatedAppOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -114,6 +127,8 @@ export interface FileRoutesByFullPath {
   '/app/loans': typeof AuthenticatedAppLoansRoute
   '/app/market': typeof AuthenticatedAppMarketRouteWithChildren
   '/app/orders': typeof AuthenticatedAppOrdersRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/app/support': typeof AuthenticatedAppSupportRoute
   '/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/market/cart': typeof AuthenticatedAppMarketCartRoute
@@ -129,6 +144,8 @@ export interface FileRoutesByTo {
   '/app/loans': typeof AuthenticatedAppLoansRoute
   '/app/market': typeof AuthenticatedAppMarketRouteWithChildren
   '/app/orders': typeof AuthenticatedAppOrdersRoute
+  '/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/app/support': typeof AuthenticatedAppSupportRoute
   '/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/market/cart': typeof AuthenticatedAppMarketCartRoute
@@ -147,6 +164,8 @@ export interface FileRoutesById {
   '/_authenticated/app/loans': typeof AuthenticatedAppLoansRoute
   '/_authenticated/app/market': typeof AuthenticatedAppMarketRouteWithChildren
   '/_authenticated/app/orders': typeof AuthenticatedAppOrdersRoute
+  '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/_authenticated/app/support': typeof AuthenticatedAppSupportRoute
   '/_authenticated/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/market/cart': typeof AuthenticatedAppMarketCartRoute
@@ -165,6 +184,8 @@ export interface FileRouteTypes {
     | '/app/loans'
     | '/app/market'
     | '/app/orders'
+    | '/app/settings'
+    | '/app/support'
     | '/app/susu'
     | '/app/'
     | '/app/market/cart'
@@ -180,6 +201,8 @@ export interface FileRouteTypes {
     | '/app/loans'
     | '/app/market'
     | '/app/orders'
+    | '/app/settings'
+    | '/app/support'
     | '/app/susu'
     | '/app'
     | '/app/market/cart'
@@ -197,6 +220,8 @@ export interface FileRouteTypes {
     | '/_authenticated/app/loans'
     | '/_authenticated/app/market'
     | '/_authenticated/app/orders'
+    | '/_authenticated/app/settings'
+    | '/_authenticated/app/support'
     | '/_authenticated/app/susu'
     | '/_authenticated/app/'
     | '/_authenticated/app/market/cart'
@@ -251,6 +276,20 @@ declare module '@tanstack/react-router' {
       path: '/susu'
       fullPath: '/app/susu'
       preLoaderRoute: typeof AuthenticatedAppSusuRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/support': {
+      id: '/_authenticated/app/support'
+      path: '/support'
+      fullPath: '/app/support'
+      preLoaderRoute: typeof AuthenticatedAppSupportRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/settings': {
+      id: '/_authenticated/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/orders': {
@@ -352,6 +391,8 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppLoansRoute: typeof AuthenticatedAppLoansRoute
   AuthenticatedAppMarketRoute: typeof AuthenticatedAppMarketRouteWithChildren
   AuthenticatedAppOrdersRoute: typeof AuthenticatedAppOrdersRoute
+  AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
+  AuthenticatedAppSupportRoute: typeof AuthenticatedAppSupportRoute
   AuthenticatedAppSusuRoute: typeof AuthenticatedAppSusuRouteWithChildren
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
@@ -364,6 +405,8 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppLoansRoute: AuthenticatedAppLoansRoute,
   AuthenticatedAppMarketRoute: AuthenticatedAppMarketRouteWithChildren,
   AuthenticatedAppOrdersRoute: AuthenticatedAppOrdersRoute,
+  AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
+  AuthenticatedAppSupportRoute: AuthenticatedAppSupportRoute,
   AuthenticatedAppSusuRoute: AuthenticatedAppSusuRouteWithChildren,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }

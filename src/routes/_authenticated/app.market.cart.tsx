@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MomoFields, useMomo } from "@/components/momo-form";
 import { useCart } from "@/lib/cart";
-import { usePlaceOrder, useMyLoans } from "@/lib/app-queries";
-import { ArrowLeft, Trash2, Smartphone, Banknote, ShieldCheck } from "lucide-react";
+import { usePlaceOrder, useMyLoans, useCurrentUser } from "@/lib/app-queries";
+import { ArrowLeft, Trash2, Smartphone, Banknote, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { usePaystack } from "@/lib/paystack";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/market/cart")({
   component: Cart,
@@ -19,7 +20,8 @@ function Cart() {
   const cart = useCart();
   const place = usePlaceOrder();
   const loans = useMyLoans();
-  const [momo, setMomo] = useMomo();
+  const { user } = useCurrentUser();
+  const { initializePayment } = usePaystack();
   const [payMethod, setPayMethod] = useState<"momo" | "loan">("momo");
   const navigate = useNavigate();
   const total = cart.items.reduce((s, i) => s + i.price * i.qty, 0);
@@ -31,27 +33,51 @@ function Cart() {
     e.preventDefault();
     if (cart.items.length === 0) return;
 
-    if (payMethod === "momo" && !momo.momo_reference) {
-      toast.error("MoMo reference required");
+    if (payMethod === "loan") {
+      if (!activeLoan) {
+        toast.error("No active loan found for payment");
+        return;
+      }
+      try {
+        await place.mutateAsync({
+          items: cart.items,
+          payment_method: "loan",
+          loan_id: activeLoan.id,
+          status: "paid"
+        });
+        cart.clear();
+        toast.success("Ordered with Buy Now, Pay Later!");
+        navigate({ to: "/app/orders" });
+      } catch (e) { toast.error((e as Error).message); }
       return;
     }
 
-    if (payMethod === "loan" && !activeLoan) {
-      toast.error("No active loan found for payment");
-      return;
-    }
+    // MoMo via Paystack
+    if (!user?.email) return;
 
-    try {
-      await place.mutateAsync({
-        items: cart.items,
-        payment_method: payMethod,
-        loan_id: payMethod === "loan" ? activeLoan?.id : undefined,
-        ...momo
-      });
-      cart.clear();
-      toast.success(payMethod === "loan" ? "Ordered with Buy Now, Pay Later!" : "Order placed");
-      navigate({ to: "/app/orders" });
-    } catch (e) { toast.error((e as Error).message); }
+    initializePayment({
+      email: user.email,
+      amount: total,
+      onSuccess: async (reference) => {
+        try {
+          await place.mutateAsync({
+            items: cart.items,
+            payment_method: "momo",
+            momo_reference: reference,
+            momo_provider: "paystack",
+            status: "paid" // Instant paid status
+          });
+          cart.clear();
+          toast.success("Payment successful! Order placed.");
+          navigate({ to: "/app/orders" });
+        } catch (err) {
+          toast.error("Order saved but failed to clear cart. Please check Orders page.");
+        }
+      },
+      onClose: () => {
+        toast.error("Payment window closed.");
+      }
+    });
   }
 
   return (
@@ -98,8 +124,8 @@ function Cart() {
                       <Smartphone className="w-5 h-5" />
                     </div>
                     <div>
-                      <div className="font-bold">Mobile Money (Instant)</div>
-                      <div className="text-xs text-muted-foreground">Pay now via MTN, Vodafone, or AirtelTigo</div>
+                      <div className="font-bold">Mobile Money (Real-time)</div>
+                      <div className="text-xs text-muted-foreground">Secure payment via Paystack</div>
                     </div>
                   </Label>
                 </div>
@@ -149,14 +175,6 @@ function Cart() {
               </div>
 
               <form onSubmit={checkout} className="space-y-4">
-                {payMethod === "momo" && (
-                  <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-border/50">
-                    <p className="text-[10px] text-muted-foreground italic text-center uppercase tracking-wider">MoMo Instructions</p>
-                    <p className="text-xs text-center">Pay total to 0244123456 (ClipCapital Ltd), then enter ID below:</p>
-                    <MomoFields value={momo} onChange={setMomo} />
-                  </div>
-                )}
-
                 {payMethod === "loan" && (
                   <div className="p-3 bg-primary/5 rounded-lg border border-primary/20 space-y-2">
                     <div className="flex items-center gap-2 text-primary font-bold text-xs">
@@ -167,22 +185,17 @@ function Cart() {
                 )}
 
                 <Button type="submit" className="w-full h-12 text-lg font-bold shadow-xl shadow-primary/20" disabled={place.isPending}>
-                  {place.isPending ? "Processing..." : payMethod === "loan" ? "Confirm BNPL Order" : "Place MoMo Order"}
+                  {place.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : payMethod === "loan" ? "Confirm BNPL Order" : "Pay with MoMo"}
                 </Button>
               </form>
             </Card>
 
             <div className="text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Secure Checkout by ClipCapital</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Secure Checkout by Paystack</p>
             </div>
           </div>
         </div>
       )}
     </AppShell>
   );
-}
-
-// Helper to handle conditional classes since I can't import cn from utils easily in this context without verification
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
 }

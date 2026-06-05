@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, StatCard, Card, EmptyState } from "@/components/app-shell";
 import { ClipScoreGauge } from "@/components/clip-score-gauge";
-import { useClipScore, useIncome, useExpenses, useMyLoans, useAddIncome } from "@/lib/app-queries";
+import { useClipScore, useIncome, useExpenses, useMyLoans, useAddIncome, useRevenueGoal, useUpdateRevenueGoal } from "@/lib/app-queries";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, Zap, Loader2 } from "lucide-react";
+import { Plus, TrendingUp, Zap, Loader2, Target, Trophy, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/")({
   component: Dashboard,
@@ -19,9 +20,13 @@ function Dashboard() {
   const expenses = useExpenses();
   const loans = useMyLoans();
   const addIncome = useAddIncome();
+  const { data: goal } = useRevenueGoal();
+  const updateGoal = useUpdateRevenueGoal();
 
   const [customAmount, setCustomAmount] = useState("");
   const [activeQuickLog, setActiveQuickLog] = useState<number | null>(null);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [newGoal, setNewGoal] = useState("");
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -32,7 +37,10 @@ function Dashboard() {
   const profit = monthIncome - monthExpense;
   const outstanding = (loans.data ?? []).filter((l) => l.status === "approved" || l.status === "repaying")
     .reduce((s, l) => s + Number(l.balance), 0);
-  const maxLoan = Math.max(200, Math.min(5000, Math.round((score - 600) * 20)));
+  const maxLoan = Math.max(200, Math.min(5000, Math.round((score - 100) * 8)));
+
+  const goalAmount = goal?.monthly_target || 1000;
+  const progressPercent = Math.min(100, Math.round((monthIncome / goalAmount) * 100));
 
   const quickLog = async (amt: number) => {
     setActiveQuickLog(amt);
@@ -59,16 +67,108 @@ function Dashboard() {
     setCustomAmount("");
   };
 
+  const handleGoalUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(newGoal);
+    if (isNaN(val) || val <= 0) return;
+    try {
+      await updateGoal.mutateAsync(val);
+      setIsEditingGoal(false);
+      toast.success("Revenue goal updated!");
+    } catch (e) { toast.error("Failed to update goal"); }
+  };
+
   return (
     <AppShell title="Dashboard">
-      <div className="grid lg:grid-cols-3 gap-6 mb-8">
-        <Card className="lg:col-span-1 flex flex-col items-center">
-          <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-4">Your Credit Identity</div>
-          <ClipScoreGauge score={score} size={220} />
-          <div className="text-xs text-muted-foreground mt-4 text-center bg-gold/10 p-2 rounded-lg border border-gold/20">
-            Current Loan Limit: <span className="text-gold font-bold">GH₵ {maxLoan.toLocaleString()}</span>
-          </div>
-        </Card>
+      <div className="space-y-6">
+        {/* Loan Disbursed Notification Bar */}
+        <AnimatePresence>
+          {loans.data?.some(l => l.status === 'approved' && !l.disbursed_at) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              className="bg-emerald-600 text-white p-4 rounded-2xl flex items-center justify-between shadow-lg shadow-emerald-900/20"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-xl">
+                  <Banknote className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-black text-sm uppercase tracking-wider">Loan Disbursed!</div>
+                  <div className="text-[10px] opacity-90 font-medium">Your funds have been sent to your MoMo. Check your wallet.</div>
+                </div>
+              </div>
+              <Button size="sm" variant="ghost" className="text-white hover:bg-white/10 h-8 text-[10px] font-black uppercase">
+                Got it
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-1 space-y-6">
+          <Card className="flex flex-col items-center">
+            <div className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-4">Your Credit Identity</div>
+            <ClipScoreGauge score={score} size={220} />
+            <div className="text-xs text-muted-foreground mt-4 text-center bg-gold/10 p-3 rounded-xl border border-gold/20 w-full">
+              Current Loan Limit: <span className="text-gold font-black">GH₵ {maxLoan.toLocaleString()}</span>
+            </div>
+          </Card>
+
+          {/* Monthly Revenue Goal Card */}
+          <Card className="bg-primary/5 border-primary/10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-primary" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary">Monthly Goal</span>
+              </div>
+              <button
+                onClick={() => { setIsEditingGoal(!isEditingGoal); setNewGoal(String(goalAmount)); }}
+                className="text-[10px] font-bold text-primary hover:underline"
+              >
+                {isEditingGoal ? "Cancel" : "Set Goal"}
+              </button>
+            </div>
+
+            {isEditingGoal ? (
+              <form onSubmit={handleGoalUpdate} className="flex gap-2 mb-4">
+                <Input
+                  type="number"
+                  value={newGoal}
+                  onChange={e => setNewGoal(e.target.value)}
+                  className="h-9 text-xs font-bold"
+                  autoFocus
+                />
+                <Button size="sm" className="h-9 px-3 text-[10px] font-bold" disabled={updateGoal.isPending}>Save</Button>
+              </form>
+            ) : (
+              <div className="mb-4">
+                <div className="flex justify-between items-end mb-1.5">
+                  <div className="text-2xl font-display font-black text-primary">GH₵ {monthIncome.toLocaleString()}</div>
+                  <div className="text-[10px] font-bold text-muted-foreground">Target: GH₵ {goalAmount.toLocaleString()}</div>
+                </div>
+                <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercent}%` }}
+                    className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                  />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <span className="text-[10px] font-bold text-muted-foreground">{progressPercent}% Achieved</span>
+                  {progressPercent >= 100 && (
+                    <span className="text-[10px] font-black text-emerald-600 flex items-center gap-1">
+                      <Trophy className="w-3 h-3" /> GOAL SMASHED!
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Consistently meeting your revenue goals increases your ClipScore eligibility faster.
+            </p>
+          </Card>
+        </div>
 
         <div className="lg:col-span-2 space-y-6">
           <div className="grid sm:grid-cols-2 gap-4">
@@ -81,7 +181,7 @@ function Dashboard() {
           <Card className="border-primary/20 bg-primary/5">
             <div className="flex items-center gap-2 mb-4">
               <Zap className="w-4 h-4 text-primary fill-primary" />
-              <h3 className="font-display font-bold text-sm uppercase tracking-tight">Quick Log Income</h3>
+              <h3 className="font-display font-bold text-sm uppercase tracking-tight">Turbo Log Income</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {[10, 20, 50, 100].map((amt) => (
@@ -105,11 +205,11 @@ function Dashboard() {
               <Input
                 type="number"
                 placeholder="Custom amount..."
-                className="h-10 bg-background"
+                className="h-10 bg-background font-bold"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
               />
-              <Button type="submit" size="sm" className="px-4" disabled={addIncome.isPending || !customAmount}>
+              <Button type="submit" size="sm" className="px-4 font-bold" disabled={addIncome.isPending || !customAmount}>
                 {addIncome.isPending && !activeQuickLog ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Plus className="w-4 h-4 mr-1" />} Log
               </Button>
             </form>
