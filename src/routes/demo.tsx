@@ -61,7 +61,7 @@ function DemoShell() {
                   return (
                     <Link
                       key={t.to}
-                      to={t.to}
+                      to={t.to as "/demo"}
                       className={`flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[10px] transition ${
                         active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
                       }`}
