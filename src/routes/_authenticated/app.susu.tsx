@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useCreateGroup, useJoinGroup, useMyGroups } from "@/lib/app-queries";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/app/susu")({
   component: SusuLayout,
