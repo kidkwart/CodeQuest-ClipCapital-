@@ -203,7 +203,7 @@ This replays every migration in `supabase/migrations/` on a fresh local database
 
 ---
 
-## 8. Optional: import your database data
+## 9. Optional: import your database data
 
 The app schema lives in the `supabase/migrations` folder. If you also want the actual marketplace products, seeded users, and sample data, import the CSV exports that were generated earlier:
 
@@ -216,7 +216,7 @@ Alternatively, use the Supabase CLI with the project reference and service role 
 
 ---
 
-## 9. Common commands
+## 10. Common commands
 
 | Command | Description |
 | --- | --- |
@@ -227,7 +227,7 @@ Alternatively, use the Supabase CLI with the project reference and service role 
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 ### "Failed to resolve import" / build errors
 
@@ -255,7 +255,7 @@ bun dev --port 3000
 
 ---
 
-## 11. Project structure (at a glance)
+## 12. Project structure (at a glance)
 
 ```
 src/
