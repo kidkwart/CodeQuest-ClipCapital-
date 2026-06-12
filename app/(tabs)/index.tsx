@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, SafeAreaView, Platform, StyleSheet } from "react-native";
 import { useProfile, useClipScore, useRecentActivity, useAddIncome, useMyRoles, useWeeklyPerformance, useUserHealth, useUpdateProfile } from "@/lib/app-queries";
-import { StatCard, Card } from "@/components/native/card";
-import { AnalyticsChart } from "@/components/native/analytics-chart";
+import { Card } from "@/components/native/card";
 import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -27,12 +26,17 @@ export default function Dashboard() {
   const [showScoreAudit, setShowScoreAudit] = useState(false);
 
   const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
-  const isPrivate = profile?.privacy_mode_enabled ?? false;
+  const [localPrivate, setLocalPrivate] = useState<boolean | null>(null);
+  const isPrivate = localPrivate ?? (profile?.privacy_mode_enabled ?? false);
 
   const togglePrivacy = async () => {
+    const newVal = !isPrivate;
+    setLocalPrivate(newVal);
+    Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
     try {
-      await updateProfile.mutateAsync({ privacy_mode_enabled: !isPrivate });
+      await updateProfile.mutateAsync({ privacy_mode_enabled: newVal });
     } catch (e) {
+      setLocalPrivate(null);
       console.error(e);
     }
   };
@@ -82,14 +86,13 @@ export default function Dashboard() {
 
           {/* Institutional Header */}
           <View style={styles.header}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, marginRight: 16 }}>
               <View style={styles.supHeaderRow}>
                 <View style={styles.institutionalDot} />
                 <Text style={styles.supHeaderText}>CLIPCAPITAL PREMIUM</Text>
               </View>
               <Text
                 numberOfLines={2}
-                adjustsFontSizeToFit
                 style={styles.greetingText}
               >
                 Akwaaba,{"\n"}{profile?.display_name || "Artisan"}
@@ -114,29 +117,9 @@ export default function Dashboard() {
             score={score}
             limit={score * 5}
             loading={isProfileLoading}
+            onAudit={() => setShowScoreAudit(!showScoreAudit)}
           />
 
-          {/* Stats Grid */}
-          <View style={styles.statsGrid}>
-            <TouchableOpacity onPress={() => router.push("/wallet")} style={{ flex: 1 }}>
-              <StatCard
-                label="My Wallet"
-                value={`GH₵ ${profile?.wallet_balance || 0}`}
-                variant="emerald"
-                hint="Manage"
-                hideValue={isPrivate}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowScoreAudit(!showScoreAudit)} style={{ flex: 1 }}>
-              <StatCard
-                label="ClipScore"
-                value={String(score)}
-                variant="gold"
-                hint="Audit"
-                hideValue={isPrivate}
-              />
-            </TouchableOpacity>
-          </View>
 
           {showScoreAudit && (
             <View style={{ marginBottom: 40 }}>
@@ -266,7 +249,6 @@ const styles = StyleSheet.create({
   headerBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   headerBtnInstitutional: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#10b98120' },
   notifBadge: { position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ef4444', borderWidth: 1.5, borderColor: '#0f1714' },
-  statsGrid: { flexDirection: 'row', gap: 16, marginBottom: 24 },
   quickActionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 50, marginTop: 10 },
   serviceIconContainer: { width: 68, height: 68, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
   serviceGlow: { position: 'absolute', width: 40, height: 40, borderRadius: 20, opacity: 0.03 },
