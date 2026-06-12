@@ -90,8 +90,8 @@ export default function Dashboard() {
           <View style={styles.header}>
             <View style={{ flex: 1, marginRight: 16 }}>
               <View style={styles.supHeaderRow}>
-                <View style={styles.institutionalDot} />
-                <Text style={styles.supHeaderText}>CLIPCAPITAL PREMIUM</Text>
+                <View style={[styles.institutionalDot, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.supHeaderText, { color: colors.primary }]}>CLIPCAPITAL PREMIUM</Text>
               </View>
               <Text
                 numberOfLines={2}
@@ -106,7 +106,7 @@ export default function Dashboard() {
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/notifications")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <Bell size={18} color={colors.primary} />
-                <View style={styles.notifBadge} />
+                <View style={[styles.notifBadge, { borderColor: colors.cardBg }]} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/support")} style={[styles.headerBtnInstitutional, { backgroundColor: colors.cardBg, borderColor: colors.primary + '20' }]}>
                 <MessageCircle size={18} color={colors.primary} />
@@ -135,7 +135,7 @@ export default function Dashboard() {
 
           {/* Premium Quick Actions */}
           <View style={styles.quickActionsRow}>
-            <ServiceNode title="Market" icon={ShoppingBag} color={theme === 'dark' ? "#f59e0b" : "#e11d48"} onPress={() => router.push("/market")} theme={theme} />
+            <ServiceNode title="Market" icon={ShoppingBag} color={theme === 'dark' ? colors.gold : "#e11d48"} onPress={() => router.push("/market")} theme={theme} />
             <ServiceNode title="Credit" icon={TrendingUp} color={colors.primary} onPress={() => router.push("/loans")} theme={theme} />
             <ServiceNode title="Payout" icon={ArrowDownToLine} color={theme === 'dark' ? "#3b82f6" : "#2563eb"} onPress={() => router.push("/withdraw")} theme={theme} />
             {isAdmin ? (
@@ -157,7 +157,7 @@ export default function Dashboard() {
             <View style={[styles.revenueCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View style={{ padding: 24, flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardLabel, isLogged && { color: colors.primary }]}>
+                  <Text style={[styles.cardLabel, { color: isLogged ? colors.primary : colors.textMuted }]}>
                     {isLogged ? "REVENUE RECORDED" : "LOG DAILY SALES"}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', height: 44 }}>
@@ -208,7 +208,7 @@ export default function Dashboard() {
                </View>
             ) : (
               activity.data?.slice(0, 5).map((item, idx) => (
-                <View key={item.id} style={[styles.activityItem, idx === 4 && { borderBottomWidth: 0 }, { borderBottomColor: colors.border }]}>
+                <View key={item.id} style={[styles.activityItem, { borderBottomColor: colors.border }, idx === 4 && { borderBottomWidth: 0 }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
                     <View style={[styles.activityIconBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
                       {item.amount > 0 ? <ArrowUpRight size={20} color={colors.primary} /> : <ArrowDownLeft size={20} color={colors.destructive} />}
@@ -248,37 +248,37 @@ function ServiceNode({ title, icon: Icon, color, onPress, theme }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
+  container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, marginTop: 10 },
   supHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  institutionalDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981', marginRight: 8 },
-  supHeaderText: { color: '#10b981', fontWeight: '900', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase' },
-  greetingText: { fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
+  institutionalDot: { width: 6, height: 6, borderRadius: 3, marginRight: 8 },
+  supHeaderText: { fontWeight: '900', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase' },
+  greetingText: { fontFamily: 'Display-Bold', fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
   headerActions: { flexDirection: 'row', gap: 10 },
-  headerBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  headerBtnInstitutional: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#10b98120' },
-  notifBadge: { position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ef4444', borderWidth: 1.5, borderColor: '#0f1714' },
+  headerBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  headerBtnInstitutional: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  notifBadge: { position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ef4444', borderWidth: 1.5 },
   quickActionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 50, marginTop: 10 },
   serviceIconContainer: { width: 68, height: 68, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
   serviceGlow: { position: 'absolute', width: 40, height: 40, borderRadius: 20, opacity: 0.03 },
-  serviceTitle: { color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 8, textTransform: 'uppercase', letterSpacing: 2 },
+  serviceTitle: { fontWeight: '900', fontSize: 8, textTransform: 'uppercase', letterSpacing: 2 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 8 },
-  sectionTitle: { color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
-  sectionStat: { color: '#10b981', fontWeight: 'bold', fontSize: 11 },
-  revenueCard: { borderRadius: 28, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', backgroundColor: '#0f1714' },
-  cardLabel: { color: '#7d8a84', fontWeight: '900', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  currencyPrefix: { fontFamily: 'Display-Bold', color: '#405045', fontSize: 18, marginRight: 8 },
-  revenueInput: { fontFamily: 'Display-Bold', color: 'white', fontSize: 32, flex: 1, height: 44, includeFontPadding: false },
-  logBtn: { width: 52, height: 52, borderRadius: 18, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  cardFooter: { backgroundColor: 'rgba(16,185,129,0.05)', paddingVertical: 10, paddingHorizontal: 20 },
-  footerText: { color: '#10b981', fontSize: 8, fontWeight: '900', textAlign: 'center', letterSpacing: 0.5 },
+  sectionTitle: { fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
+  sectionStat: { fontWeight: 'bold', fontSize: 11 },
+  revenueCard: { borderRadius: 28, overflow: 'hidden', borderWidth: 1 },
+  cardLabel: { fontWeight: '900', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
+  currencyPrefix: { fontFamily: 'Display-Bold', fontSize: 18, marginRight: 8 },
+  revenueInput: { fontFamily: 'Display-Bold', fontSize: 32, flex: 1, height: 44, includeFontPadding: false },
+  logBtn: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
+  cardFooter: { paddingVertical: 10, paddingHorizontal: 20 },
+  footerText: { fontSize: 8, fontWeight: '900', textAlign: 'center', letterSpacing: 0.5 },
   activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, paddingHorizontal: 8 },
-  activityTitle: { fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 22 },
-  viewHistoryLink: { color: '#10b981', fontWeight: '900', fontSize: 9, letterSpacing: 1 },
-  activityCard: { padding: 4, backgroundColor: '#0f1714', borderRadius: 24 },
-  activityItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.03)' },
-  activityIconBox: { width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.02)', alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  activityNote: { color: '#fcfcfc', fontWeight: 'bold', fontSize: 14 },
-  activityDateText: { color: '#405045', fontWeight: '900', fontSize: 9, textTransform: 'uppercase', marginTop: 3, letterSpacing: 1 },
+  activityTitle: { fontFamily: 'Display-Bold', fontSize: 22 },
+  viewHistoryLink: { fontWeight: '900', fontSize: 9, letterSpacing: 1 },
+  activityCard: { padding: 4, borderRadius: 24 },
+  activityItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
+  activityIconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  activityNote: { fontWeight: 'bold', fontSize: 14 },
+  activityDateText: { fontWeight: '900', fontSize: 9, textTransform: 'uppercase', marginTop: 3, letterSpacing: 1 },
   activityAmount: { fontFamily: 'Display-Bold', fontSize: 16, marginLeft: 12 }
 });

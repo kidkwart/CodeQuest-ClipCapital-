@@ -62,14 +62,14 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
   }
 
   return (
-    <Card glass style={styles.container}>
+    <Card glass style={[styles.container, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
       {/* 1. Header Protocol */}
       <View style={styles.header}>
-        <View style={styles.headerBadge}>
-           <Shield size={10} color="#10b981" fill="#10b98120" />
-           <Text style={styles.supTitle}>VAULT PROTOCOL v4.2</Text>
+        <View style={[styles.headerBadge, { backgroundColor: colors.primary + '05', borderColor: colors.primary + '10' }]}>
+           <Shield size={10} color={colors.primary} fill={colors.primary + '20'} />
+           <Text style={[styles.supTitle, { color: colors.primary }]}>VAULT PROTOCOL v4.2</Text>
         </View>
-        <Text style={styles.mainTitle}>Financial Capacity</Text>
+        <Text style={[styles.mainTitle, { color: colors.text }]}>Financial Capacity</Text>
       </View>
 
       {/* 2. Central Gauge (Symmetrical) */}
@@ -79,7 +79,7 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
             <Defs>
               <LinearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
                 <Stop offset="0" stopColor={tier.color} stopOpacity="1" />
-                <Stop offset="1" stopColor="#064e3b" stopOpacity="1" />
+                <Stop offset="1" stopColor={theme === 'dark' ? "#064e3b" : colors.primary} stopOpacity="1" />
               </LinearGradient>
             </Defs>
 
@@ -111,7 +111,7 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
           </Svg>
 
           <View style={styles.centerInfo}>
-             <Text style={[styles.scoreLabel, { color: colors.textMuted }]}>CLIPSCORE</Text>
+             <Text style={[styles.scoreLabel, { color: colors.textDim }]}>CLIPSCORE</Text>
              <Text style={[styles.scoreValue, { color: colors.text }]}>{score}</Text>
              <View style={[styles.tierLabel, { backgroundColor: `${tier.color}15` }]}>
                 <Text style={[styles.tierLabelText, { color: tier.color }]}>{tier.label} STATUS</Text>
@@ -142,9 +142,9 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
             <Activity size={12} color={colors.textDim} />
             <Text style={[styles.footerText, { color: colors.textDim }]}>Real-time Credit Assessment</Text>
          </View>
-         <BouncyTap onPress={onAudit} style={styles.auditBtn}>
-            <Text style={styles.auditText}>AUDIT</Text>
-            <ChevronRight size={10} color="#10b981" />
+         <BouncyTap onPress={onAudit} style={[styles.auditBtn, { borderColor: colors.primary + '30' }]}>
+            <Text style={[styles.auditText, { color: colors.primary }]}>AUDIT</Text>
+            <ChevronRight size={10} color={colors.primary} />
          </BouncyTap>
       </View>
     </Card>
@@ -156,9 +156,7 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 40,
     borderRadius: 36,
-    backgroundColor: '#0d1310',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   header: {
     alignItems: 'center',
@@ -168,22 +166,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(16,185,129,0.05)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.1)',
   },
   supTitle: {
-    color: '#10b981',
     fontWeight: '900',
     fontSize: 8,
     letterSpacing: 3,
   },
   mainTitle: {
     fontFamily: 'Display-Bold',
-    color: 'white',
     fontSize: 22,
     marginTop: 10,
     letterSpacing: -0.5
@@ -206,14 +200,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scoreLabel: {
-    color: '#405045',
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 3,
   },
   scoreValue: {
     fontFamily: 'Display-Bold',
-    color: 'white',
     fontSize: 44,
     marginVertical: 2,
     letterSpacing: -1
@@ -231,11 +223,9 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.02)',
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.03)',
   },
   statBox: {
     flex: 1,
@@ -244,10 +234,8 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: '100%',
-    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   statLabel: {
-    color: '#405045',
     fontSize: 8,
     fontWeight: '900',
     letterSpacing: 2,
@@ -255,7 +243,6 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontFamily: 'Display-Bold',
-    color: 'white',
     fontSize: 16,
   },
   footer: {
@@ -271,7 +258,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   footerText: {
-    color: '#334140',
     fontSize: 9,
     fontWeight: 'bold',
   },
@@ -280,13 +266,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.2)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
   },
   auditText: {
-    color: '#10b981',
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1
