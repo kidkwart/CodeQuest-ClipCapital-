@@ -13,54 +13,54 @@ import { useTheme } from "@/context/theme-context";
 const { width } = Dimensions.get('window');
 
 // Verified professional imagery for master barbers
-const FALLBACK_PRODUCTS = [
+export const FALLBACK_PRODUCTS = [
   {
-    id: "38947f6a-4933-4f9e-9d2a-4a2a1a8c9b0e",
-    name: "Wahl Professional Cordless Magic Clip",
-    price: 2450,
+    id: "prod_1",
+    name: "Wahl Cordless Magic Clip",
+    price: 550,
     image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
-    description: "The 'Gold Standard' for Ghanaian master barbers. Features the iconic stagger-tooth blade for the ultimate seamless fade.",
-    category: "Cutting"
+    description: "The 'Gold Standard' for Ghanaian master barbers. Features the iconic stagger-tooth blade for the ultimate seamless fade and precision tapering.",
+    category: "Clippers"
   },
   {
-    id: "982b6e12-32b4-4b5a-9e12-c2e3f4a5b6c7",
-    name: "BaBylissPRO GoldFX Skeleton Trimmer",
-    price: 3200,
-    image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
-    description: "The world's most desired hitter. 360-degree exposed T-blade for surgical precision lineups.",
-    category: "Cutting"
+    id: "prod_2",
+    name: "Premium Beard Growth Oil",
+    price: 50,
+    image_url: "https://images.unsplash.com/photo-1626285493125-9653842f1f0a?auto=format&fit=crop&q=80&w=800",
+    description: "Artisan-crafted beard oil with Cedarwood and Sandalwood. Softens coarse hair and eliminates itch for a well-maintained, healthy look.",
+    category: "Oils"
   },
   {
-    id: "716a5b4c-d3e2-4f1a-b0c9-d8e7f6a5b4c3",
-    name: "Luxury Gold Vintage Hydraulic Barber Chair",
-    price: 7800,
+    id: "prod_3",
+    name: "Vintage Gold Barber Chair",
+    price: 12000,
     image_url: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=800",
-    description: "Industrial-grade heavy-duty hydraulic pump. Hand-stitched premium leather with 24k gold-plated accents.",
-    category: "Furniture"
+    description: "Heavy-duty hydraulic pump with 360-degree rotation and adjustable recline. Hand-stitched premium leather for maximum client comfort and shop aesthetics.",
+    category: "Chairs"
   },
   {
-    id: "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d",
-    name: "Dyson Supersonic™ Pro Stylist Edition",
-    price: 4500,
+    id: "prod_4",
+    name: "Proraso Shaving Cream",
+    price: 80,
+    image_url: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=800",
+    description: "Traditional Italian formula enriched with Eucalyptus and Menthol. Provides a rich, cooling lather for the smoothest possible professional shave.",
+    category: "Grooming"
+  },
+  {
+    id: "prod_5",
+    name: "Dyson Supersonic™ Pro",
+    price: 3500,
     image_url: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?auto=format&fit=crop&q=80&w=800",
-    description: "Intelligent heat control to protect natural shine. Fastest drying for high-volume salons.",
-    category: "Tech"
+    description: "Intelligent heat control to protect natural shine. Engineered for professional stylists with ultra-fast drying and quiet high-torque motor.",
+    category: "Tools"
   },
   {
-    id: "f1e2d3c4-b5a6-4f5e-9d8c-7b6a5e4d3c2b",
-    name: "Wahl Professional Cordless Senior",
-    price: 2600,
-    image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
-    description: "The most powerful motor in the Wahl range. Metal bottom housing for durability and high-torque performance.",
-    category: "Cutting"
-  },
-  {
-    id: "e1d2c3b4-a5f6-4e5d-9c8b-7a6f5e4d3c2b",
-    name: "Andis Master Cordless Gold Edition",
+    id: "prod_6",
+    name: "Andis Master Cordless Gold",
     price: 4200,
-    image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
-    description: "The legendary Master motor now in a high-speed cordless body. Unbreakable aluminum housing.",
-    category: "Cutting"
+    image_url: "https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&q=80&w=800",
+    description: "The legendary high-speed motor now in a cordless body. Unbreakable gold-plated aluminum housing for durability and classic professional style.",
+    category: "Clippers"
   }
 ];
 

@@ -9,6 +9,7 @@ import { ArrowLeft, ShoppingCart, ShieldCheck, Sparkles, Plus, Minus, ClipboardL
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '@/context/theme-context';
+import { FALLBACK_PRODUCTS } from './index';
 
 const { width } = Dimensions.get('window');
 
@@ -22,53 +23,7 @@ export default function ProductDetails() {
   const [qty, setQty] = useState("1");
   const [isAdded, setIsAdded] = useState(false);
 
-  // Fallback products from the main marketplace file
-  const FALLBACK_PRODUCTS = [
-    {
-      id: "38947f6a-4933-4f9e-9d2a-4a2a1a8c9b0e",
-      name: "Wahl Professional Cordless Magic Clip",
-      price: 2450,
-      image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
-      description: "The 'Gold Standard' for Ghanaian master barbers. Features the iconic stagger-tooth blade for the ultimate seamless fade."
-    },
-    {
-      id: "982b6e12-32b4-4b5a-9e12-c2e3f4a5b6c7",
-      name: "BaBylissPRO GoldFX Skeleton Trimmer",
-      price: 3200,
-      image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
-      description: "The world's most desired hitter. 360-degree exposed T-blade for surgical precision lineups."
-    },
-    {
-      id: "716a5b4c-d3e2-4f1a-b0c9-d8e7f6a5b4c3",
-      name: "Luxury Gold Vintage Hydraulic Barber Chair",
-      price: 7800,
-      image_url: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=800",
-      description: "Industrial-grade heavy-duty hydraulic pump. Hand-stitched premium leather with 24k gold-plated accents."
-    },
-    {
-      id: "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d",
-      name: "Dyson Supersonic™ Pro Stylist Edition",
-      price: 4500,
-      image_url: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?auto=format&fit=crop&q=80&w=800",
-      description: "Intelligent heat control to protect natural shine. Fastest drying for high-volume salons."
-    },
-    {
-      id: "f1e2d3c4-b5a6-4f5e-9d8c-7b6a5e4d3c2b",
-      name: "Wahl Professional Cordless Senior",
-      price: 2600,
-      image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
-      description: "The most powerful motor in the Wahl range. Metal bottom housing for durability and high-torque performance."
-    },
-    {
-      id: "e1d2c3b4-a5f6-4e5d-9c8b-7a6f5e4d3c2b",
-      name: "Andis Master Cordless Gold Edition",
-      price: 4200,
-      image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
-      description: "The legendary Master motor now in a high-speed cordless body. Unbreakable aluminum housing."
-    }
-  ];
-
-  const allProducts = [...(dbProducts || []), ...FALLBACK_PRODUCTS];
+  const allProducts = (dbProducts && dbProducts.length > 0) ? dbProducts : FALLBACK_PRODUCTS;
   const product = allProducts.find(p => p.id === productId);
 
   if (!product) return null;
@@ -77,7 +32,6 @@ export default function ProductDetails() {
     const numericQty = parseInt(qty) || 1;
     cart.add({
       product_id: product.id,
-      vendor_id: product.vendor_id,
       name: product.name,
       price: product.price,
       qty: numericQty
@@ -130,12 +84,12 @@ export default function ProductDetails() {
       <ScrollView contentContainerStyle={{ paddingBottom: 150 }}>
         <View style={{ width: width, height: width }}>
           <Image
-            source={{ uri: product.image_url || "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=800&q=80" }}
+            source={{ uri: product.image_url }}
             style={{ width: '100%', height: '100%' }}
             resizeMode="cover"
           />
           <LinearGradient
-            colors={theme === 'dark' ? ['transparent', '#080c0a'] : ['transparent', '#f8fafc']}
+            colors={theme === 'dark' ? ['transparent', '#080c0a'] : ['transparent', colors.background]}
             style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100 }}
           />
         </View>
@@ -194,14 +148,14 @@ export default function ProductDetails() {
 
           <Text style={[styles.sectionLabel, { color: colors.textDim }]}>Overview</Text>
           <Text style={[styles.description, { color: colors.textMuted }]}>
-            {product.description || "This professional-grade tool is the standard for high-performance grooming. Engineered for precision and built to last in a high-traffic shop environment."}
+            {product.description}
           </Text>
         </View>
       </ScrollView>
 
       <View style={[styles.bottomBar, { borderTopColor: colors.border }]}>
         {Platform.OS !== 'web' && <BlurView intensity={80} tint={theme} style={StyleSheet.absoluteFill} />}
-        <View style={[styles.bottomBarInner, { backgroundColor: Platform.OS === 'web' ? colors.background + 'e6' : 'transparent' }]}>
+        <View style={[styles.bottomBarInner, { backgroundColor: Platform.OS === 'web' ? colors.background : 'transparent' }]}>
           <View style={{ flex: 1 }}>
             <Button
               title={isAdded ? "Added ✓" : "Add to Cart"}
@@ -232,24 +186,20 @@ const styles = StyleSheet.create({
     height: 48,
     width: 48,
     borderRadius: 16,
-    backgroundColor: 'rgba(15, 23, 20, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)'
   },
   badge: {
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: '#10b981',
     width: 18,
     height: 18,
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#080c0a'
   },
   badgeTextCount: {
     color: 'black',
@@ -258,14 +208,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Display-Bold',
-    color: 'white',
     fontSize: 32,
     lineHeight: 38,
     letterSpacing: -1
   },
   price: {
     fontFamily: 'Display-Bold',
-    color: '#10b981',
     fontSize: 26,
     marginLeft: 16
   },
@@ -273,22 +221,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(245,158,11,0.1)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 100,
     borderWidth: 1,
-    borderColor: 'rgba(245,158,11,0.2)'
   },
   choiceBadgeText: {
-    color: '#f59e0b',
     fontWeight: '900',
     fontSize: 9,
     textTransform: 'uppercase',
     letterSpacing: 1
   },
   sectionLabel: {
-    color: 'rgba(252,252,252,0.3)',
     fontWeight: '900',
     fontSize: 10,
     letterSpacing: 4,
@@ -297,36 +241,30 @@ const styles = StyleSheet.create({
     marginLeft: 4
   },
   description: {
-    color: '#b2baac',
     fontSize: 14,
     lineHeight: 24,
     marginBottom: 40
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     marginVertical: 32
   },
   qtyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
     padding: 6
   },
   qtyBtn: {
     width: 44,
     height: 44,
     borderRadius: 16,
-    backgroundColor: '#0f1714',
     alignItems: 'center',
     justifyContent: 'center'
   },
   qtyInput: {
     fontFamily: 'Display-Bold',
-    color: 'white',
     fontSize: 20,
     minWidth: 60,
     textAlign: 'center',
@@ -338,7 +276,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
     overflow: 'hidden',
     zIndex: 10
   },
@@ -347,6 +284,5 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 24,
     paddingVertical: 24,
-    backgroundColor: Platform.OS === 'web' ? 'rgba(8, 12, 10, 0.9)' : 'transparent'
   }
 });
