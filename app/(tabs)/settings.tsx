@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, Alert, Platform, Modal } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, Alert, Platform, Modal, Switch } from "react-native";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, useUpdateProfile } from "@/lib/app-queries";
 import { Input } from "@/components/native/input";
 import { Button } from "@/components/native/button";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X } from "lucide-react-native";
+import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X, Eye, EyeOff, Smartphone, BellRing } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 
 export default function Settings() {
@@ -14,11 +14,20 @@ export default function Settings() {
   const updateProfile = useUpdateProfile();
   const [refreshing, setRefreshing] = useState(false);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [showNotifModal, setShowNotifModal] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
 
   const [formData, setFormData] = useState({
     display_name: "",
     business_name: "",
     phone_number: "",
+  });
+
+  const [prefs, setPrefs] = useState({
+    notifications_enabled: true,
+    privacy_mode_enabled: false,
+    security_2fa_enabled: false,
+    sms_backup_enabled: false,
   });
 
   const [payoutData, setPayoutData] = useState({
@@ -39,6 +48,12 @@ export default function Settings() {
         account_number: profile.account_number || "",
         account_name: profile.account_name || "",
       });
+      setPrefs({
+        notifications_enabled: profile.notifications_enabled ?? true,
+        privacy_mode_enabled: profile.privacy_mode_enabled ?? false,
+        security_2fa_enabled: profile.security_2fa_enabled ?? false,
+        sms_backup_enabled: profile.sms_backup_enabled ?? false,
+      });
     }
   }, [profile]);
 
@@ -46,6 +61,16 @@ export default function Settings() {
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
+  };
+
+  const handleTogglePref = async (key: keyof typeof prefs) => {
+    const newVal = !prefs[key];
+    setPrefs(p => ({ ...p, [key]: newVal }));
+    try {
+      await updateProfile.mutateAsync({ [key]: newVal });
+    } catch (e: any) {
+      alert("Failed to update preference: " + e.message);
+    }
   };
 
   const handleSave = async () => {
@@ -178,7 +203,12 @@ export default function Settings() {
           {/* Preferences */}
           <View style={{ marginBottom: 48 }}>
             <Text style={{ color: 'rgba(252,252,252,0.3)', fontFamily: 'Display-Bold', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 24, marginLeft: 8 }}>Preferences</Text>
-            <SettingRow icon={Bell} label="Alert Notifications" onPress={() => alert("Coming soon")} />
+            <SettingRow
+              icon={Bell}
+              label="Alert Notifications"
+              value={prefs.notifications_enabled ? "Enabled" : "Muted"}
+              onPress={() => setShowNotifModal(true)}
+            />
             <SettingRow
               icon={CreditCard}
               label="Payout Account"
@@ -186,7 +216,12 @@ export default function Settings() {
               value={profile?.account_number ? `${profile.bank_name} • ${profile.account_number}` : "Not configured"}
               onPress={() => setShowPayoutModal(true)}
             />
-            <SettingRow icon={Shield} label="Security Protocol" onPress={() => alert("Coming soon")} />
+            <SettingRow
+              icon={Shield}
+              label="Security Protocol"
+              value={prefs.privacy_mode_enabled ? "High Privacy" : "Standard"}
+              onPress={() => setShowSecurityModal(true)}
+            />
           </View>
 
           {/* Account Actions */}
@@ -271,9 +306,117 @@ export default function Settings() {
           </View>
         </View>
       </Modal>
+
+      {/* Notifications Modal */}
+      <Modal
+        visible={showNotifModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNotifModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Alert Preferences</Text>
+              <TouchableOpacity onPress={() => setShowNotifModal(false)}>
+                <X size={24} color="#7d8a84" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView>
+              <ToggleRow
+                icon={BellRing}
+                label="Push Notifications"
+                desc="Get real-time updates on your phone"
+                value={prefs.notifications_enabled}
+                onToggle={() => handleTogglePref('notifications_enabled')}
+              />
+              <ToggleRow
+                icon={CreditCard}
+                label="Transaction Alerts"
+                desc="Notify me on every deposit and payout"
+                value={true}
+                onToggle={() => {}}
+              />
+              <ToggleRow
+                icon={Smartphone}
+                label="SMS Backup"
+                desc="Receive SMS for critical security events"
+                value={prefs.sms_backup_enabled}
+                onToggle={() => handleTogglePref('sms_backup_enabled')}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Security Modal */}
+      <Modal
+        visible={showSecurityModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowSecurityModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Security Protocol</Text>
+              <TouchableOpacity onPress={() => setShowSecurityModal(false)}>
+                <X size={24} color="#7d8a84" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView>
+              <ToggleRow
+                icon={EyeOff}
+                label="Privacy Mode"
+                desc="Hide wallet balances on your dashboard"
+                value={prefs.privacy_mode_enabled}
+                onToggle={() => handleTogglePref('privacy_mode_enabled')}
+              />
+              <ToggleRow
+                icon={Lock}
+                label="Two-Factor Auth"
+                desc="Require a code for every sign-in"
+                value={prefs.security_2fa_enabled}
+                onToggle={() => handleTogglePref('security_2fa_enabled')}
+              />
+              <ToggleRow
+                icon={Smartphone}
+                label="Biometric Login"
+                desc="Use FaceID or Fingerprint to unlock"
+                value={true}
+                onToggle={() => {}}
+              />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const ToggleRow = ({ icon: Icon, label, desc, value, onToggle }: any) => (
+  <View style={styles.toggleRow}>
+    <View style={styles.toggleLeft}>
+      <View style={styles.toggleIcon}>
+        <Icon size={18} color="#10b981" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        <Text style={styles.toggleDesc}>{desc}</Text>
+      </View>
+    </View>
+    <Switch
+      value={value}
+      onValueChange={onToggle}
+      trackColor={{ false: "#1a211e", true: "#10b981" }}
+      thumbColor="#fff"
+    />
+  </View>
+);
 
 const styles = StyleSheet.create({
   actionBtn: {
@@ -319,5 +462,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Display-Bold',
     color: 'white',
     fontSize: 20
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24
+  },
+  toggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 16
+  },
+  toggleIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16,185,129,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16
+  },
+  toggleLabel: {
+    color: 'white',
+    fontFamily: 'Display-Bold',
+    fontSize: 14
+  },
+  toggleDesc: {
+    color: '#7d8a84',
+    fontSize: 12,
+    marginTop: 2
   }
 });

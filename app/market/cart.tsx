@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useCart } from "@/lib/cart";
-import { usePlaceOrder, useProfile, useAddExpense } from "@/lib/app-queries";
+import { usePlaceOrder, useProfile, useMyActiveLoans } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, Trash2, ShieldCheck, ShoppingBag, Plus, Minus, XCircle, Wallet, CreditCard } from "lucide-react-native";
+import { ArrowLeft, Trash2, ShoppingBag, Wallet, CreditCard, Banknote, XCircle } from "lucide-react-native";
 
 // Conditional import for Paystack to avoid web errors
 let Paystack: any = null;
@@ -19,17 +19,21 @@ export default function CartScreen() {
   const cart = useCart();
   const place = usePlaceOrder();
   const { data: profile } = useProfile();
-  const addExpense = useAddExpense();
+  const { data: activeLoans } = useMyActiveLoans();
 
   const [loading, setLoading] = useState(false);
   const [showPaystack, setShowPaystack] = useState(false);
 
   const total = cart.items.reduce((s, i) => s + i.price * i.qty, 0);
-  const PAYSTACK_KEY = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || "pk_test_your_key_here";
+  const PAYSTACK_KEY = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || "pk_test_yoursecretkey";
+
+  const activeLoan = activeLoans?.[0];
 
   const handleWalletPayment = async () => {
     if (Number(profile?.wallet_balance || 0) < total) {
-      Alert.alert("Insufficient Balance", "Please top up your wallet or pay with Paystack.");
+      const msg = "Insufficient Balance. Please top up your wallet or pay with Paystack.";
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert("Insufficient Balance", msg);
       return;
     }
 
@@ -37,22 +41,53 @@ export default function CartScreen() {
     try {
       await place.mutateAsync({
         items: cart.items,
-        payment_method: "momo",
+        payment_method: "wallet",
         status: "paid"
       });
 
-      await addExpense.mutateAsync({
-        amount: total,
-        category: "Supplies",
-        note: `Payment for Order`,
-        entry_date: new Date().toISOString().split('T')[0]
+      await cart.clear();
+
+      const successMsg = "Success: Order placed using wallet balance!";
+      if (Platform.OS === 'web') window.alert(successMsg);
+      else Alert.alert("Success", successMsg);
+
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      console.error("Wallet payment failed:", e);
+      const errorMsg = e.message === "INSUFFICIENT_BALANCE" ? "Insufficient wallet balance." : `Transaction failed: ${e.message}`;
+      if (Platform.OS === 'web') window.alert(errorMsg);
+      else Alert.alert("Error", errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoanPayment = async () => {
+    if (!activeLoan) {
+      Alert.alert("No Active Credit", "You don't have an active credit line.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await place.mutateAsync({
+        items: cart.items,
+        payment_method: "loan",
+        loan_id: activeLoan.id,
+        status: "paid"
       });
 
       await cart.clear();
-      Alert.alert("Success", "Order placed using wallet balance!");
+      const msg = "Success: Order placed using your credit line!";
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert("Success", msg);
+
       router.replace("/(tabs)");
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      console.error("Loan payment failed:", e);
+      const errorMsg = `Order failed: ${e.message}`;
+      if (Platform.OS === 'web') window.alert(errorMsg);
+      else Alert.alert("Error", errorMsg);
     } finally {
       setLoading(false);
     }
@@ -66,27 +101,43 @@ export default function CartScreen() {
         items: cart.items,
         payment_method: "momo",
         status: "paid",
-        momo_reference: reference
+        momo_reference: reference,
+        momo_provider: "Paystack"
       });
       await cart.clear();
-      Alert.alert("Success", "Order placed successfully!");
+
+      const msg = "Success: Order placed successfully!";
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert("Success", msg);
+
       router.replace("/(tabs)");
     } catch (e: any) {
-      Alert.alert("Critical Error", "Payment received but order failed to save. Contact support.");
+      console.error("Paystack order save failed:", e);
+      const msg = `Order failed to save: ${e.message}. Please contact support.`;
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert("Error", msg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleWebPayment = () => {
-    Alert.alert(
-      "Web Simulation",
-      "Paystack WebView is not supported on browsers. Simulate success?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Simulate", onPress: () => handlePaystackSuccess("WEB-ORDER-" + Math.random().toString(36).substr(2, 9).toUpperCase()) }
-      ]
-    );
+    if (window.confirm("Simulate a successful Paystack payment?")) {
+      handlePaystackSuccess("WEB-ORDER-" + Math.random().toString(36).substring(2, 9).toUpperCase());
+    }
+  };
+
+  const handleClearCart = async () => {
+    try {
+      await cart.clear();
+      if (Platform.OS === 'web') {
+        window.alert("Cart has been cleared.");
+      } else {
+        Alert.alert("Success", "Cart has been cleared.");
+      }
+    } catch (e) {
+      console.error("Failed to clear cart:", e);
+    }
   };
 
   return (
@@ -96,11 +147,16 @@ export default function CartScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.navBtn}>
             <ArrowLeft size={20} color="#FFF" />
           </TouchableOpacity>
-        )
+        ),
+        headerRight: () => cart.items.length > 0 ? (
+          <TouchableOpacity onPress={handleClearCart} style={[styles.navBtn, { marginRight: 16 }]}>
+            <Trash2 size={20} color="#ef4444" />
+          </TouchableOpacity>
+        ) : null
       }} />
 
       {showPaystack && Platform.OS !== 'web' && (
-        <View style={StyleSheet.absoluteFill}>
+        <View style={StyleSheet.absoluteFillObject}>
           <Paystack
             paystackKey={PAYSTACK_KEY}
             amount={total * 100}
@@ -112,7 +168,10 @@ export default function CartScreen() {
         </View>
       )}
 
-      <ScrollView contentContainerStyle={{ paddingTop: 100, paddingBottom: 40, paddingHorizontal: 24 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: 100, paddingBottom: 40, paddingHorizontal: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <PremiumHeader title="Checkout" subtitle={`${cart.items.length} Items Selected`} />
 
         {cart.items.length === 0 ? (
@@ -123,49 +182,62 @@ export default function CartScreen() {
           </View>
         ) : (
           <View>
-            {cart.items.map((item) => (
-              <Card key={item.product_id} style={styles.itemCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>GH₵ {item.price} x {item.qty}</Text>
-                </View>
-                <TouchableOpacity onPress={() => cart.remove(item.product_id)}>
-                  <Trash2 size={18} color="#ef4444" opacity={0.6} />
+            <View className="flex-row justify-between items-center mb-4 px-2">
+                <Text className="text-white/40 font-bold uppercase text-[10px] tracking-widest">Items in Cart</Text>
+                <TouchableOpacity onPress={handleClearCart}>
+                    <Text className="text-red-500/60 text-xs font-bold">Clear All</Text>
                 </TouchableOpacity>
+            </View>
+
+            {cart.items.map((item) => (
+              <Card key={item.product_id} className="mb-3 p-0">
+                <View className="flex-row items-center p-4">
+                  <View style={{ flex: 1 }}>
+                    <Text className="text-white font-bold">{item.name}</Text>
+                    <Text className="text-white/40 text-xs mt-1">GH₵ {item.price} x {item.qty}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => cart.remove(item.product_id)} hitSlop={15}>
+                    <Trash2 size={18} color="#ef4444" opacity={0.6} />
+                  </TouchableOpacity>
+                </View>
               </Card>
             ))}
 
-            <Card glass style={styles.summaryCard}>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Grand Total</Text>
-                <Text style={styles.totalValue}>GH₵ {total.toLocaleString()}</Text>
+            <Card className="mt-6 p-6">
+              <View className="flex-row justify-between items-center border-b border-white/5 pb-4 mb-6">
+                <Text className="text-white/60 font-bold">Grand Total</Text>
+                <Text className="text-gold font-bold text-2xl">GH₵ {total.toLocaleString()}</Text>
               </View>
 
               <View style={{ gap: 12 }}>
-                <TouchableOpacity onPress={handleWalletPayment} disabled={loading} style={styles.walletBtn}>
-                  <Wallet size={20} color="#10b981" />
-                  <View>
-                    <Text style={styles.btnTitle}>Pay with Wallet</Text>
-                    <Text style={styles.btnSub}>Balance: GH₵ {profile?.wallet_balance || '0.00'}</Text>
-                  </View>
-                </TouchableOpacity>
+                {activeLoan && (
+                   <Button variant="outline" onPress={handleLoanPayment} loading={loading} style={{ borderColor: '#f59e0b40', height: 70 }}>
+                      <View className="flex-row items-center gap-4">
+                        <Banknote size={20} color="#f59e0b" />
+                        <View>
+                          <Text className="text-white font-bold text-sm">Pay with Credit</Text>
+                          <Text className="text-[#f59e0b] text-[10px] font-black uppercase">Active Loan Facility</Text>
+                        </View>
+                      </View>
+                   </Button>
+                )}
 
-                <TouchableOpacity
-                  onPress={() => {
-                    if (Platform.OS === 'web') {
-                      handleWebPayment();
-                    } else {
-                      setShowPaystack(true);
-                    }
-                  }}
-                  disabled={loading}
-                  style={styles.paystackBtn}
-                >
-                  <CreditCard size={20} color="#0d1310" />
-                  <Text style={styles.paystackBtnText}>
-                    {Platform.OS === 'web' ? "Simulate Paystack" : "Pay with Paystack"}
-                  </Text>
-                </TouchableOpacity>
+                <Button variant="outline" onPress={handleWalletPayment} loading={loading} style={{ height: 70 }}>
+                  <View className="flex-row items-center gap-4">
+                    <Wallet size={20} color="#10b981" />
+                    <View>
+                      <Text className="text-white font-bold text-sm">Pay with Wallet</Text>
+                      <Text className="text-primary text-[10px] font-black uppercase">Balance: GH₵ {profile?.wallet_balance || '0.00'}</Text>
+                    </View>
+                  </View>
+                </Button>
+
+                <Button
+                  title={Platform.OS === 'web' ? "Simulate Paystack" : "Pay with Paystack"}
+                  onPress={() => Platform.OS === 'web' ? handleWebPayment() : setShowPaystack(true)}
+                  loading={loading}
+                  style={{ height: 60 }}
+                />
               </View>
             </Card>
           </View>
@@ -176,19 +248,7 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  navBtn: { marginLeft: 16, height: 44, width: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  navBtn: { height: 44, width: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   emptyContainer: { alignItems: 'center', paddingVertical: 80, opacity: 0.5 },
   emptyText: { color: 'white', fontFamily: 'Display-Bold', marginTop: 16 },
-  itemCard: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 16 },
-  itemName: { color: 'white', fontWeight: 'bold' },
-  itemPrice: { color: '#7d8a84', fontSize: 12, marginTop: 4 },
-  summaryCard: { marginTop: 24, padding: 24, borderColor: 'rgba(16,185,129,0.2)' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 16, marginBottom: 20 },
-  totalLabel: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  totalValue: { fontFamily: 'Display-Bold', color: '#f59e0b', fontSize: 24 },
-  walletBtn: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: 16, borderWidth: 1, borderColor: '#10b98130' },
-  btnTitle: { color: 'white', fontWeight: 'bold' },
-  btnSub: { color: '#10b981', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
-  paystackBtn: { height: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#10b981', borderRadius: 16 },
-  paystackBtnText: { fontFamily: 'Display-Bold', color: '#0d1310', textTransform: 'uppercase', fontSize: 12, letterSpacing: 1 }
 });

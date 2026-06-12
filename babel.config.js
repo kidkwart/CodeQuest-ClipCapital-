@@ -6,19 +6,17 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
-      "babel-plugin-transform-import-meta",
-      "react-native-worklets-core/plugin",
-      [
-        "module-resolver",
-        {
-          root: ["./"],
-          alias: {
-            "@": "./src",
-            "react-native-worklets": "react-native-worklets-core",
-          },
-        },
-      ],
-      "react-native-reanimated/plugin", // MUST BE LAST
-    ],
+          "babel-plugin-transform-import-meta",
+          [
+            "module-resolver",
+            {
+              root: ["./"],
+              alias: {
+                "@": "./src"
+              }
+            }
+          ],
+          "react-native-reanimated/plugin" // MUST BE LAST
+        ]
   };
 };
