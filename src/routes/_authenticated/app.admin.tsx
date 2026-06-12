@@ -147,6 +147,12 @@ function OrderQueue() {
               </div>
             </div>
             <div className="text-xl font-display font-black text-primary">GH₵ {Number(o.total).toLocaleString()}</div>
+
+            <div className="text-[10px] bg-muted/30 p-2 rounded border border-border/50">
+              <div className="font-bold text-muted-foreground uppercase text-[8px] mb-1">Payment Reference</div>
+              <div className="font-mono text-primary truncate">{(o as any).momo_reference || "N/A"}</div>
+            </div>
+
             <div className="space-y-1">
               {(o as any).order_items?.map((item: any) => (
                 <div key={item.id} className="text-[11px] flex justify-between text-muted-foreground italic">
@@ -294,10 +300,18 @@ function SusuPayoutQueue() {
               <div className="font-black text-lg text-gold">GH₵ {Number(g.pot).toLocaleString()}</div>
             </div>
           </div>
+
+          <div className="bg-white/50 p-2 rounded-lg border border-gold/10 mb-3 text-[10px]">
+            <div className="flex items-center gap-1.5 text-gold font-bold uppercase text-[8px] mb-1">
+              <Check className="w-3 h-3" /> Ready for next member
+            </div>
+            <p className="text-muted-foreground leading-tight italic">Verify the next recipient and their MoMo details by clicking Review below.</p>
+          </div>
+
           <div className="flex items-center justify-between pt-3 border-t border-gold/10">
             <div className="text-[10px] font-medium text-muted-foreground">{g.members_count} Members · {g.frequency}</div>
             <Button size="sm" variant="outline" className="h-8 text-[10px] border-gold/30 text-gold hover:bg-gold hover:text-white" asChild>
-              <Link to="/app/susu/$groupId" params={{ groupId: g.id }}>Review Payout →</Link>
+              <Link to="/app/susu/$groupId" params={{ groupId: g.id }}>Review Recipient →</Link>
             </Button>
           </div>
         </Card>
@@ -337,6 +351,27 @@ function LoanQueue() {
                 <div className="mt-3 text-xs p-2 bg-muted/30 rounded border border-border/50">
                   <span className="text-muted-foreground font-bold">Purpose:</span> {l.purpose}
                 </div>
+
+                {profile?.account_number && (
+                  <div className="mt-3 p-2 bg-emerald-500/5 rounded-lg border border-emerald-500/10 text-[10px]">
+                    <div className="font-bold text-emerald-700 uppercase text-[8px] mb-1">Disbursement Destination</div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-emerald-800">{profile.bank_name}: {profile.account_number}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 px-1.5 text-[8px] font-black border border-emerald-500/20"
+                        onClick={() => {
+                          navigator.clipboard.writeText(profile.account_number);
+                          toast.success("Account copied");
+                        }}
+                      >
+                        Copy
+                      </Button>
+                    </div>
+                    <div className="text-emerald-600/70 italic truncate mt-0.5">{profile.account_name}</div>
+                  </div>
+                )}
               </div>
             </div>
             {l.status === "pending" && (
