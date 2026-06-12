@@ -578,7 +578,7 @@ export function useReviewLoan() {
       const { error } = await supabase.from("loan_applications").update({
         status: v.status,
         decision_note: v.decision_note,
-        interest_rate: v.interest_rate ?? 5.0,
+        interest_rate: v.interest_rate ?? 15.0,
         reviewed_by: user!.id,
         reviewed_at: new Date().toISOString(),
         disbursed_at: v.status === "approved" ? new Date().toISOString() : null,

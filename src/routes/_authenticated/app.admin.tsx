@@ -391,10 +391,10 @@ function LoanQueue() {
                     <Label className="text-[10px] font-bold">Interest (%)</Label>
                     <Input
                       type="number"
-                      placeholder="5.0"
+                      placeholder="15.0"
                       step="0.1"
                       className="h-8 text-xs"
-                      value={interestById[l.id] ?? "5.0"}
+                      value={interestById[l.id] ?? "15.0"}
                       onChange={(e) => setInterestById({ ...interestById, [l.id]: e.target.value })}
                     />
                   </div>
@@ -420,7 +420,7 @@ function LoanQueue() {
                           id: l.id,
                           status: "approved",
                           decision_note: noteById[l.id] ?? "",
-                          interest_rate: Number(interestById[l.id] ?? 5.0)
+                          interest_rate: Number(interestById[l.id] ?? 15.0)
                         });
                         toast.promise(promise, {
                           loading: 'Processing MoMo Payout...',
