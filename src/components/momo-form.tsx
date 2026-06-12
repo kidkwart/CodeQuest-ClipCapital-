@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -79,7 +79,7 @@ export function useMomo(initial?: Partial<MomoValue>) {
   return [v, set] as const;
 }
 
-export function MomoButton({ disabled, loading, children }: { disabled?: boolean; loading?: boolean; children: React.ReactNode }) {
+export function MomoButton({ disabled, loading, children }: { disabled?: boolean; loading?: boolean; children: ReactNode }) {
   return (
     <Button type="submit" disabled={disabled || loading} className="w-full h-12 rounded-xl font-bold shadow-lg shadow-primary/20">
       {loading ? "Processing..." : children}

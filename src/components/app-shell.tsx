@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History, Settings, MessageCircle, X, ArrowDownToLine
+  LucideIcon, LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History, Settings, MessageCircle, X, ArrowDownToLine
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,7 @@ import { NotificationTray } from "./notification-tray";
 
 import logoImg from "@/assets/logo.svg";
 
-type NavItem = { to: string; label: string; icon: any; exact?: boolean };
+type NavItem = { to: string; label: string; icon: LucideIcon; exact?: boolean };
 const baseNav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/income", label: "Income", icon: TrendingUp },
@@ -91,7 +91,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             return (
               <Link
                 key={item.to}
-                to={item.to}
+                to={item.to as any}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                   active ? "bg-primary text-white font-bold shadow-md shadow-primary/20" : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground"

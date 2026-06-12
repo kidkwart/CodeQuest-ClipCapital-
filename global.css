@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Exact PWA Luxury Palette */
+    --background: #080c0a;    /* Absolute Midnight Emerald */
+    --foreground: #fcfcfc;    /* Silk White */
+    --primary: #10b981;       /* Neon Emerald */
+    --gold: #f59e0b;          /* Pure Kente Gold */
+    --surface: #0f1714;       /* Deep Charcoal Card */
+    --border: rgba(16, 185, 129, 0.2); /* Glowing Emerald Border */
+  }
+}
+
+/* Force the body background for web preview */
+body {
+  background-color: #080c0a !important;
+  color: #fcfcfc !important;
+}

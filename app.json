@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "ClipCapital",
+    "slug": "clipcapital",
+    "scheme": "clipcapital",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#10B981"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.clipcapital.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.clipcapital.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#10B981"
+      }
+    },
+    "web": {
+      "favicon": "./public/favicon.png",
+      "bundler": "metro"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e4982c14-7a20-40ed-9e2a-de8c05b0b88a"
+      }
+    }
+  }
+}
