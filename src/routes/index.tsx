@@ -27,6 +27,17 @@ const pillars = [
   { icon: "🛒", name: "Shop supplies", desc: "Buy clippers, shampoo, towels from vetted local vendors directly in the app." },
 ];
 
+const testimonials = [
+  { name: "Kwame Osei", shop: "Classic Cuts Osu", text: "ClipCapital helped me buy two new clippers when my old ones broke. The Susu payouts are always on time!", rating: 5 },
+  { name: "Abena Mensah", shop: "Beauty Haven Kumasi", text: "I used to track everything on paper. Now I can see my profits instantly and my ClipScore is rising!", rating: 5 },
+];
+
+const steps = [
+  { step: "01", title: "Sign Up", desc: "Create your profile in 30 seconds using just your email and phone." },
+  { step: "02", title: "Log Income", desc: "Record your daily shop earnings to build your digital financial identity." },
+  { step: "03", title: "Grow Score", desc: "As your ClipScore rises, you unlock larger loans and exclusive market deals." },
+];
+
 function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -119,6 +130,43 @@ function LandingPage() {
               <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="py-20 max-w-6xl mx-auto px-6">
+        <h2 className="text-3xl md:text-4xl font-display font-bold mb-3 text-center">How it works</h2>
+        <p className="text-muted-foreground mb-12 text-center max-w-xl mx-auto">Three simple steps to unlock your shop's full potential.</p>
+        <div className="grid md:grid-cols-3 gap-8">
+          {steps.map((s) => (
+            <div key={s.step} className="relative p-8 rounded-3xl bg-surface border border-border overflow-hidden">
+              <div className="text-6xl font-display font-black text-primary/10 absolute -top-2 -right-2">{s.step}</div>
+              <h3 className="text-xl font-display font-bold mb-3 relative z-10">{s.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed relative z-10">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="py-20 bg-primary/5 border-y border-primary/10">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-10">Trusted by artisans</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            {testimonials.map((t) => (
+              <Card key={t.name} className="p-8">
+                <div className="flex gap-1 text-gold mb-4">
+                  {Array.from({ length: t.rating }).map((_, i) => <Zap key={i} className="w-4 h-4 fill-current" />)}
+                </div>
+                <p className="text-lg font-medium mb-6 italic text-foreground">"{t.text}"</p>
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">{t.name[0]}</div>
+                  <div>
+                    <div className="font-bold">{t.name}</div>
+                    <div className="text-xs text-muted-foreground uppercase font-black tracking-widest">{t.shop}</div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
 

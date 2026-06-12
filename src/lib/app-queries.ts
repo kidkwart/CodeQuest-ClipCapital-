@@ -31,6 +31,7 @@ export function useUpdateProfile() {
       bank_name?: string;
       account_number?: string;
       account_name?: string;
+      wallet_balance?: number;
     }) => {
       const { error } = await supabase.from("profiles").update(v).eq("id", user!.id);
       if (error) throw error;
@@ -243,15 +244,24 @@ export function useAddIncome() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Authentication required to log income");
 
+      // 1. Log the entry
       const { error } = await supabase.from("income_entries").insert({
         ...v,
         user_id: user.id
       });
       if (error) throw error;
+
+      // 2. Update wallet balance
+      const { data: p } = await supabase.from("profiles").select("wallet_balance").eq("id", user.id).single();
+      const { error: uErr } = await supabase.from("profiles")
+        .update({ wallet_balance: Number(p?.wallet_balance || 0) + v.amount })
+        .eq("id", user.id);
+      if (uErr) throw uErr;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["income"] });
-      qc.invalidateQueries({ queryKey: ["profile"] }); // Refresh score
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["recent-activity"] });
     },
   });
 }
@@ -287,10 +297,22 @@ export function useAddExpense() {
   const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (v: { amount: number; category: string; note: string; entry_date: string }) => {
+      // 1. Log the entry
       const { error } = await supabase.from("expense_entries").insert({ ...v, user_id: user!.id });
       if (error) throw error;
+
+      // 2. Update wallet balance (deduct)
+      const { data: p } = await supabase.from("profiles").select("wallet_balance").eq("id", user!.id).single();
+      const { error: uErr } = await supabase.from("profiles")
+        .update({ wallet_balance: Number(p?.wallet_balance || 0) - v.amount })
+        .eq("id", user!.id);
+      if (uErr) throw uErr;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["expenses"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
+      qc.invalidateQueries({ queryKey: ["recent-activity"] });
+    },
   });
 }
 

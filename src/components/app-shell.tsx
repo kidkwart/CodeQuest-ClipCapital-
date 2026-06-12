@@ -141,7 +141,8 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
 
 export function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl bg-surface border border-border p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="rounded-2xl bg-surface border border-border p-6 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+      <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
       <div className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{label}</div>
       <div className="text-2xl font-display font-black mt-1 text-foreground">{value}</div>
       {hint && <div className="text-[10px] text-muted-foreground mt-2 font-medium bg-muted/50 px-2 py-0.5 rounded-full inline-block">{hint}</div>}
