@@ -10,6 +10,8 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { NotificationTray } from "./notification-tray";
 
+import logoImg from "@/assets/logo.svg";
+
 type NavItem = { to: string; label: string; icon: any; exact?: boolean };
 const baseNav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -50,16 +52,21 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-border bg-surface transform transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="h-20 flex flex-col justify-center px-5 border-b border-border">
-          <Link to="/app" className="font-display font-bold text-lg leading-tight">
-            Clip<span className="text-gradient-gold">Capital</span>
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-border bg-surface transform transition-transform md:translate-x-0 flex flex-col ${open ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="h-24 flex flex-col justify-center px-5 border-b border-border bg-primary/5 shrink-0">
+          <Link to="/app" className="flex items-center gap-3 active:scale-95 transition-transform">
+            <img src={logoImg} alt="ClipCapital Logo" className="w-8 h-8 rounded-lg shadow-sm" />
+            <div className="flex flex-col">
+              <span className="font-display font-bold text-lg leading-tight tracking-tight">
+                Clip<span className="text-primary">Capital</span>
+              </span>
+              <span className="text-[9px] font-black text-primary uppercase tracking-[0.15em] mt-0.5">
+                Finance. Simplified.
+              </span>
+            </div>
           </Link>
-          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter mt-0.5">
-            Finance. Simplified.
-          </div>
         </div>
-        <nav className="p-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
           {nav.map((item) => {
             const Icon = item.icon;
             const active = item.exact
@@ -79,7 +86,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             );
           })}
         </nav>
-        <div className="absolute bottom-0 inset-x-0 p-3 border-t border-border">
+        <div className="p-3 border-t border-border shrink-0">
           <div className="px-3 py-2 text-xs">
             <div className="font-semibold text-foreground truncate">{profile.data?.display_name || "—"}</div>
             <div className="text-muted-foreground truncate">{profile.data?.business_name || ""}</div>

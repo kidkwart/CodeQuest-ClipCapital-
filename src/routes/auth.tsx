@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Mail, Lock, Building, User as UserIcon, ArrowRight, CheckCircle2, Scissors, ChevronLeft } from "lucide-react";
 
+import logoImg from "@/assets/logo.svg";
+
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
@@ -159,9 +161,7 @@ function AuthPage() {
             <Link to="/" className="group transition-transform active:scale-95">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:bg-primary/30 transition-colors" />
-                <div className="relative bg-primary p-4 rounded-2xl shadow-2xl shadow-primary/20 flex items-center justify-center">
-                  <Scissors className="w-8 h-8 text-white" />
-                </div>
+                <img src={logoImg} alt="ClipCapital" className="relative w-20 h-20 rounded-[28%] shadow-2xl shadow-primary/20" />
               </div>
             </Link>
             <h1 className="mt-6 text-3xl font-display font-extrabold tracking-tight">

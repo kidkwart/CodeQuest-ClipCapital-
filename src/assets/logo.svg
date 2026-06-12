@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded Background Square -->
+  <rect width="512" height="512" rx="120" fill="url(#brandGradient)" />
+
+  <!-- Stylized Clipper / Coin "C" -->
+  <path d="M380 256C380 324.482 324.482 380 256 380C187.518 380 132 324.482 132 256C132 187.518 187.518 132 256 132" stroke="white" stroke-width="48" stroke-linecap="round" />
+
+  <!-- The "Clip" element (Gold highlight) -->
+  <path d="M280 132L380 132L420 232L320 232L280 132Z" fill="url(#goldGradient)" stroke="#92400E" stroke-width="4" />
+
+  <!-- Money/Growth Sparkle -->
+  <circle cx="256" cy="256" r="20" fill="#FBBF24" />
+</svg>

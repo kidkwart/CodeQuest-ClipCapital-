@@ -4,10 +4,10 @@ import { AppShell, Card, EmptyState } from "@/components/app-shell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useJoinGroup, useMyGroups, useAllSusuGroups } from "@/lib/app-queries";
+import { useJoinGroup, useMyGroups, useAllSusuGroups, useCreateGroup } from "@/lib/app-queries";
 import { toast } from "sonner";
-import { Loader2, Users, Wallet, Plus, ChevronRight, Search } from "lucide-react";
-import { motion } from "framer-motion";
+import { Loader2, Users, Wallet, Plus, ChevronRight, Search, ShieldPlus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/app/susu")({
   component: SusuLayout,
@@ -24,7 +24,14 @@ function SusuList() {
   const myGroups = useMyGroups();
   const allGroups = useAllSusuGroups();
   const join = useJoinGroup();
+  const create = useCreateGroup();
+
   const [invite, setInvite] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+
+  const [name, setName] = useState("");
+  const [contribution, setContribution] = useState("");
+  const [frequency, setFrequency] = useState("Weekly");
 
   const myGroupIds = new Set((myGroups.data ?? []).map(g => g.id));
   const availableGroups = (allGroups.data ?? []).filter(g => !myGroupIds.has(g.id));
@@ -35,6 +42,20 @@ function SusuList() {
       toast.success("Joined group successfully!");
     } catch (e) {
       toast.error("Failed to join: " + (e as Error).message);
+    }
+  }
+
+  async function onCreate(e: React.FormEvent) {
+    e.preventDefault();
+    const amount = Number(contribution);
+    if (!name.trim() || !amount) { toast.error("Name and contribution required"); return; }
+    try {
+      await create.mutateAsync({ name, contribution: amount, frequency });
+      setName(""); setContribution(""); setShowCreate(false);
+      toast.success("Susu Circle created successfully!");
+    }
+    catch (e) {
+      toast.error("Failed to create circle: " + (e as Error).message);
     }
   }
 
@@ -49,14 +70,60 @@ function SusuList() {
     <AppShell title="Susu Savings Groups">
       {/* Top Banner */}
       <div className="bg-primary rounded-3xl p-6 mb-8 text-white relative overflow-hidden shadow-xl shadow-primary/20">
-        <div className="relative z-10">
-          <h2 className="text-2xl font-display font-black mb-2">Join a Savings Circle</h2>
-          <p className="text-primary-foreground/80 text-sm max-w-md font-medium leading-relaxed">
-            Save with fellow professionals and get a large lump sum payout when it's your turn. Safe, secure, and automated.
-          </p>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex-1">
+            <h2 className="text-2xl font-display font-black mb-2">Savings Circles</h2>
+            <p className="text-primary-foreground/80 text-sm max-w-md font-medium leading-relaxed">
+              Join professional circles or start your own private Susu with friends. Safe, secure, and automated payouts.
+            </p>
+          </div>
+          <Button
+            onClick={() => setShowCreate(!showCreate)}
+            className="bg-white text-primary hover:bg-white/90 font-black uppercase text-[11px] tracking-widest px-6 h-11 rounded-2xl shadow-xl active:scale-95 transition-all gap-2"
+          >
+            <ShieldPlus className="w-4 h-4" />
+            {showCreate ? "Close Form" : "Start New Circle"}
+          </Button>
         </div>
         <Users className="absolute -right-4 -bottom-4 w-40 h-40 text-white/10 rotate-12" />
       </div>
+
+      <AnimatePresence>
+        {showCreate && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+            animate={{ height: 'auto', opacity: 1, marginBottom: 32 }}
+            exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+            className="overflow-hidden"
+          >
+            <Card className="border-primary/20 bg-primary/5">
+              <h3 className="font-display font-black text-sm uppercase tracking-tight mb-4 text-primary">New Savings Circle</h3>
+              <form onSubmit={onCreate} className="grid md:grid-cols-4 gap-4 items-end">
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-bold uppercase ml-1">Circle Name</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. My Private Susu" className="h-11 bg-background" required />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-bold uppercase ml-1">Contribution (GH₵)</Label>
+                  <Input type="number" min="1" value={contribution} onChange={(e) => setContribution(e.target.value)} placeholder="50" className="h-11 bg-background" required />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-bold uppercase ml-1">Frequency</Label>
+                  <select value={frequency} onChange={(e) => setFrequency(e.target.value)}
+                    className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm font-bold focus:ring-1 focus:ring-primary outline-none">
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                    <option value="Monthly">Monthly</option>
+                  </select>
+                </div>
+                <Button type="submit" disabled={create.isPending} className="h-11 font-black uppercase text-[11px] tracking-widest">
+                  {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm & Create"}
+                </Button>
+              </form>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Left Column: My Groups */}

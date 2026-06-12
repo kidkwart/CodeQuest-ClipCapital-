@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ClipScoreGauge } from "@/components/clip-score-gauge";
 import heroImg from "@/assets/hero-barber.jpg";
+import logoImg from "@/assets/logo.svg";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -30,9 +31,12 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="fixed top-0 inset-x-0 z-40 backdrop-blur bg-background/70 border-b border-border/40">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="font-display font-bold text-lg">
-            Clip<span className="text-gradient-gold">Capital</span>
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 group active:scale-95 transition-transform">
+            <img src={logoImg} alt="ClipCapital Logo" className="w-8 h-8 rounded-lg" />
+            <span className="font-display font-bold text-lg">
+              Clip<span className="text-gradient-gold">Capital</span>
+            </span>
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground">Sign in</Link>
