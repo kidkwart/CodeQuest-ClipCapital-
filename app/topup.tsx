@@ -7,6 +7,7 @@ import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, ShieldCheck, CheckCircle2, FlaskConical, Zap, ChevronRight } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 // Defensive import for Paystack
 let Paystack: any = null;
@@ -18,6 +19,7 @@ try {
 
 export default function TopUpScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile, refetch: refetchProfile } = useProfile();
   const deposit = useDeposit();
 
@@ -95,33 +97,33 @@ export default function TopUpScreen() {
 
   if (success) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
         <LinearGradient
           colors={['#10b981', '#064e3b']}
           style={styles.successIconCircle}
         >
           <CheckCircle2 size={48} color="#000" strokeWidth={2.5} />
         </LinearGradient>
-        <Text style={styles.successTitle}>Protocol Complete</Text>
-        <Text style={styles.successSub}>GH₵ {parseFloat(amount).toLocaleString()} has been added to your vault.</Text>
-        <BouncyTap style={styles.returnBtn} onPress={() => router.replace("/(tabs)/wallet")}>
-          <Text style={styles.returnBtnText}>RETURN TO VAULT</Text>
+        <Text style={[styles.successTitle, { color: colors.text }]}>Protocol Complete</Text>
+        <Text style={[styles.successSub, { color: colors.textMuted }]}>GH₵ {parseFloat(amount).toLocaleString()} has been added to your vault.</Text>
+        <BouncyTap style={[styles.returnBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]} onPress={() => router.replace("/(tabs)/wallet")}>
+          <Text style={[styles.returnBtnText, { color: colors.text }]}>RETURN TO VAULT</Text>
         </BouncyTap>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {showPaystack && Paystack && (
-        <View style={[StyleSheet.absoluteFill, { zIndex: 9999, backgroundColor: '#080c0a' }]}>
+        <View style={[StyleSheet.absoluteFill, { zIndex: 9999, backgroundColor: colors.background }]}>
           <Paystack
             paystackKey={PAYSTACK_KEY}
             amount={parseFloat(amount.replace(/[^0-9.]/g, '')) * 100}
             billingEmail={profile?.email || "customer@clipcapital.com"}
-            activityIndicatorColor="#10b981"
+            activityIndicatorColor={colors.primary}
             onCancel={() => setShowPaystack(false)}
             onSuccess={(res: any) => handleSuccess(res.transactionRef.reference)}
             autoStart={true}
@@ -130,9 +132,9 @@ export default function TopUpScreen() {
       )}
 
       {isProcessing && (
-        <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#10b981" />
-          <Text style={styles.overlayText}>SYNCING VAULT...</Text>
+        <View style={[styles.overlay, { backgroundColor: theme === 'dark' ? 'rgba(8,12,10,0.95)' : 'rgba(255,255,255,0.95)' }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.overlayText, { color: colors.primary }]}>SYNCING VAULT...</Text>
         </View>
       )}
 
@@ -142,37 +144,37 @@ export default function TopUpScreen() {
           keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
         >
-          <BouncyTap onPress={() => router.back()} style={styles.backBtn}>
-            <ArrowLeft size={20} color="#FFF" />
+          <BouncyTap onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
 
           <PremiumHeader title="Add Funds" subtitle="Capital Injection" />
 
           <LinearGradient
-            colors={['#1e2923', '#0f1714']}
-            style={styles.vaultCard}
+            colors={theme === 'dark' ? ['#1e2923', '#0f1714'] : ['#ffffff', '#f1f5f9']}
+            style={[styles.vaultCard, { borderColor: colors.border }]}
           >
             <View style={styles.vaultHeader}>
-              <Text style={styles.smallLabel}>CURRENT LIQUIDITY</Text>
-              <Zap size={14} color="#f59e0b" fill="#f59e0b" />
+              <Text style={[styles.smallLabel, { color: colors.textMuted }]}>CURRENT LIQUIDITY</Text>
+              <Zap size={14} color={colors.gold} fill={colors.gold} />
             </View>
-            <Text style={styles.balanceValue}>GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
+            <Text style={[styles.balanceValue, { color: colors.text }]}>GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
           </LinearGradient>
 
           <View style={styles.inputSection}>
-            <Text style={styles.label}>TRANSACTION AMOUNT (GHS)</Text>
-            <View style={styles.inputWrapper}>
+            <Text style={[styles.label, { color: colors.textDim }]}>TRANSACTION AMOUNT (GHS)</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 placeholder="0.00"
-                placeholderTextColor="#405045"
+                placeholderTextColor={colors.textDim}
                 value={amount}
                 onChangeText={setAmount}
                 keyboardType="numeric"
-                selectionColor="#10b981"
+                selectionColor={colors.primary}
               />
-              <View style={styles.currencyBadge}>
-                <Text style={styles.currencyText}>CEDIS</Text>
+              <View style={[styles.currencyBadge, { backgroundColor: colors.primary + '10' }]}>
+                <Text style={[styles.currencyText, { color: colors.primary }]}>CEDIS</Text>
               </View>
             </View>
           </View>

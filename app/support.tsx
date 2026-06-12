@@ -13,9 +13,11 @@ import { BlurView } from 'expo-blur';
 import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/theme-context";
 
 export default function SupportScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: messages, isLoading } = useMyMessages();
   const sendMessage = useSendMessageToAdmin();
   const [text, setText] = useState("");
@@ -60,7 +62,7 @@ export default function SupportScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <View style={{ flex: 1 }}>
         <Stack.Screen options={{
@@ -68,8 +70,8 @@ export default function SupportScreen() {
           title: "",
           headerTransparent: true,
           headerLeft: () => (
-            <BouncyTap onPress={() => router.back()} style={styles.headerBtn}>
-              <ArrowLeft size={20} color="#fcfcfc" />
+            <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              <ArrowLeft size={20} color={colors.text} />
             </BouncyTap>
           )
         }} />
@@ -89,27 +91,27 @@ export default function SupportScreen() {
             <View style={styles.channelRow}>
                <BouncyTap onPress={openWhatsApp} style={{ flex: 1 }}>
                   <LinearGradient
-                    colors={['#1a241f', '#0d1310']}
-                    style={styles.channelCard}
+                    colors={theme === 'dark' ? ['#1a241f', '#0d1310'] : ['#ffffff', '#f1f5f9']}
+                    style={[styles.channelCard, { borderColor: colors.border }]}
                   >
                      <View style={[styles.channelIconBox, { backgroundColor: '#25D366' }]}>
                         <MessageCircle size={20} color="#000" strokeWidth={2.5} />
                      </View>
-                     <Text style={styles.channelTitle}>WhatsApp</Text>
-                     <Text style={styles.channelStatus}>ONLINE</Text>
+                     <Text style={[styles.channelTitle, { color: colors.text }]}>WhatsApp</Text>
+                     <Text style={[styles.channelStatus, { color: colors.primary }]}>ONLINE</Text>
                   </LinearGradient>
                </BouncyTap>
 
                <BouncyTap onPress={() => {}} style={{ flex: 1 }}>
                   <LinearGradient
-                    colors={['#1a241f', '#0d1310']}
-                    style={styles.channelCard}
+                    colors={theme === 'dark' ? ['#1a241f', '#0d1310'] : ['#ffffff', '#f1f5f9']}
+                    style={[styles.channelCard, { borderColor: colors.border }]}
                   >
-                     <View style={[styles.channelIconBox, { backgroundColor: '#10b981' }]}>
+                     <View style={[styles.channelIconBox, { backgroundColor: colors.primary }]}>
                         <Smartphone size={20} color="#000" strokeWidth={2.5} />
                      </View>
-                     <Text style={styles.channelTitle}>Direct Call</Text>
-                     <Text style={styles.channelStatus}>24/7</Text>
+                     <Text style={[styles.channelTitle, { color: colors.text }]}>Direct Call</Text>
+                     <Text style={[styles.channelStatus, { color: colors.primary }]}>24/7</Text>
                   </LinearGradient>
                </BouncyTap>
             </View>
@@ -117,22 +119,22 @@ export default function SupportScreen() {
             {/* Chat Interface */}
             <View style={styles.chatSection}>
               <View style={styles.chatDivider}>
-                <View style={styles.dividerLine} />
-                <View style={styles.dividerBadge}>
-                   <ShieldCheck size={12} color="#10b981" />
-                   <Text style={styles.dividerText}>SECURE PROTOCOL</Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                <View style={[styles.dividerBadge, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '15' }]}>
+                   <ShieldCheck size={12} color={colors.primary} />
+                   <Text style={[styles.dividerText, { color: colors.primary }]}>SECURE PROTOCOL</Text>
                 </View>
-                <View style={styles.dividerLine} />
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
               </View>
 
               {isLoading ? (
                 <View style={{ paddingVertical: 60 }}>
-                  <ActivityIndicator color="#10b981" />
+                  <ActivityIndicator color={colors.primary} />
                 </View>
               ) : (messages ?? []).length === 0 ? (
                 <Animated.View entering={FadeInUp} style={styles.emptyChat}>
-                  <HelpCircle size={40} color="#1a211e" />
-                  <Text style={styles.emptyText}>Inquire with the Command Center for institutional support.</Text>
+                  <HelpCircle size={40} color={colors.textDim} />
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>Inquire with the Command Center for institutional support.</Text>
                 </Animated.View>
               ) : (
                 <View style={{ paddingBottom: 120 }}>
@@ -143,11 +145,11 @@ export default function SupportScreen() {
                       layout={Layout.springify()}
                       style={[styles.msgWrapper, m.is_from_admin ? styles.msgAdmin : styles.msgUser]}
                     >
-                      <View style={[styles.msgBubble, m.is_from_admin ? styles.bubbleAdmin : styles.bubbleUser]}>
-                        <Text style={[styles.msgText, m.is_from_admin ? styles.textAdmin : styles.textUser]}>{m.message}</Text>
+                      <View style={[styles.msgBubble, m.is_from_admin ? [styles.bubbleAdmin, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }] : [styles.bubbleUser, { backgroundColor: colors.primary }]]}>
+                        <Text style={[styles.msgText, m.is_from_admin ? { color: colors.text } : { color: '#0d1310', fontWeight: 'bold' }]}>{m.message}</Text>
                       </View>
                       <View style={styles.msgMeta}>
-                         <Text style={[styles.msgTime, m.is_from_admin ? { textAlign: 'left' } : { textAlign: 'right' }]}>
+                         <Text style={[styles.msgTime, { color: colors.textDim }, m.is_from_admin ? { textAlign: 'left' } : { textAlign: 'right' }]}>
                            {m.is_from_admin ? 'INSTITUTIONAL AGENT' : 'VERIFIED MERCHANT'} · {format(new Date(m.created_at), "h:mm a")}
                          </Text>
                       </View>
@@ -160,17 +162,17 @@ export default function SupportScreen() {
         </ScrollView>
 
         {/* Premium Input Bar */}
-        <View style={styles.inputBarContainer}>
-           <BlurView intensity={Platform.OS === 'ios' ? 90 : 100} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={[styles.inputBarContainer, { borderColor: colors.border }]}>
+           <BlurView intensity={Platform.OS === 'ios' ? 90 : 100} tint={theme} style={StyleSheet.absoluteFill} />
            <View style={styles.inputBarInner}>
               <View style={styles.inputWrapper}>
                 <TextInput
                   value={text}
                   onChangeText={setText}
                   placeholder="Initiate private inquiry..."
-                  placeholderTextColor="#405045"
-                  style={styles.input}
-                  selectionColor="#10b981"
+                  placeholderTextColor={colors.textDim}
+                  style={[styles.input, { color: colors.text }]}
+                  selectionColor={colors.primary}
                   multiline
                 />
               </View>
@@ -180,7 +182,7 @@ export default function SupportScreen() {
                 style={[styles.sendBtn, !text.trim() && { opacity: 0.3 }]}
               >
                 <LinearGradient
-                  colors={['#10b981', '#059669']}
+                  colors={[colors.primary, colors.primary + 'cc']}
                   style={styles.sendBtnGradient}
                 >
                    <Send size={20} color="#080c0a" strokeWidth={2.5} />

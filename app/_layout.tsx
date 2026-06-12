@@ -14,7 +14,7 @@ import { useSystemSettings, useMyRoles } from "@/lib/app-queries";
 import { ShieldAlert, RefreshCw } from "lucide-react-native";
 import { BouncyTap } from '@/components/native/bouncy-tap';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ThemeProvider } from "@/context/theme-context";
+import { ThemeProvider, useTheme } from "@/context/theme-context";
 
 const queryClient = new QueryClient();
 
@@ -42,17 +42,24 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <StatusBar barStyle="light-content" />
-        <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
-          <KenteBackground />
-          <ThemeProvider>
-            <MaintenanceGuard>
-              <AuthGuard />
-            </MaintenanceGuard>
-          </ThemeProvider>
-        </View>
+        <ThemeProvider>
+          <KenteBackgroundWrapper />
+        </ThemeProvider>
       </SafeAreaProvider>
     </QueryClientProvider>
+  );
+}
+
+function KenteBackgroundWrapper() {
+  const { colors, theme } = useTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar barStyle={theme === 'dark' ? "light-content" : "dark-content"} />
+      <KenteBackground />
+      <MaintenanceGuard>
+        <AuthGuard />
+      </MaintenanceGuard>
+    </View>
   );
 }
 
@@ -104,7 +111,7 @@ function AuthGuard() {
 
   if (!isReady || loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 100 : 0 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 100 : 0 }}>
         <ActivityIndicator size="large" color="#10b981" />
         <Text style={{ color: 'gray', marginTop: 10, fontSize: 10, letterSpacing: 2 }}>SECURE GATEWAY...</Text>
       </View>
@@ -131,6 +138,7 @@ function AuthGuard() {
 }
 
 function MaintenanceGuard({ children }: { children: React.ReactNode }) {
+  const { colors, theme } = useTheme();
   const { settings } = useSystemSettings();
   const { user } = useCurrentUser();
   const roles = useMyRoles();
@@ -141,22 +149,22 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   // If maintenance is ON and user is NOT an admin, block access
   if (isMaintenanceActive && !isAdmin) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
          <LinearGradient
-            colors={['#10b981', '#064e3b']}
-            style={{ width: 100, height: 100, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 32, shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 20 }}
+            colors={[colors.primary, theme === 'dark' ? '#064e3b' : colors.primary + 'cc']}
+            style={{ width: 100, height: 100, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 32, shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 20 }}
          >
             <ShieldAlert size={48} color="#000" strokeWidth={1.5} />
          </LinearGradient>
 
-         <Text style={{ color: 'white', fontFamily: 'Display-Bold', fontSize: 28, textAlign: 'center', marginBottom: 12 }}>Under Lockdown</Text>
-         <Text style={{ color: '#7d8a84', fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 48 }}>
+         <Text style={{ color: colors.text, fontFamily: 'Display-Bold', fontSize: 28, textAlign: 'center', marginBottom: 12 }}>Under Lockdown</Text>
+         <Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 48 }}>
            The ClipCapital vault is currently undergoing an institutional upgrade. All transactions and activities have been suspended for security.
          </Text>
 
-         <BouncyTap onPress={() => settings.refetch()} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-            <RefreshCw size={16} color="#10b981" />
-            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, letterSpacing: 1 }}>CHECK SYSTEM STATUS</Text>
+         <BouncyTap onPress={() => settings.refetch()} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.surfaceElevated, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
+            <RefreshCw size={16} color={colors.primary} />
+            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 12, letterSpacing: 1 }}>CHECK SYSTEM STATUS</Text>
          </BouncyTap>
       </View>
     );

@@ -7,6 +7,7 @@ import { KenteBackground } from "@/components/native/effects/kente-pattern";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Animated, { FadeIn, FadeInDown, Layout, SlideInRight, SlideOutLeft } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/theme-context";
 
 // Optional biometric import
 let LocalAuthentication: any = null;
@@ -15,6 +16,7 @@ try {
 } catch (e) {}
 
 export default function Login() {
+  const { colors, theme } = useTheme();
   const [mode, setMode] = useState<"signin" | "signup" | "2fa">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -179,15 +181,15 @@ export default function Login() {
 
   if (mode === "2fa") {
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <KenteBackground />
             <View style={styles.otpWrapper}>
-                <Animated.View entering={FadeInDown.duration(600)} style={styles.otpSection}>
-                    <View style={styles.shieldIconBox}>
-                        <ShieldAlert size={48} color="#10b981" strokeWidth={1.5} />
+                <Animated.View entering={FadeInDown.duration(600)} style={[styles.otpSection, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                    <View style={[styles.shieldIconBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '20' }]}>
+                        <ShieldAlert size={48} color={colors.primary} strokeWidth={1.5} />
                     </View>
-                    <Text style={styles.otpTitle}>Institutional Gate</Text>
-                    <Text style={styles.otpSub}>Dual-layer security is active. Enter your 4-digit institutional access key.</Text>
+                    <Text style={[styles.otpTitle, { color: colors.text }]}>Institutional Gate</Text>
+                    <Text style={[styles.otpSub, { color: colors.textMuted }]}>Dual-layer security is active. Enter your 4-digit institutional access key.</Text>
 
                     <View style={styles.otpInputRow}>
                         <TextInput
@@ -198,19 +200,19 @@ export default function Login() {
                                 if (t.length === 4) Keyboard.dismiss();
                             }}
                             placeholder="0000"
-                            placeholderTextColor="#405045"
+                            placeholderTextColor={colors.textDim}
                             keyboardType="numeric"
                             secureTextEntry
-                            style={styles.otpInput}
+                            style={[styles.otpInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceElevated }]}
                             autoFocus
                         />
                     </View>
 
                     <BouncyTap onPress={verifyOTP} disabled={loading || otp.length < 4}>
-                        <LinearGradient colors={['#10b981', '#059669']} style={styles.verifyBtn}>
+                        <LinearGradient colors={[colors.primary, theme === 'dark' ? '#059669' : colors.primary + 'cc']} style={styles.verifyBtn}>
                             {loading ? <ActivityIndicator color="#000" /> : (
                                 <View style={styles.btnInner}>
-                                    <Text style={styles.verifyBtnText}>AUTHORIZE ENTRY</Text>
+                                    <Text style={[styles.verifyBtnText, { color: '#000' }]}>AUTHORIZE ENTRY</Text>
                                     <Key size={18} color="#000" />
                                 </View>
                             )}
@@ -218,7 +220,7 @@ export default function Login() {
                     </BouncyTap>
 
                     <TouchableOpacity onPress={() => setMode("signin")} style={{ marginTop: 32 }}>
-                        <Text style={styles.cancelText}>CANCEL SECURITY PROTOCOL</Text>
+                        <Text style={[styles.cancelText, { color: colors.textDim }]}>CANCEL SECURITY PROTOCOL</Text>
                     </TouchableOpacity>
                 </Animated.View>
             </View>
@@ -227,7 +229,7 @@ export default function Login() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KenteBackground />
 
       <ScrollView
@@ -241,35 +243,35 @@ export default function Login() {
           {/* Logo Branding */}
           <Animated.View entering={FadeInDown.duration(800)} style={styles.brandSection}>
             <LinearGradient
-              colors={['#0f1714', '#080c0a']}
-              style={styles.logoBox}
+              colors={theme === 'dark' ? ['#0f1714', '#080c0a'] : ['#ffffff', '#f8fafc']}
+              style={[styles.logoBox, { borderColor: colors.border }]}
             >
-               <Text style={styles.logoText}>
-                 Clip<Text style={{ color: '#10b981' }}>Capital</Text>
+               <Text style={[styles.logoText, { color: colors.text }]}>
+                 Clip<Text style={{ color: colors.primary }}>Capital</Text>
                </Text>
-               <View style={styles.logoGlow} />
+               <View style={[styles.logoGlow, { backgroundColor: colors.primary }]} />
             </LinearGradient>
-            <View style={styles.badgeRow}>
-              <ShieldCheck size={10} color="#10b981" />
-              <Text style={styles.badgeText}>INSTITUTIONAL GRADE SECURITY</Text>
+            <View style={[styles.badgeRow, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '15' }]}>
+              <ShieldCheck size={10} color={colors.primary} />
+              <Text style={[styles.badgeText, { color: colors.primary }]}>INSTITUTIONAL GRADE SECURITY</Text>
             </View>
           </Animated.View>
 
           {/* Tab Switcher */}
-          <Animated.View layout={Layout.springify()} style={styles.tabSwitcher}>
+          <Animated.View layout={Layout.springify()} style={[styles.tabSwitcher, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <TouchableOpacity
               onPress={() => toggleMode("signin")}
               activeOpacity={0.8}
-              style={[styles.tabBtn, mode === "signin" && styles.tabBtnActive]}
+              style={[styles.tabBtn, mode === "signin" && [styles.tabBtnActive, { backgroundColor: colors.primary }]]}
             >
-              <Text style={[styles.tabText, mode === "signin" && styles.tabTextActive]}>SIGN IN</Text>
+              <Text style={[styles.tabText, { color: colors.textMuted }, mode === "signin" && { color: '#000' }]}>SIGN IN</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => toggleMode("signup")}
               activeOpacity={0.8}
-              style={[styles.tabBtn, mode === "signup" && styles.tabBtnActive]}
+              style={[styles.tabBtn, mode === "signup" && [styles.tabBtnActive, { backgroundColor: colors.primary }]]}
             >
-              <Text style={[styles.tabText, mode === "signup" && styles.tabTextActive]}>SIGN UP</Text>
+              <Text style={[styles.tabText, { color: colors.textMuted }, mode === "signup" && { color: '#000' }]}>SIGN UP</Text>
             </TouchableOpacity>
           </Animated.View>
 
@@ -326,17 +328,17 @@ export default function Login() {
                   style={{ flex: 1 }}
                 >
                   <LinearGradient
-                    colors={['#10b981', '#059669']}
+                    colors={[colors.primary, theme === 'dark' ? '#059669' : colors.primary + 'cc']}
                     style={styles.submitBtn}
                   >
                     {loading ? (
                       <ActivityIndicator color="#080c0a" />
                     ) : (
                       <View style={styles.btnInner}>
-                        <Text style={styles.submitBtnText}>
+                        <Text style={[styles.submitBtnText, { color: '#000' }]}>
                           {mode === "signin" ? "AUTHORIZE ENTRY" : "REGISTER VAULT"}
                         </Text>
-                        <ArrowRight size={18} color="#080c0a" strokeWidth={3} />
+                        <ArrowRight size={18} color="#000" strokeWidth={3} />
                       </View>
                     )}
                   </LinearGradient>
@@ -345,17 +347,17 @@ export default function Login() {
                 {mode === "signin" && isBiometricSupported && (
                     <TouchableOpacity
                         onPress={() => handleBiometricAuth(email)}
-                        style={styles.biometricBtn}
+                        style={[styles.biometricBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
                     >
-                        <Fingerprint size={28} color="#10b981" />
+                        <Fingerprint size={28} color={colors.primary} />
                     </TouchableOpacity>
                 )}
             </View>
 
             {mode === "signup" && (
               <Animated.View entering={FadeIn.delay(400)} style={styles.privacyNote}>
-                <Sparkles size={12} color="#f59e0b" />
-                <Text style={styles.privacyText}>
+                <Sparkles size={12} color={colors.gold} />
+                <Text style={[styles.privacyText, { color: colors.textDim }]}>
                   By registering, you agree to our Institutional Terms and Data Governance protocols.
                 </Text>
               </Animated.View>
@@ -363,9 +365,9 @@ export default function Login() {
           </View>
 
           <View style={styles.footer}>
-            <View style={styles.footerBadge}>
-              <View style={styles.pulseDot} />
-              <Text style={styles.footerBadgeText}>
+            <View style={[styles.footerBadge, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+              <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
+              <Text style={[styles.footerBadgeText, { color: colors.textDim }]}>
                 GHANA'S ELITE PARTNER FOR ARTISANS
               </Text>
             </View>
@@ -377,18 +379,19 @@ export default function Login() {
 }
 
 function InputWithIcon({ label, icon: Icon, ...props }: any) {
+  const { colors } = useTheme();
   return (
     <View>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={styles.inputWrapper}>
+      <Text style={[styles.inputLabel, { color: colors.primary }]}>{label}</Text>
+      <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
         <View style={styles.inputIconBox}>
-          <Icon size={18} color="#10B981" />
+          <Icon size={18} color={colors.primary} />
         </View>
         <TextInput
-          placeholderTextColor="#405045"
-          style={styles.textInput}
+          placeholderTextColor={colors.textDim}
+          style={[styles.textInput, { color: colors.text }]}
           autoCapitalize="none"
-          selectionColor="#10b981"
+          selectionColor={colors.primary}
           {...props}
         />
       </View>

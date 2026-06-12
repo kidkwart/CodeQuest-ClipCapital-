@@ -21,9 +21,11 @@ import { cn } from "@/lib/utils";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { LinearGradient } from "expo-linear-gradient";
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const [activeTab, setActiveTab] = useState<"stats" | "loans" | "withdrawals" | "orders" | "circles" | "chat" | "users" | "settings">("stats");
   const { data: stats, isLoading: statsLoading, refetch: refetchStats, isRefetching } = useAdminStats();
 
@@ -34,7 +36,7 @@ export default function AdminDashboard() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, backgroundColor: "#080C0A" }}
+      style={{ flex: 1, backgroundColor: colors.background }}
     >
       <Stack.Screen options={{
         headerShown: true,
@@ -43,10 +45,10 @@ export default function AdminDashboard() {
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/settings")}
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Lucide.ArrowLeft size={20} color="#fff" />
+            <Lucide.ArrowLeft size={20} color={colors.text} />
           </TouchableOpacity>
         )
       }} />
@@ -56,7 +58,7 @@ export default function AdminDashboard() {
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets={true}
         contentContainerStyle={{ paddingTop: 100, paddingBottom: 150 }}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor="#10B981" />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <View className="px-6">
           <PremiumHeader title="Command Center" subtitle="Admin Authority" />
@@ -88,12 +90,13 @@ export default function AdminDashboard() {
 }
 
 function TabItem({ active, label, icon: Icon, onPress }: any) {
+  const { colors } = useTheme();
   return (
     <TouchableOpacity onPress={onPress} className="items-center mr-8">
-      <View className={cn("p-3 rounded-2xl mb-2", active ? "bg-primary" : "bg-white/5")}>
-        <Icon size={20} color={active ? "#000" : "#10B981"} />
+      <View style={{ backgroundColor: active ? colors.primary : colors.surfaceElevated }} className={cn("p-3 rounded-2xl mb-2")}>
+        <Icon size={20} color={active ? "#000" : colors.primary} />
       </View>
-      <Text className={cn("text-[10px] font-bold uppercase tracking-widest", active ? "text-white" : "text-white/40")}>
+      <Text style={{ color: active ? colors.text : colors.textDim }} className={cn("text-[10px] font-bold uppercase tracking-widest")}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -104,7 +107,8 @@ function TabItem({ active, label, icon: Icon, onPress }: any) {
  * COMPONENT: System Health
  */
 function SystemHealth({ stats, loading }: any) {
-  if (loading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+  const { colors } = useTheme();
+  if (loading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   return (
     <Animated.View entering={FadeInDown} style={styles.grid}>
@@ -152,6 +156,7 @@ function SystemHealth({ stats, loading }: any) {
  * COMPONENT: Loan Management
  */
 function LoanQueue() {
+  const { colors } = useTheme();
   const { data: allLoans, isLoading, refetch } = usePendingLoans();
   const [view, setView] = React.useState<'pending' | 'history'>('pending');
   const review = useReviewLoan();
@@ -170,24 +175,26 @@ function LoanQueue() {
     }
   };
 
-  if (isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+  if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   const displayLoans = allLoans?.filter(l => view === 'pending' ? l.status === 'pending' : l.status !== 'pending') || [];
 
   return (
     <Animated.View entering={FadeInDown}>
-      <View className="flex-row bg-white/5 p-1 rounded-xl mb-6">
+      <View style={{ backgroundColor: colors.surfaceElevated }} className="flex-row p-1 rounded-xl mb-6">
         <TouchableOpacity
           onPress={() => setView('pending')}
-          className={cn("flex-1 py-2 rounded-lg items-center", view === 'pending' ? "bg-white/10" : "")}
+          style={{ backgroundColor: view === 'pending' ? colors.cardBg : 'transparent' }}
+          className={cn("flex-1 py-2 rounded-lg items-center")}
         >
-          <Text className={cn("font-bold", view === 'pending' ? "text-white" : "text-white/40")}>Pending</Text>
+          <Text style={{ color: view === 'pending' ? colors.text : colors.textDim }} className={cn("font-bold")}>Pending</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setView('history')}
-          className={cn("flex-1 py-2 rounded-lg items-center", view === 'history' ? "bg-white/10" : "")}
+          style={{ backgroundColor: view === 'history' ? colors.cardBg : 'transparent' }}
+          className={cn("flex-1 py-2 rounded-lg items-center")}
         >
-          <Text className={cn("font-bold", view === 'history' ? "text-white" : "text-white/40")}>History</Text>
+          <Text style={{ color: view === 'history' ? colors.text : colors.textDim }} className={cn("font-bold")}>History</Text>
         </TouchableOpacity>
       </View>
 
@@ -195,44 +202,47 @@ function LoanQueue() {
         <EmptyState icon={Lucide.Inbox} title="No Records" subtitle={`No ${view} loans found.`} />
       ) : (
         displayLoans.map((loan) => (
-          <Card key={loan.id} className="mb-4 p-5">
+          <Card key={loan.id} style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="mb-4 p-5">
             <View className="flex-row justify-between items-center">
               <View className="flex-1">
                 <View className="flex-row items-center">
-                  <Text className="text-white font-bold text-xl">GH₵ {loan.amount}</Text>
+                  <Text style={{ color: colors.text }} className="font-bold text-xl">GH₵ {loan.amount}</Text>
                   {loan.status !== 'pending' && (
-                    <View className={cn("ml-2 px-2 py-0.5 rounded-full", (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? "bg-primary/20" : "bg-red-500/20")}>
-                      <Text className={cn("text-[10px] font-bold uppercase", (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? "text-primary" : "text-red-500")}>
+                    <View style={{ backgroundColor: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary + '20' : colors.destructive + '20' }} className={cn("ml-2 px-2 py-0.5 rounded-full")}>
+                      <Text style={{ color: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary : colors.destructive }} className={cn("text-[10px] font-bold uppercase")}>
                         {loan.status}
                       </Text>
                     </View>
                   )}
                 </View>
-                <Text className="text-white/60 text-sm">{loan.profiles?.display_name}</Text>
-                <Text className="text-xs text-white/40 mt-1 italic">"{loan.purpose}"</Text>
+                <Text style={{ color: colors.textMuted }} className="text-sm">{loan.profiles?.display_name}</Text>
+                <Text style={{ color: colors.textDim }} className="text-xs mt-1 italic">"{loan.purpose}"</Text>
               </View>
 
               {loan.status === 'pending' && (
                 <View className="flex-row gap-3">
                    <TouchableOpacity
-                    onPress={() => setActiveTab("stats")} // Logic to view user info if needed, but for now just a shortcut
-                    className="bg-white/5 p-3 rounded-full border border-white/5"
+                    onPress={() => {}} // Logic to view user info if needed
+                    style={{ backgroundColor: colors.surfaceElevated, borderColor: colors.border }}
+                    className="p-3 rounded-full border"
                   >
-                    <Lucide.Search size={24} color="#7d8a84" />
+                    <Lucide.Search size={24} color={colors.textMuted} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleAction(loan.id, 'approved')}
                     disabled={review.isPending}
-                    className="bg-primary/20 p-3 rounded-full"
+                    style={{ backgroundColor: colors.primary + '20' }}
+                    className="p-3 rounded-full"
                   >
-                    <Lucide.CheckCircle2 size={24} color="#10b981" />
+                    <Lucide.CheckCircle2 size={24} color={colors.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleAction(loan.id, 'rejected')}
                     disabled={review.isPending}
-                    className="bg-red-500/10 p-3 rounded-full"
+                    style={{ backgroundColor: colors.destructive + '10' }}
+                    className="p-3 rounded-full"
                   >
-                    <Lucide.XCircle size={24} color="#ef4444" />
+                    <Lucide.XCircle size={24} color={colors.destructive} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -248,6 +258,7 @@ function LoanQueue() {
  * COMPONENT: Payout Management (Withdrawals)
  */
 function WithdrawalQueue() {
+  const { colors } = useTheme();
   const { data: requests, isLoading, refetch } = useAllWithdrawalRequests();
   const [view, setView] = React.useState<'pending' | 'history'>('pending');
   const updateStatus = useUpdateWithdrawalStatus();
@@ -287,24 +298,26 @@ function WithdrawalQueue() {
     }
   };
 
-  if (isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+  if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   const displayRequests = requests?.filter(r => view === 'pending' ? r.status === 'pending' : r.status !== 'pending') || [];
 
   return (
     <Animated.View entering={FadeInDown}>
-      <View className="flex-row bg-white/5 p-1 rounded-xl mb-6">
+      <View style={{ backgroundColor: colors.surfaceElevated }} className="flex-row p-1 rounded-xl mb-6">
         <TouchableOpacity
           onPress={() => setView('pending')}
-          className={cn("flex-1 py-2 rounded-lg items-center", view === 'pending' ? "bg-white/10" : "")}
+          style={{ backgroundColor: view === 'pending' ? colors.cardBg : 'transparent' }}
+          className={cn("flex-1 py-2 rounded-lg items-center")}
         >
-          <Text className={cn("font-bold", view === 'pending' ? "text-white" : "text-white/40")}>Pending</Text>
+          <Text style={{ color: view === 'pending' ? colors.text : colors.textDim }} className={cn("font-bold")}>Pending</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setView('history')}
-          className={cn("flex-1 py-2 rounded-lg items-center", view === 'history' ? "bg-white/10" : "")}
+          style={{ backgroundColor: view === 'history' ? colors.cardBg : 'transparent' }}
+          className={cn("flex-1 py-2 rounded-lg items-center")}
         >
-          <Text className={cn("font-bold", view === 'history' ? "text-white" : "text-white/40")}>History</Text>
+          <Text style={{ color: view === 'history' ? colors.text : colors.textDim }} className={cn("font-bold")}>History</Text>
         </TouchableOpacity>
       </View>
 
@@ -312,30 +325,24 @@ function WithdrawalQueue() {
         <EmptyState icon={Lucide.Clock} title="Empty" subtitle={`No ${view} payouts found.`} />
       ) : (
         displayRequests.map((req) => (
-          <Card key={req.id} className="mb-4 p-5">
+          <Card key={req.id} style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="mb-4 p-5">
             <View className="flex-row justify-between items-start">
               <View className="flex-1 mr-4">
                 <View className="flex-row items-center mb-1">
-                  <Text className="text-white font-bold text-xl">GH₵ {req.amount}</Text>
-                  <View className={cn("ml-2 px-2 py-0.5 rounded-full",
-                    req.status === 'pending' ? "bg-yellow-500/20" :
-                    req.status === 'completed' ? "bg-primary/20" : "bg-red-500/20"
-                  )}>
-                    <Text className={cn("text-[10px] font-bold uppercase",
-                      req.status === 'pending' ? "text-yellow-500" :
-                      req.status === 'completed' ? "text-primary" : "text-red-500"
-                    )}>
+                  <Text style={{ color: colors.text }} className="font-bold text-xl">GH₵ {req.amount}</Text>
+                  <View style={{ backgroundColor: req.status === 'pending' ? colors.gold + '20' : req.status === 'completed' ? colors.primary + '20' : colors.destructive + '20' }} className={cn("ml-2 px-2 py-0.5 rounded-full")}>
+                    <Text style={{ color: req.status === 'pending' ? colors.gold : req.status === 'completed' ? colors.primary : colors.destructive }} className={cn("text-[10px] font-bold uppercase")}>
                       {req.status === 'completed' ? 'PAID' : req.status}
                     </Text>
                   </View>
                 </View>
-                <Text className="text-white/60 text-sm mb-3">{req.profiles?.display_name || "Unknown User"}</Text>
+                <Text style={{ color: colors.textMuted }} className="text-sm mb-3">{req.profiles?.display_name || "Unknown User"}</Text>
 
-                <View className="bg-white/5 p-3 rounded-lg border border-white/10">
-                  <Text className="text-white/40 text-[10px] uppercase font-bold mb-1">Bank Details</Text>
-                  <Text className="text-white font-medium">{req.bank_name}</Text>
-                  <Text className="text-white font-medium">{req.account_number}</Text>
-                  <Text className="text-white/80 text-xs">{req.account_name}</Text>
+                <View style={{ backgroundColor: colors.surfaceElevated, borderColor: colors.border }} className="p-3 rounded-lg border">
+                  <Text style={{ color: colors.textDim }} className="text-[10px] uppercase font-bold mb-1">Bank Details</Text>
+                  <Text style={{ color: colors.text }} className="font-medium">{req.bank_name}</Text>
+                  <Text style={{ color: colors.text }} className="font-medium">{req.account_number}</Text>
+                  <Text style={{ color: colors.textMuted }} className="text-xs">{req.account_name}</Text>
                 </View>
               </View>
 
@@ -344,16 +351,18 @@ function WithdrawalQueue() {
                   <TouchableOpacity
                     onPress={() => handleAction(req.id, 'completed')}
                     disabled={updateStatus.isPending}
-                    className="bg-primary px-4 py-3 rounded-xl items-center"
+                    style={{ backgroundColor: colors.primary }}
+                    className="px-4 py-3 rounded-xl items-center"
                   >
                     {updateStatus.isPending ? <ActivityIndicator size="small" color="#000" /> : <Text className="text-black font-black text-xs">MARK PAID</Text>}
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleAction(req.id, 'rejected')}
                     disabled={updateStatus.isPending}
-                    className="bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl items-center"
+                    style={{ backgroundColor: colors.destructive + '10', borderColor: colors.destructive + '20' }}
+                    className="border px-4 py-3 rounded-xl items-center"
                   >
-                    <Text className="text-red-500 font-bold text-xs">DECLINE</Text>
+                    <Text style={{ color: colors.destructive }} className="font-bold text-xs">DECLINE</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -369,6 +378,7 @@ function WithdrawalQueue() {
  * COMPONENT: Order Management
  */
 function OrderManagement() {
+  const { colors } = useTheme();
   const { data: orders, isLoading, refetch } = useAllOrders();
   const updateStatus = useUpdateOrderStatus();
   const [filter, setFilter] = useState<'all' | 'pending' | 'paid' | 'shipped' | 'completed'>('all');
@@ -382,7 +392,7 @@ function OrderManagement() {
     }
   };
 
-  if (isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+  if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   const filteredOrders = orders?.filter(o => filter === 'all' || o.status === filter) || [];
 
@@ -393,9 +403,10 @@ function OrderManagement() {
           <TouchableOpacity
             key={f}
             onPress={() => setFilter(f as any)}
-            className={cn("px-4 py-2 rounded-full mr-2", filter === f ? "bg-primary" : "bg-white/5")}
+            style={{ backgroundColor: filter === f ? colors.primary : colors.surfaceElevated }}
+            className={cn("px-4 py-2 rounded-full mr-2")}
           >
-            <Text className={cn("font-bold text-xs uppercase", filter === f ? "text-black" : "text-white/40")}>{f}</Text>
+            <Text style={{ color: filter === f ? '#000' : colors.textDim }} className={cn("font-bold text-xs uppercase")}>{f}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -404,31 +415,25 @@ function OrderManagement() {
         <EmptyState icon={Lucide.ShoppingBag} title="No Orders" subtitle="No orders found for this filter." />
       ) : (
         filteredOrders.map((order) => (
-          <Card key={order.id} className="mb-6 p-5">
+          <Card key={order.id} style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="mb-6 p-5">
             <View className="flex-row justify-between mb-3">
               <View>
-                <Text className="text-white font-bold text-lg">GH₵ {order.total}</Text>
-                <Text className="text-white/40 text-xs uppercase font-bold">{order.payment_method}</Text>
+                <Text style={{ color: colors.text }} className="font-bold text-lg">GH₵ {order.total}</Text>
+                <Text style={{ color: colors.textDim }} className="text-xs uppercase font-bold">{order.payment_method}</Text>
               </View>
-              <View className={cn("px-3 py-1 rounded-full",
-                order.status === 'completed' ? "bg-primary/20" :
-                order.status === 'pending' ? "bg-yellow-500/20" : "bg-blue-500/20"
-              )}>
-                <Text className={cn("text-[10px] font-bold uppercase",
-                  order.status === 'completed' ? "text-primary" :
-                  order.status === 'pending' ? "text-yellow-500" : "text-blue-500"
-                )}>{order.status}</Text>
+              <View style={{ backgroundColor: order.status === 'completed' ? colors.primary + '20' : order.status === 'pending' ? colors.gold + '20' : '#3b82f620' }} className={cn("px-3 py-1 rounded-full")}>
+                <Text style={{ color: order.status === 'completed' ? colors.primary : order.status === 'pending' ? colors.gold : '#3b82f6' }} className={cn("text-[10px] font-bold uppercase")}>{order.status}</Text>
               </View>
             </View>
 
             <View className="mb-4">
-              <Text className="text-white/60 text-sm">Buyer: {order.profiles?.display_name}</Text>
-              <Text className="text-white/40 text-xs">Shop: {order.profiles?.business_name}</Text>
+              <Text style={{ color: colors.textMuted }} className="text-sm">Buyer: {order.profiles?.display_name}</Text>
+              <Text style={{ color: colors.textDim }} className="text-xs">Shop: {order.profiles?.business_name}</Text>
             </View>
 
-            <View className="bg-black/20 p-3 rounded-lg mb-4">
+            <View style={{ backgroundColor: colors.surfaceElevated }} className="p-3 rounded-lg mb-4">
               {order.order_items?.map((item: any) => (
-                <Text key={item.id} className="text-white/80 text-xs">
+                <Text key={item.id} style={{ color: colors.textMuted }} className="text-xs">
                    • {item.products?.name} (x{item.qty})
                 </Text>
               ))}
@@ -446,9 +451,10 @@ function OrderManagement() {
               )}
               <TouchableOpacity
                 onPress={() => handleUpdate(order.id, 'cancelled')}
-                className="px-4 py-2 border border-red-500/30 rounded-xl"
+                style={{ borderColor: colors.destructive + '40' }}
+                className="px-4 py-2 border rounded-xl"
               >
-                <Text className="text-red-500 font-bold text-xs">CANCEL</Text>
+                <Text style={{ color: colors.destructive }} className="font-bold text-xs">CANCEL</Text>
               </TouchableOpacity>
             </View>
           </Card>
@@ -462,6 +468,7 @@ function OrderManagement() {
  * COMPONENT: Susu Management
  */
 function SusuManagement() {
+  const { colors } = useTheme();
   const { data: groups, isLoading, refetch } = useAllSusuGroups();
   const disburse = useDisburseSusuPot();
 
@@ -475,8 +482,6 @@ function SusuManagement() {
           text: "Confirm",
           onPress: async () => {
             try {
-              // Note: Picking winner logic should be server-side or more complex,
-              // for now we pick the owner or the user at current cycle index
               await disburse.mutateAsync({
                 group_id: group.id,
                 user_id: group.owner_id,
@@ -493,46 +498,47 @@ function SusuManagement() {
     );
   };
 
-  if (isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+  if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   return (
     <Animated.View entering={FadeInDown}>
-      <Text className="text-white/40 text-[10px] uppercase font-bold mb-4 px-2 tracking-widest">Global Savings Circles</Text>
+      <Text style={{ color: colors.textDim }} className="text-[10px] uppercase font-bold mb-4 px-2 tracking-widest">Global Savings Circles</Text>
 
       {(!groups || groups.length === 0) ? (
         <EmptyState icon={Lucide.Users} title="No Circles" subtitle="No active Susu circles found." />
       ) : (
         groups.map((group) => (
-          <Card key={group.id} className="mb-4 p-5">
+          <Card key={group.id} style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="mb-4 p-5">
             <View className="flex-row justify-between items-center mb-3">
               <View className="flex-1">
-                <Text className="text-white font-bold text-lg">{group.name}</Text>
-                <Text className="text-white/40 text-[10px] uppercase font-bold">
+                <Text style={{ color: colors.text }} className="font-bold text-lg">{group.name}</Text>
+                <Text style={{ color: colors.textDim }} className="text-[10px] uppercase font-bold">
                   {group.frequency} · {group.members_count} Members
                 </Text>
               </View>
-              <View className="bg-primary/20 px-3 py-1 rounded-full">
-                <Text className="text-primary text-[10px] font-black uppercase">Cycle #{group.cycle_index}</Text>
+              <View style={{ backgroundColor: colors.primary + '20' }} className="px-3 py-1 rounded-full">
+                <Text style={{ color: colors.primary }} className="text-[10px] font-black uppercase">Cycle #{group.cycle_index}</Text>
               </View>
             </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
                <View>
-                  <Text style={{ color: '#7d8a84', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 }}>CURRENT POT</Text>
-                  <Text style={{ color: '#10b981', fontFamily: 'Display-Bold', fontSize: 20 }}>GH₵ {group.pot?.toLocaleString()}</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 }}>CURRENT POT</Text>
+                  <Text style={{ color: colors.primary, fontFamily: 'Display-Bold', fontSize: 20 }}>GH₵ {group.pot?.toLocaleString()}</Text>
                </View>
                <View style={{ alignItems: 'flex-end' }}>
                   {group.pot > 0 ? (
                     <TouchableOpacity
                       onPress={() => handleDisburse(group)}
-                      className="bg-primary px-4 py-2 rounded-lg"
+                      style={{ backgroundColor: colors.primary }}
+                      className="px-4 py-2 rounded-lg"
                     >
                       <Text className="text-black font-black text-[10px] uppercase">Disburse</Text>
                     </TouchableOpacity>
                   ) : (
                     <View>
-                      <Text style={{ color: '#7d8a84', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 }}>CONTRIBUTION</Text>
-                      <Text style={{ color: 'white', fontWeight: 'bold' }}>GH₵ {group.contribution}</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 }}>CONTRIBUTION</Text>
+                      <Text style={{ color: colors.text, fontWeight: 'bold' }}>GH₵ {group.contribution}</Text>
                     </View>
                   )}
                </View>
@@ -548,6 +554,7 @@ function SusuManagement() {
  * COMPONENT: Admin Support / Chat
  */
 function AdminChatSection() {
+  const { colors } = useTheme();
   const { data: messages, isLoading, refetch } = useAllUserMessages();
   const replyMutation = useReplyToUser();
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
@@ -565,7 +572,7 @@ function AdminChatSection() {
     }
   };
 
-  if (isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+  if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   // Group messages by user
   const groupedMessages = messages?.reduce((acc: any, msg: any) => {
@@ -585,16 +592,16 @@ function AdminChatSection() {
 
   return (
     <Animated.View entering={FadeInDown}>
-      <Text className="text-white font-bold mb-4 px-2">{userIds.length} Active Conversations</Text>
+      <Text style={{ color: colors.text }} className="font-bold mb-4 px-2">{userIds.length} Active Conversations</Text>
       {userIds.map((userId) => (
-        <Card key={userId} className="mb-6 p-5">
+        <Card key={userId} style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="mb-6 p-5">
           <View className="flex-row items-center mb-4">
-            <View className="h-10 w-10 rounded-full bg-primary/20 items-center justify-center mr-3">
-              <Lucide.User size={20} color="#10b981" />
+            <View style={{ backgroundColor: colors.primary + '15' }} className="h-10 w-10 rounded-full items-center justify-center mr-3">
+              <Lucide.User size={20} color={colors.primary} />
             </View>
             <View>
-              <Text className="text-white font-bold">{groupedMessages[userId].profile?.display_name || "User"}</Text>
-              <Text className="text-white/40 text-xs">{groupedMessages[userId].profile?.business_name || "No Business Name"}</Text>
+              <Text style={{ color: colors.text }} className="font-bold">{groupedMessages[userId].profile?.display_name || "User"}</Text>
+              <Text style={{ color: colors.textDim }} className="text-xs">{groupedMessages[userId].profile?.business_name || "No Business Name"}</Text>
             </View>
           </View>
 
@@ -605,15 +612,19 @@ function AdminChatSection() {
               .map((m: any) => (
               <View
                 key={m.id}
+                style={{
+                  backgroundColor: m.is_from_admin ? colors.primary + '15' : colors.surfaceElevated,
+                  borderColor: m.is_from_admin ? colors.primary + '30' : colors.border
+                }}
                 className={cn(
-                  "p-3 rounded-2xl mb-2 max-w-[85%]",
-                  m.is_from_admin ? "bg-primary/20 self-end border border-primary/10" : "bg-white/10 self-start border border-white/5"
+                  "p-3 rounded-2xl mb-2 max-w-[85%] border",
+                  m.is_from_admin ? "self-end" : "self-start"
                 )}
               >
-                <Text className={cn("text-sm", m.is_from_admin ? "text-primary font-medium" : "text-white")}>
+                <Text style={{ color: m.is_from_admin ? colors.primary : colors.text }} className={cn("text-sm", m.is_from_admin ? "font-medium" : "")}>
                   {m.message}
                 </Text>
-                <Text className="text-[8px] text-white/30 mt-1 self-end">
+                <Text style={{ color: colors.textDim }} className="text-[8px] mt-1 self-end">
                   {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
@@ -621,13 +632,13 @@ function AdminChatSection() {
           </View>
 
           <View className="flex-row items-center gap-2">
-            <View style={{ flex: 1, height: 56, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, justifyContent: 'center' }}>
+            <View style={{ flex: 1, height: 56, backgroundColor: colors.surfaceElevated, borderRadius: 16, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 16, justifyContent: 'center' }}>
               <TextInput
                 placeholder="Type transmission..."
-                placeholderTextColor="#405045"
+                placeholderTextColor={colors.textDim}
                 value={replyText[userId] || ""}
                 onChangeText={(t) => setReplyText(prev => ({ ...prev, [userId]: t }))}
-                style={{ color: 'white', fontWeight: 'bold', fontSize: 13 }}
+                style={{ color: colors.text, fontWeight: 'bold', fontSize: 13 }}
                 multiline
               />
             </View>
@@ -636,13 +647,13 @@ function AdminChatSection() {
               disabled={!replyText[userId]?.trim() || replyMutation.isPending}
             >
               <LinearGradient
-                colors={replyText[userId]?.trim() ? ['#10b981', '#059669'] : ['#1a211e', '#0d1310']}
-                style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: replyText[userId]?.trim() ? 0.3 : 0, shadowRadius: 10 }}
+                colors={replyText[userId]?.trim() ? [colors.primary, colors.primary + 'cc'] : [colors.surfaceElevated, colors.cardBg]}
+                style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOpacity: replyText[userId]?.trim() ? 0.3 : 0, shadowRadius: 10 }}
               >
                 {replyMutation.isPending ? (
                   <ActivityIndicator size="small" color="#000" />
                 ) : (
-                  <Lucide.Send size={20} color={replyText[userId]?.trim() ? "#000" : "#405045"} strokeWidth={2.5} />
+                  <Lucide.Send size={20} color={replyText[userId]?.trim() ? "#000" : colors.textDim} strokeWidth={2.5} />
                 )}
               </LinearGradient>
             </BouncyTap>
@@ -657,32 +668,33 @@ function AdminChatSection() {
  * COMPONENT: User Directory
  */
 function UserDirectory() {
+  const { colors } = useTheme();
   const { data: users, isLoading } = useAllProfiles();
   const updateStatus = useUpdateUserStatus();
 
-  if (isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+  if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   return (
     <View>
       {users?.map((u) => (
-        <Card key={u.id} className="mb-4 p-5 flex-row items-center justify-between">
+        <Card key={u.id} style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="mb-4 p-5 flex-row items-center justify-between">
           <View className="flex-row items-center gap-4">
-            <View className="h-12 w-12 rounded-2xl bg-primary/10 items-center justify-center border border-primary/20">
-              <Lucide.User size={20} color="#10b981" />
+            <View style={{ backgroundColor: colors.primary + '10', borderColor: colors.primary + '20' }} className="h-12 w-12 rounded-2xl items-center justify-center border">
+              <Lucide.User size={20} color={colors.primary} />
             </View>
             <View>
-              <Text className="text-white font-bold text-lg">{u.display_name || "User"}</Text>
-              <Text className={cn("text-[10px] uppercase font-bold", u.status === 'banned' ? "text-red-500" : "text-primary")}>
+              <Text style={{ color: colors.text }} className="font-bold text-lg">{u.display_name || "User"}</Text>
+              <Text style={{ color: u.status === 'banned' ? colors.destructive : colors.primary }} className={cn("text-[10px] uppercase font-bold")}>
                 {u.status || 'Active'}
               </Text>
             </View>
           </View>
           <View className="flex-row items-center gap-4">
-             <Text className="text-gold font-bold text-xl">{u.clip_score}</Text>
+             <Text style={{ color: colors.gold }} className="font-bold text-xl">{u.clip_score}</Text>
              <TouchableOpacity
                 onPress={() => updateStatus.mutate({ id: u.id, status: u.status === 'banned' ? 'active' : 'banned' })}
              >
-                {u.status === 'banned' ? <Lucide.Unlock size={22} color="#10b981" /> : <Lucide.Lock size={22} color="#ef4444" />}
+                {u.status === 'banned' ? <Lucide.Unlock size={22} color={colors.primary} /> : <Lucide.Lock size={22} color={colors.destructive} />}
              </TouchableOpacity>
           </View>
         </Card>
@@ -695,6 +707,7 @@ function UserDirectory() {
  * COMPONENT: System Settings
  */
 function SettingsSection() {
+    const { colors, theme } = useTheme();
     const { settings, updateSettings } = useSystemSettings();
     const broadcast = useSendBroadcast();
     const [notif, setNotif] = useState({ title: "", body: "" });
@@ -706,7 +719,7 @@ function SettingsSection() {
         }
     }, [settings.data]);
 
-    if (settings.isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+    if (settings.isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
     const handleUpdateRate = () => {
         const rate = parseFloat(localRate);
@@ -747,32 +760,32 @@ function SettingsSection() {
     return (
       <Animated.View entering={FadeInDown}>
         <View className="mb-8">
-          <Text className="text-white font-bold mb-4 text-lg">System Governance</Text>
-          <Card className="p-6 border-white/5 bg-[#0f1714]">
-            <View className="mb-8 p-4 bg-white/5 rounded-2xl border border-white/5">
+          <Text style={{ color: colors.text }} className="font-bold mb-4 text-lg">System Governance</Text>
+          <Card style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="p-6">
+            <View style={{ backgroundColor: colors.surfaceElevated, borderColor: colors.border }} className="mb-8 p-4 rounded-2xl border">
                 <View className="mb-4">
-                  <Text className="text-white font-bold text-sm">Base Interest Rate</Text>
-                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Global credit growth percentage</Text>
+                  <Text style={{ color: colors.text }} className="font-bold text-sm">Base Interest Rate</Text>
+                  <Text style={{ color: colors.textDim }} className="text-[10px] uppercase font-bold tracking-widest mt-1">Global credit growth percentage</Text>
                 </View>
 
                 <View className="flex-row items-center gap-4">
-                    <View className="flex-1 flex-row items-center bg-[#080c0a] rounded-2xl px-5 h-16 border border-white/10">
+                    <View style={{ backgroundColor: colors.cardBg, borderColor: colors.border }} className="flex-1 flex-row items-center rounded-2xl px-5 h-16 border">
                         <TextInput
                             value={localRate}
                             keyboardType="decimal-pad"
                             onChangeText={setLocalRate}
                             placeholder="0.0"
-                            placeholderTextColor="#334140"
-                            style={{ flex: 1, color: '#10b981', fontFamily: 'Display-Bold', fontSize: 24 }}
-                            selectionColor="#10b981"
+                            placeholderTextColor={colors.textDim}
+                            style={{ flex: 1, color: colors.primary, fontFamily: 'Display-Bold', fontSize: 24 }}
+                            selectionColor={colors.primary}
                         />
-                        <Text style={{ fontFamily: 'Display-Bold' }} className="text-[#10b981] text-xl ml-2">%</Text>
+                        <Text style={{ fontFamily: 'Display-Bold', color: colors.primary }} className="text-xl ml-2">%</Text>
                     </View>
 
                     <BouncyTap onPress={handleUpdateRate}>
                        <LinearGradient
-                        colors={['#10b981', '#059669']}
-                        style={{ width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 10 }}
+                        colors={[colors.primary, colors.primary + 'cc']}
+                        style={{ width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 10 }}
                        >
                           <Lucide.Check size={28} color="#000" strokeWidth={3} />
                        </LinearGradient>
@@ -780,10 +793,10 @@ function SettingsSection() {
                 </View>
             </View>
 
-            <View className="flex-row justify-between items-center p-6 bg-white/5 rounded-2xl border border-white/5">
+            <View style={{ backgroundColor: colors.surfaceElevated, borderColor: colors.border }} className="flex-row justify-between items-center p-6 rounded-2xl border">
                 <View className="flex-1 mr-4">
-                  <Text className="text-white font-bold text-sm">Vault Lockdown</Text>
-                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Suspend all global activities</Text>
+                  <Text style={{ color: colors.text }} className="font-bold text-sm">Vault Lockdown</Text>
+                  <Text style={{ color: colors.textDim }} className="text-[10px] uppercase font-bold tracking-widest mt-1">Suspend all global activities</Text>
                 </View>
 
                 <BouncyTap
@@ -799,7 +812,7 @@ function SettingsSection() {
                   }}
                 >
                   <LinearGradient
-                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#7f1d1d'] : ['#10b981', '#064e3b']}
+                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#7f1d1d'] : [colors.primary, colors.primary + 'cc']}
                     style={styles.maintenanceBtn}
                   >
                     <View style={styles.maintenanceBtnInner}>
@@ -818,42 +831,43 @@ function SettingsSection() {
           </Card>
         </View>
 
-        <Text className="text-white font-bold mb-4 text-lg">Broadcast Protocol</Text>
-        <Card className="p-8 border-white/5 bg-[#0f1714]" style={{ borderRadius: 40 }}>
+        <Text style={{ color: colors.text }} className="font-bold mb-4 text-lg">Broadcast Protocol</Text>
+        <Card style={{ backgroundColor: colors.cardBg, borderColor: colors.border, borderRadius: 40 }} className="p-8">
           <View className="mb-8">
             <View className="flex-row items-center gap-2 mb-3 ml-1">
-              <Lucide.Tag size={12} color="#10b981" />
-              <Text className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-60">Signal Title</Text>
+              <Lucide.Tag size={12} color={colors.primary} />
+              <Text style={{ color: colors.primary }} className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Signal Title</Text>
             </View>
             <TextInput
               value={notif.title}
               onChangeText={t => setNotif(prev => ({...prev, title: t}))}
               placeholder="e.g. SYSTEM UPGRADE COMPLETE"
-              placeholderTextColor="#334140"
-              className="bg-white/5 h-16 rounded-2xl px-6 text-white font-bold border border-white/5"
-              selectionColor="#10b981"
+              placeholderTextColor={colors.textDim}
+              style={{ backgroundColor: colors.surfaceElevated, borderColor: colors.border, color: colors.text }}
+              className="h-16 rounded-2xl px-6 font-bold border"
+              selectionColor={colors.primary}
             />
           </View>
 
           <View className="mb-10">
             <View className="flex-row items-center gap-2 mb-3 ml-1">
-              <Lucide.MessageSquare size={12} color="#10b981" />
-              <Text className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-60">Global Transmission</Text>
+              <Lucide.MessageSquare size={12} color={colors.primary} />
+              <Text style={{ color: colors.primary }} className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Global Transmission</Text>
             </View>
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+            <View style={{ backgroundColor: colors.surfaceElevated, borderRadius: 24, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
               <TextInput
                 value={notif.body}
                 onChangeText={t => setNotif(prev => ({...prev, body: t}))}
                 placeholder="Type institutional transmission details..."
-                placeholderTextColor="#334140"
+                placeholderTextColor={colors.textDim}
                 multiline
                 numberOfLines={6}
                 textAlignVertical="top"
-                style={{ minHeight: 160, padding: 20, color: 'white', fontSize: 15, fontWeight: '500', lineHeight: 22 }}
-                selectionColor="#10b981"
+                style={{ minHeight: 160, padding: 20, color: colors.text, fontSize: 15, fontWeight: '500', lineHeight: 22 }}
+                selectionColor={colors.primary}
               />
               <LinearGradient
-                colors={['transparent', 'rgba(16,185,129,0.02)']}
+                colors={['transparent', colors.primary + '05']}
                 style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40 }}
                 pointerEvents="none"
               />
@@ -862,8 +876,8 @@ function SettingsSection() {
 
           <BouncyTap onPress={handleBroadcast} disabled={broadcast.isPending}>
             <LinearGradient
-              colors={['#10b981', '#059669']}
-              style={{ height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 }}
+              colors={[colors.primary, colors.primary + 'cc']}
+              style={{ height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 }}
             >
                {broadcast.isPending ? (
                  <ActivityIndicator color="#000" />
@@ -881,11 +895,12 @@ function SettingsSection() {
 }
 
 function EmptyState({ icon: Icon, title, subtitle }: any) {
+  const { colors } = useTheme();
   return (
     <View className="items-center justify-center py-20 opacity-50">
-      <Icon size={48} color="#10B981" />
-      <Text className="text-white font-bold mt-4">{title}</Text>
-      <Text className="text-slate-400">{subtitle}</Text>
+      <Icon size={48} color={colors.primary} />
+      <Text style={{ color: colors.text }} className="font-bold mt-4">{title}</Text>
+      <Text style={{ color: colors.textMuted }}>{subtitle}</Text>
     </View>
   );
 }

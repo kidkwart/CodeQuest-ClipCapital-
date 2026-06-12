@@ -9,10 +9,12 @@ import { ArrowLeft, Users, Check, Clock, ShieldCheck, Wallet, TrendingUp, X, Cop
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
+import { useTheme } from "@/context/theme-context";
 
 export default function GroupDetails() {
   const { groupId } = useLocalSearchParams();
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile } = useProfile();
 
   const id = Array.isArray(groupId) ? groupId[0] : groupId;
@@ -118,20 +120,20 @@ export default function GroupDetails() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
           <TouchableOpacity
             onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/susu")}
-            style={styles.headerBtn}
+            style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
           >
-            <ArrowLeft size={20} color="#FFFFFF" />
+            <ArrowLeft size={20} color={colors.text} />
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <TouchableOpacity onPress={shareInvite} style={styles.headerBtn}>
-             <Share2 size={20} color="#10b981" />
+          <TouchableOpacity onPress={shareInvite} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+             <Share2 size={20} color={colors.primary} />
           </TouchableOpacity>
         )
       }} />
@@ -139,23 +141,23 @@ export default function GroupDetails() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={group.isRefetching} onRefresh={() => group.refetch()} tintColor="#10B981" />}
+        refreshControl={<RefreshControl refreshing={group.isRefetching} onRefresh={() => group.refetch()} tintColor={colors.primary} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-             {isOwner && <Crown size={14} color="#f59e0b" fill="#f59e0b" />}
-             <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase' }}>{frequency} Savings</Text>
+             {isOwner && <Crown size={14} color={colors.gold} fill={colors.gold} />}
+             <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase' }}>{frequency} Savings</Text>
           </View>
-          <Text style={{ fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 32, marginBottom: 32 }}>{g?.name || "Circle"}</Text>
+          <Text style={{ fontFamily: 'Display-Bold', color: colors.text, fontSize: 32, marginBottom: 32 }}>{g?.name || "Circle"}</Text>
 
           {/* Pot Status */}
-          <Card style={styles.potCard}>
+          <Card style={[styles.potCard, { backgroundColor: colors.primary }]}>
             <View style={{ zIndex: 2 }}>
-              <Text style={styles.potLabel}>ACCUMULATED POT</Text>
-              <Text style={styles.potValue}>{isPrivate ? "••••••" : `GH₵ ${(g?.pot || 0).toLocaleString()}`}</Text>
+              <Text style={[styles.potLabel, { color: 'rgba(255,255,255,0.7)' }]}>ACCUMULATED POT</Text>
+              <Text style={[styles.potValue, { color: 'white' }]}>{isPrivate ? "••••••" : `GH₵ ${(g?.pot || 0).toLocaleString()}`}</Text>
 
               <View style={styles.potFooter}>
-                <View style={styles.tag}>
+                <View style={[styles.tag, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                    <Clock size={12} color="#fff" />
                    <Text style={styles.tagText}>Round #{currentCycle}</Text>
                 </View>
@@ -167,16 +169,16 @@ export default function GroupDetails() {
 
           {/* Your Status / CTA */}
           <View style={styles.section}>
-            <Card style={[styles.statusCard, hasPaidCurrent && { borderColor: '#10b98140' }]}>
+            <Card style={[styles.statusCard, { backgroundColor: colors.cardBg, borderColor: colors.border }, hasPaidCurrent && { borderColor: colors.primary + '40' }]}>
                <View style={styles.statusRow}>
                   <View style={styles.statusInfo}>
-                     <Text style={styles.statusLabel}>{hasPaidCurrent ? "Your Contribution" : "Next Payment"}</Text>
-                     <Text style={styles.statusValue}>{isPrivate ? "••••" : `GH₵ ${contribution}`}</Text>
+                     <Text style={[styles.statusLabel, { color: colors.textDim }]}>{hasPaidCurrent ? "Your Contribution" : "Next Payment"}</Text>
+                     <Text style={[styles.statusValue, { color: colors.text }]}>{isPrivate ? "••••" : `GH₵ ${contribution}`}</Text>
                   </View>
                   {hasPaidCurrent ? (
-                    <View style={styles.paidBadge}>
-                       <Check size={16} color="#10b981" />
-                       <Text style={styles.paidText}>PAID</Text>
+                    <View style={[styles.paidBadge, { backgroundColor: colors.primary + '10' }]}>
+                       <Check size={16} color={colors.primary} />
+                       <Text style={[styles.paidText, { color: colors.primary }]}>PAID</Text>
                     </View>
                   ) : (
                     <TouchableOpacity onPress={() => setShowPayModal(true)} activeOpacity={0.8}>
@@ -198,78 +200,78 @@ export default function GroupDetails() {
           {/* Members List */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-               <Users size={14} color="#10B981" />
-               <Text style={styles.sectionTitle}>Partners ({memberCount})</Text>
+               <Users size={14} color={colors.primary} />
+               <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Partners ({memberCount})</Text>
             </View>
-            <Card style={{ padding: 8 }}>
+            <Card style={{ padding: 8, backgroundColor: colors.cardBg, borderColor: colors.border }}>
                {members.data?.map((m: any, idx: number) => {
                  const hasPaid = contributions.data?.some(c => c.user_id === m.user_id && c.cycle_index === currentCycle);
                  const isMe = m.user_id === profile?.id;
                  const isTheWinner = m.payout_order === currentCycle;
 
                  return (
-                   <View key={m.id} style={[styles.memberRow, idx === (members.data?.length || 0) - 1 && { borderBottomWidth: 0 }]}>
+                   <View key={m.id} style={[styles.memberRow, { borderBottomColor: colors.border }, idx === (members.data?.length || 0) - 1 && { borderBottomWidth: 0 }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                         <View style={[styles.avatar, isTheWinner && { borderColor: '#f59e0b', borderWidth: 2 }]}>
-                            <Text style={styles.avatarText}>{m.profiles?.display_name?.charAt(0) || "?"}</Text>
-                            {isTheWinner && <View style={styles.crownMini}><Crown size={8} color="white" fill="white" /></View>}
+                         <View style={[styles.avatar, { backgroundColor: colors.surfaceElevated }, isTheWinner && { borderColor: colors.gold, borderWidth: 2 }]}>
+                            <Text style={[styles.avatarText, { color: colors.text }]}>{m.profiles?.display_name?.charAt(0) || "?"}</Text>
+                            {isTheWinner && <View style={[styles.crownMini, { backgroundColor: colors.gold }]}><Crown size={8} color="white" fill="white" /></View>}
                          </View>
                          <View>
-                            <Text style={[styles.memberName, isMe && { color: '#10b981' }]}>
+                            <Text style={[styles.memberName, { color: colors.text }, isMe && { color: colors.primary }]}>
                                 {m.profiles?.display_name || "Unknown"} {isMe ? "(You)" : ""}
                             </Text>
-                            <Text style={styles.memberSub}>Order: #{m.payout_order}</Text>
+                            <Text style={[styles.memberSub, { color: colors.textDim }]}>Order: #{m.payout_order}</Text>
                          </View>
                       </View>
                       {hasPaid ? (
-                        <View style={styles.checkCircle}>
-                           <Check size={12} color="#10b981" />
+                        <View style={[styles.checkCircle, { borderColor: colors.primary + '30' }]}>
+                           <Check size={12} color={colors.primary} />
                         </View>
                       ) : (
-                        <View style={[styles.checkCircle, { borderColor: 'rgba(255,255,255,0.05)' }]} />
+                        <View style={[styles.checkCircle, { borderColor: colors.border }]} />
                       )}
                    </View>
                  );
                })}
                <TouchableOpacity onPress={shareInvite} style={styles.addMemberBtn}>
-                  <Plus size={16} color="#7d8a84" />
-                  <Text style={styles.addMemberText}>Invite Partner</Text>
+                  <Plus size={16} color={colors.textDim} />
+                  <Text style={[styles.addMemberText, { color: colors.textDim }]}>Invite Partner</Text>
                </TouchableOpacity>
             </Card>
           </View>
 
           {/* History */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Recent Activity</Text>
             {contributions.data && contributions.data.length > 0 ? (
                 contributions.data.slice(0, 5).map((c: any) => (
-                    <View key={c.id} style={styles.historyItem}>
+                    <View key={c.id} style={[styles.historyItem, { borderBottomColor: colors.border }]}>
                        <View style={styles.historyLeft}>
-                          <View style={styles.historyIcon}>
-                             <Zap size={14} color="#7d8a84" />
+                          <View style={[styles.historyIcon, { backgroundColor: colors.surfaceElevated }]}>
+                             <Zap size={14} color={colors.textDim} />
                           </View>
                           <View>
-                             <Text style={styles.historyUser}>{c.momo_provider || "Wallet"}</Text>
-                             <Text style={styles.historyDate}>{new Date(c.created_at).toLocaleDateString()}</Text>
+                             <Text style={[styles.historyUser, { color: colors.text }]}>{c.momo_provider || "Wallet"}</Text>
+                             <Text style={[styles.historyDate, { color: colors.textDim }]}>{new Date(c.created_at).toLocaleDateString()}</Text>
                           </View>
                        </View>
-                       <Text style={styles.historyAmount}>+ {isPrivate ? "•••" : `GH₵ ${c.amount}`}</Text>
+                       <Text style={[styles.historyAmount, { color: colors.primary }]}>+ {isPrivate ? "•••" : `GH₵ ${c.amount}`}</Text>
                     </View>
                 ))
             ) : (
-                <Text style={{ color: '#405045', fontSize: 13, textAlign: 'center', marginTop: 10 }}>No activity yet.</Text>
+                <Text style={{ color: colors.textDim, fontSize: 13, textAlign: 'center', marginTop: 10 }}>No activity yet.</Text>
             )}
           </View>
 
           {/* Exit Group - Now more prominent */}
           <View style={{ marginTop: 20, marginBottom: 40 }}>
-              <Card style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.1)' }}>
+              <Card style={{ backgroundColor: colors.destructive + '05', borderColor: colors.destructive + '15' }}>
                 <TouchableOpacity
                     style={styles.exitBtnContainer}
                     onPress={() => setShowExitModal(true)}
                 >
-                    <LogOut size={16} color="#ef4444" />
-                    <Text style={styles.exitBtnText}>EXIT THIS CIRCLE</Text>
+                    <LogOut size={16} color={colors.destructive} />
+                    <Text style={[styles.exitBtnText, { color: colors.destructive }]}>EXIT THIS CIRCLE</Text>
                 </TouchableOpacity>
               </Card>
           </View>
@@ -280,22 +282,22 @@ export default function GroupDetails() {
       <Modal visible={showPayModal} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
            <Animated.View entering={FadeInDown} style={{ width: '100%' }}>
-             <Card style={styles.modalContent}>
+             <Card style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <View style={styles.modalHeader}>
-                   <Text style={styles.modalTitle}>Confirm Payment</Text>
+                   <Text style={[styles.modalTitle, { color: colors.text }]}>Confirm Payment</Text>
                    <TouchableOpacity onPress={() => setShowPayModal(false)}>
-                      <X color="#7d8a84" />
+                      <X color={colors.textDim} />
                    </TouchableOpacity>
                 </View>
-                <Text style={styles.modalDesc}>Contribute GH₵ {contribution} to the "{g?.name}" pot.</Text>
+                <Text style={[styles.modalDesc, { color: colors.textMuted }]}>Contribute GH₵ {contribution} to the "{g?.name}" pot.</Text>
 
-                <View style={styles.paymentMethod}>
-                   <View style={styles.methodIcon}>
-                      <Wallet size={20} color="#10b981" />
+                <View style={[styles.paymentMethod, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                   <View style={[styles.methodIcon, { backgroundColor: colors.primary + '10' }]}>
+                      <Wallet size={20} color={colors.primary} />
                    </View>
                    <View>
-                      <Text style={styles.methodTitle}>Oxygen Wallet</Text>
-                      <Text style={styles.methodSub}>Available: GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
+                      <Text style={[styles.methodTitle, { color: colors.text }]}>Oxygen Wallet</Text>
+                      <Text style={[styles.methodSub, { color: colors.textMuted }]}>Available: GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
                    </View>
                 </View>
 
@@ -314,23 +316,23 @@ export default function GroupDetails() {
       <Modal visible={showExitModal} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
            <Animated.View entering={FadeInDown} style={{ width: '100%' }}>
-             <Card style={styles.modalContent}>
+             <Card style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <View style={styles.modalHeader}>
                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <AlertCircle size={20} color="#ef4444" />
-                      <Text style={[styles.modalTitle, { color: '#ef4444' }]}>Exit Circle</Text>
+                      <AlertCircle size={20} color={colors.destructive} />
+                      <Text style={[styles.modalTitle, { color: colors.destructive }]}>Exit Circle</Text>
                    </View>
                    <TouchableOpacity onPress={() => setShowExitModal(false)}>
-                      <X color="#7d8a84" />
+                      <X color={colors.textDim} />
                    </TouchableOpacity>
                 </View>
 
-                <View style={styles.penaltyWarning}>
-                   <Info size={16} color="#f59e0b" />
-                   <Text style={styles.penaltyText}>An exit penalty of <Text style={{ fontWeight: 'bold', color: 'white' }}>GH₵ 100.00</Text> will be deducted from your wallet.</Text>
+                <View style={[styles.penaltyWarning, { backgroundColor: colors.gold + '10', borderColor: colors.gold + '20' }]}>
+                   <Info size={16} color={colors.gold} />
+                   <Text style={[styles.penaltyText, { color: colors.gold }]}>An exit penalty of <Text style={{ fontWeight: 'bold', color: colors.text }}>GH₵ 100.00</Text> will be deducted from your wallet.</Text>
                 </View>
 
-                <Text style={styles.modalDesc}>Are you sure you want to leave <Text style={{ color: 'white', fontWeight: 'bold' }}>{g?.name}</Text>? This action is permanent.</Text>
+                <Text style={[styles.modalDesc, { color: colors.textMuted }]}>Are you sure you want to leave <Text style={{ color: colors.text, fontWeight: 'bold' }}>{g?.name}</Text>? This action is permanent.</Text>
 
                 <Button
                   title="Pay Penalty & Exit"
@@ -341,7 +343,7 @@ export default function GroupDetails() {
                 />
 
                 <TouchableOpacity style={{ marginTop: 20, alignItems: 'center' }} onPress={() => setShowExitModal(false)}>
-                    <Text style={{ color: '#7d8a84', fontSize: 12, fontWeight: 'bold' }}>STAY IN CIRCLE</Text>
+                    <Text style={{ color: colors.textDim, fontSize: 12, fontWeight: 'bold' }}>STAY IN CIRCLE</Text>
                 </TouchableOpacity>
              </Card>
            </Animated.View>
