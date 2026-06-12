@@ -1,62 +1,74 @@
 import React from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useTransactionHistory } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
-import { ArrowLeft, ArrowUpRight, ArrowDownLeft, ShoppingBag, Wallet, Banknote } from "lucide-react-native";
+import { PremiumHeader } from "@/components/native/premium-header";
+import { ArrowLeft, ArrowUpRight, ArrowDownLeft, ShoppingBag, Wallet, Banknote, Clock } from "lucide-react-native";
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const { data: history, isLoading } = useTransactionHistory();
+  const { data: history, isLoading, refetch } = useTransactionHistory();
 
   const getIcon = (type: string, amount: number) => {
-    if (type === "order") return <ShoppingBag size={18} color="#F59E0B" />;
-    if (type.startsWith("susu")) return <Wallet size={18} color="#10B981" />;
-    if (type.startsWith("loan")) return <Banknote size={18} color="#10B981" />;
-    return amount > 0 ? <ArrowUpRight size={18} color="#10B981" /> : <ArrowDownLeft size={18} color="#EF4444" />;
+    if (type === "order") return <ShoppingBag size={18} color="#f59e0b" />;
+    if (type.startsWith("susu")) return <Wallet size={18} color="#10b981" />;
+    if (type.startsWith("loan")) return <Banknote size={18} color="#10b981" />;
+    return amount > 0 ? <ArrowUpRight size={18} color="#10b981" /> : <ArrowDownLeft size={18} color="#ef4444" />;
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
       <Stack.Screen options={{
-        headerShown: true,
-        title: "Transaction History",
-        headerStyle: { backgroundColor: "#0A0A0A" },
-        headerTintColor: "#FFFFFF",
+        headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} className="mr-4">
-            <ArrowLeft size={24} color="#FFFFFF" />
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{ marginLeft: 16, h: 40, w: 40, borderRadius: 12, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+          >
+            <ArrowLeft size={20} color="#FFF" />
           </TouchableOpacity>
         )
       }} />
 
-      <ScrollView className="flex-1 px-6 pt-6">
-        {isLoading ? (
-          <Text className="text-muted-foreground italic">Loading history...</Text>
-        ) : (history ?? []).length === 0 ? (
-          <Text className="text-muted-foreground italic text-center py-20">No transactions found</Text>
-        ) : (
-          <View className="pb-20">
-            {history?.map((t) => (
-              <View key={`${t.type}-${t.id}`} className="flex-row items-center justify-between py-4 border-b border-border/20">
-                <View className="flex-row items-center gap-4">
-                  <View className={`h-10 w-10 rounded-2xl items-center justify-center bg-surface border border-border/30`}>
-                    {getIcon(t.type, t.amount)}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: 100, paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
+      >
+        <View style={{ paddingHorizontal: 24 }}>
+          <PremiumHeader title="History" subtitle="Financial Audit" />
+
+          {isLoading ? (
+            <View style={{ py: 80, alignItems: 'center' }}><Text style={{ color: '#10b981', fontWeight: '900', letterSpacing: 2 }}>ANALYZING RECORDS...</Text></View>
+          ) : (history ?? []).length === 0 ? (
+            <View style={{ py: 80, alignItems: 'center', opacity: 0.3, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.1)', borderRadius: 40 }}>
+               <Clock size={48} color="#405045" />
+               <Text style={{ color: 'white', fontWeight: 'bold', mt: 16, fontStyle: 'italic' }}>Clean ledger</Text>
+            </View>
+          ) : (
+            <View style={{ paddingBottom: 40 }}>
+              {history?.map((t, idx) => (
+                <View key={`${t.type}-${t.id}`} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 24, borderBottomWidth: idx !== history!.length - 1 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+                    <View style={{ width: 48, height: 48, borderRadius: 18, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                      {getIcon(t.type, t.amount)}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }} numberOfLines={1}>{t.title}</Text>
+                      <Text style={{ color: '#7d8a84', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', mt: 4, letterSpacing: 1 }}>
+                        {new Date(t.date).toLocaleDateString()} · {t.status || 'COMPLETED'}
+                      </Text>
+                    </View>
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-foreground font-bold text-sm" numberOfLines={1}>{t.title}</Text>
-                    <Text className="text-muted-foreground text-[10px] uppercase">
-                      {new Date(t.date).toLocaleDateString()} · {t.status || 'COMPLETED'}
-                    </Text>
-                  </View>
+                  <Text style={{ fontFamily: 'Display-Bold', fontSize: 16, color: t.amount > 0 ? '#10b981' : '#ef4444' }}>
+                    {t.amount > 0 ? '+' : '-'} {Math.abs(t.amount)}
+                  </Text>
                 </View>
-                <Text className={`font-black ml-4 ${t.amount > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {t.amount > 0 ? '+' : '-'} GH₵ {Math.abs(t.amount)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );

@@ -1,19 +1,26 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput } from "react-native";
-import { useProfile, useClipScore, useRecentActivity, useAddIncome } from "@/lib/app-queries";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput, Dimensions } from "react-native";
+import { useProfile, useClipScore, useRecentActivity, useAddIncome, useMyRoles } from "@/lib/app-queries";
 import { StatCard, Card } from "@/components/native/card";
-import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Wallet } from "lucide-react-native";
+import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Wallet, Bell, ShieldCheck, ArrowDownToLine } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import { cn } from "@/lib/utils";
+import { useCurrentUser } from "@/hooks/use-current-user";
+
+const { width } = Dimensions.get('window');
 
 export default function Dashboard() {
   const router = useRouter();
   const profile = useProfile();
+  const roles = useMyRoles();
+  const { user } = useCurrentUser();
   const { score } = useClipScore();
   const activity = useRecentActivity(5);
   const addIncome = useAddIncome();
   const [incomeAmt, setIncomeAmt] = useState("");
+
+  const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
 
   return (
     <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
@@ -22,97 +29,106 @@ export default function Dashboard() {
         contentContainerStyle={{ paddingBottom: 140, paddingTop: 60 }}
         refreshControl={<RefreshControl refreshing={profile.isLoading} tintColor="#10B981" />}
       >
-        <View className="px-6">
-          {/* Header - Massive Premium Typography */}
-          <View className="flex-row justify-between items-start mb-12">
+        <View style={{ paddingHorizontal: 24 }}>
+
+          {/* Header - Fixed Structure */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40 }}>
             <View>
-              <View className="flex-row items-center gap-2 mb-2">
-                <View className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-[0_0_15px_#10b981]" />
-                <Text className="text-[#10b981] font-black text-[10px] uppercase tracking-[0.45em]">ClipCapital Premium</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981', marginRight: 8, shadowColor: '#10b981', shadowOpacity: 0.5, shadowRadius: 10, elevation: 10 }} />
+                <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase' }}>ClipCapital Premium</Text>
               </View>
-              <Text style={{ fontFamily: 'Display-Bold' }} className="text-[#fcfcfc] text-5xl leading-[0.82] tracking-tighter">
+              <Text style={{ fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 48, lineHeight: 42, letterSpacing: -2 }}>
                 Akwaaba,{"\n"}{profile.data?.display_name?.split(' ')[0] || "Artisan"}
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => router.push("/support")}
-              className="h-16 w-16 rounded-[28px] bg-[#0f1714] items-center justify-center border border-[#10b981]/30 shadow-2xl"
-            >
-              <MessageCircle size={28} color="#10b981" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => router.push("/notifications")}
+                style={{ width: 56, height: 56, borderRadius: 22, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWeight: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+              >
+                <Bell size={24} color="#10b981" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push("/support")}
+                style={{ width: 56, height: 56, borderRadius: 22, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWeight: 1, borderColor: '#10b98130' }}
+              >
+                <MessageCircle size={24} color="#10b981" />
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Emerald & Gold Stat Pair */}
-          <View className="flex-row gap-5 mb-10">
-            <View className="flex-1">
+          {/* Stats Grid - Balanced width */}
+          <View style={{ flexDirection: 'row', gap: 16, marginBottom: 40 }}>
+            <View style={{ flex: 1 }}>
               <StatCard label="My Wallet" value={`GH₵ ${profile.data?.wallet_balance || 0}`} variant="emerald" hint="Available" />
             </View>
-            <View className="flex-1">
+            <View style={{ flex: 1 }}>
               <StatCard label="ClipScore" value={String(score)} variant="gold" hint="Verified" />
             </View>
           </View>
 
-          {/* The Signature Quick Log - Neon PWA Gradient */}
-          <View className="mb-14 rounded-[42px] overflow-hidden shadow-[0_25px_60px_rgba(16,185,129,0.3)] border border-[#10b981]/40">
+          {/* Revenue Card - Impactful size */}
+          <View style={{ marginBottom: 48, borderRadius: 42, overflow: 'hidden', borderWeight: 1, borderColor: '#10b98140' }}>
             <LinearGradient
               colors={['#10B981', '#064e3b', '#080c0a']}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              className="p-9 flex-row items-center"
+              style={{ padding: 32, flexDirection: 'row', alignItems: 'center' }}
             >
-              <View className="flex-1">
-                <Text className="text-white/70 font-black text-[10px] uppercase tracking-[0.4em] mb-2">Daily Revenue Log</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontWeight: '900', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 8 }}>Daily Revenue Log</Text>
                 <TextInput
                   value={incomeAmt}
                   onChangeText={setIncomeAmt}
                   placeholder="0.00 GH₵"
                   placeholderTextColor="rgba(255,255,255,0.2)"
                   keyboardType="numeric"
-                  style={{ fontFamily: 'Display-Bold' }}
-                  className="text-white text-4xl p-0 tracking-tighter"
+                  style={{ fontFamily: 'Display-Bold', color: 'white', fontSize: 32 }}
                 />
               </View>
               <TouchableOpacity
-                onPress={() => alert("Revenue Logged")}
-                className="bg-[#fcfcfc] h-16 w-16 rounded-[24px] items-center justify-center shadow-2xl"
+                activeOpacity={0.9}
+                style={{ width: 64, height: 64, borderRadius: 24, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }}
               >
                 <Plus size={32} color="#064e3b" />
               </TouchableOpacity>
             </LinearGradient>
           </View>
 
-          {/* Member Services Icons */}
-          <Text className="text-[#fcfcfc]/30 font-black text-[11px] uppercase tracking-[0.4em] mb-8 ml-2">Shop Facilities</Text>
-          <View className="flex-row justify-between mb-16 px-1">
+          {/* Services Grid - Perfectly Aligned */}
+          <Text style={{ color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 24, marginLeft: 8 }}>Shop Facilities</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 60 }}>
             <ServiceNode title="Market" icon={ShoppingBag} color="#f59e0b" onPress={() => router.push("/market")} />
             <ServiceNode title="Loans" icon={TrendingUp} color="#10b981" onPress={() => router.push("/loans")} />
-            <ServiceNode title="Susu" icon={Wallet} color="#10b981" onPress={() => router.push("/susu")} />
-            <ServiceNode title="History" icon={Plus} color="#3b82f6" onPress={() => router.push("/history")} />
+            <ServiceNode title="Payout" icon={ArrowDownToLine} color="#3b82f6" onPress={() => router.push("/withdraw")} />
+            {isAdmin ? (
+              <ServiceNode title="Admin" icon={ShieldCheck} color="#ef4444" onPress={() => router.push("/admin")} />
+            ) : (
+              <ServiceNode title="History" icon={Plus} color="#10b981" onPress={() => router.push("/history")} />
+            )}
           </View>
 
-          {/* Recent Activity Glass Panel */}
-          <View className="flex-row justify-between items-end mb-8 px-2">
-            <Text style={{ fontFamily: 'Display-Bold' }} className="text-[#fcfcfc] text-2xl tracking-tight">Recent Activity</Text>
+          {/* Recent Activity - Glass List */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 24, paddingHorizontal: 8 }}>
+            <Text style={{ fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 24 }}>Recent Activity</Text>
             <TouchableOpacity onPress={() => router.push("/history")}>
-              <Text className="text-[#10b981] font-black text-[10px] uppercase tracking-widest mb-1">View History →</Text>
+              <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>View History →</Text>
             </TouchableOpacity>
           </View>
 
-          <Card glass className="p-2 border-[#10b981]/10">
+          <Card glass style={{ padding: 8 }}>
             {activity.data?.map((item, idx) => (
-              <View key={item.id} className={cn("flex-row items-center justify-between p-6", idx !== 4 && "border-b border-[#10b981]/10")}>
-                <View className="flex-row items-center gap-5">
-                  <View className={cn(
-                    "h-14 w-14 rounded-[22px] bg-[#0f1714] items-center justify-center border",
-                    item.type === 'income' ? "border-[#10b981]/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]" : "border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.1)]"
-                  )}>
+              <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: idx !== 4 ? 1 : 0, borderBottomColor: 'rgba(16,185,129,0.1)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                  <View style={{ width: 56, height: 56, borderRadius: 18, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: item.type === 'income' ? '#10b98130' : '#ef444430' }}>
                     {item.type === 'income' ? <ArrowUpRight size={24} color="#10B981" /> : <ArrowDownLeft size={24} color="#EF4444" />}
                   </View>
                   <View>
-                    <Text className="text-[#fcfcfc] font-bold text-base tracking-tight">{item.note}</Text>
-                    <Text className="text-[#7d8a84] text-[10px] font-black uppercase mt-1 tracking-wider">{item.date}</Text>
+                    <Text style={{ color: '#fcfcfc', fontWeight: 'bold', fontSize: 16 }}>{item.note}</Text>
+                    <Text style={{ color: '#7d8a84', fontWeight: '900', fontSize: 10, textTransform: 'uppercase', marginTop: 4, letterSpacing: 1 }}>{item.date}</Text>
                   </View>
                 </View>
-                <Text style={{ fontFamily: 'Display-Bold' }} className={cn("text-lg tracking-tighter", item.type === 'income' ? 'text-[#10b981]' : 'text-[#ef4444]')}>
+                <Text style={{ fontFamily: 'Display-Bold', fontSize: 18, color: item.type === 'income' ? '#10b981' : '#ef4444' }}>
                   {item.type === 'income' ? '+' : '-'} {item.amount}
                 </Text>
               </View>
@@ -126,12 +142,12 @@ export default function Dashboard() {
 
 function ServiceNode({ title, icon: Icon, color, onPress }: any) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} className="items-center">
-      <View style={{ borderColor: `${color}35`, backgroundColor: '#0f1714' }} className="h-20 w-20 rounded-[30px] items-center justify-center border shadow-2xl mb-4 relative">
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={{ alignItems: 'center' }}>
+      <View style={{ width: 72, height: 72, borderRadius: 28, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: `${color}30`, shadowColor: color, shadowOpacity: 0.1, shadowRadius: 10, marginBottom: 12 }}>
         <Icon size={28} color={color} />
-        <View style={{ backgroundColor: color, position: 'absolute', width: 30, height: 30, borderRadius: 15, opacity: 0.1 }} />
+        <View style={{ position: 'absolute', width: 30, height: 30, borderRadius: 15, backgroundColor: color, opacity: 0.05 }} />
       </View>
-      <Text className="text-[#fcfcfc]/30 font-black text-[9px] uppercase tracking-[0.35em]">{title}</Text>
+      <Text style={{ color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 9, textTransform: 'uppercase', letterSpacing: 2 }}>{title}</Text>
     </TouchableOpacity>
   );
 }

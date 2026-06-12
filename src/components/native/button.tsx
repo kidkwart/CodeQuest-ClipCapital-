@@ -1,25 +1,26 @@
 import React from "react";
-import { Pressable, Text, ActivityIndicator, View } from "react-native";
+import { Pressable, Text, ActivityIndicator, View, StyleSheet } from "react-native";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { LinearGradient } from 'expo-linear-gradient';
 
 const buttonVariants = cva(
-  "flex-row items-center justify-center rounded-[24px] px-4 py-3 active:scale-[0.98]",
+  "flex-row items-center justify-center rounded-[26px] px-8 active:scale-[0.96]",
   {
     variants: {
       variant: {
-        default: "bg-[#10b981] shadow-xl shadow-[#10b981]/30",
-        destructive: "bg-[#ef4444] shadow-xl shadow-[#ef4444]/30",
-        outline: "border-2 border-[#10b981]/40 bg-transparent",
-        secondary: "bg-[#eab308] shadow-xl shadow-[#eab308]/30",
+        default: "bg-[#10b981]",
+        destructive: "bg-[#ef4444]",
+        outline: "border-2 border-[#10b981]/30 bg-transparent",
+        secondary: "bg-[#f59e0b]", // Gold
         ghost: "bg-transparent",
         link: "bg-transparent",
       },
       size: {
-        default: "h-14",
-        sm: "h-11 px-5",
-        lg: "h-18 px-10",
-        icon: "h-14 w-14",
+        default: "h-16",
+        sm: "h-11 px-6",
+        lg: "h-20 px-12",
+        icon: "h-16 w-16",
       },
     },
     defaultVariants: {
@@ -29,56 +30,45 @@ const buttonVariants = cva(
   }
 );
 
-const textVariants = cva("text-[13px] font-black uppercase tracking-[0.2em]", {
-  variants: {
-    variant: {
-      default: "text-[#0d1310]", // Dark text on bright green
-      destructive: "text-white",
-      outline: "text-[#10b981]",
-      secondary: "text-[#0d1310]", // Dark text on bright gold
-      ghost: "text-[#7d8a84]",
-      link: "text-[#10b981] underline",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});
-
-export interface ButtonProps
-  extends VariantProps<typeof buttonVariants> {
+export interface ButtonProps extends VariantProps<typeof buttonVariants> {
   onPress?: () => void;
   title?: string;
   loading?: boolean;
   className?: string;
+  style?: any;
   children?: React.ReactNode;
 }
 
-export function Button({
-  className,
-  variant,
-  size,
-  onPress,
-  title,
-  loading,
-  children,
-  ...props
-}: ButtonProps) {
+export function Button({ className, variant, size, onPress, title, loading, style, children, ...props }: ButtonProps) {
+  const isDarkText = variant === 'default' || variant === 'secondary';
+  const isGold = variant === 'secondary';
+  const isEmerald = variant === 'default';
+
   return (
     <Pressable
       onPress={onPress}
       disabled={loading}
+      style={style}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
+      {/* Add a subtle gradient overlay for the Premium look */}
+      {(isGold || isEmerald) && (
+        <LinearGradient
+          colors={['rgba(255,255,255,0.15)', 'transparent']}
+          style={StyleSheet.absoluteFill}
+          className="rounded-[26px]"
+        />
+      )}
+
       {loading ? (
-        <ActivityIndicator color="#0d1310" />
+        <ActivityIndicator color={isDarkText ? "#0d1310" : "white"} />
       ) : (
-        <View className="flex-row items-center justify-center">
-          {children ? (
-            children
-          ) : (
-            <Text className={cn(textVariants({ variant }))}>{title}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {children ? children : (
+            <Text style={{ fontFamily: 'Display-Bold', color: isDarkText ? '#0d1310' : 'white', fontSize: 14, letterSpacing: 3, textTransform: 'uppercase' }}>
+              {title}
+            </Text>
           )}
         </View>
       )}

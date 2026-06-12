@@ -1,13 +1,12 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { cn } from "@/lib/utils";
 import { BlurView } from 'expo-blur';
 
-export function Card({ children, className = "", glass = false }: { children: React.ReactNode; className?: string; glass?: boolean }) {
+export function Card({ children, style, glass = false }: { children: React.ReactNode; style?: any; glass?: boolean }) {
   if (glass) {
     return (
-      <View className={cn("rounded-[35px] border border-[#10b981]/20 overflow-hidden shadow-2xl", className)}>
-        <BlurView intensity={30} tint="dark" className="p-8 bg-[#0f1714]/60">
+      <View style={[styles.cardContainer, { overflow: 'hidden', borderWeight: 1, borderColor: 'rgba(16,185,129,0.1)' }, style]}>
+        <BlurView intensity={30} tint="dark" style={{ padding: 24, backgroundColor: 'rgba(15,23,20,0.6)' }}>
           {children}
         </BlurView>
       </View>
@@ -15,7 +14,7 @@ export function Card({ children, className = "", glass = false }: { children: Re
   }
 
   return (
-    <View className={cn("rounded-[35px] border border-white/5 bg-[#0f1714] p-8 shadow-2xl", className)}>
+    <View style={[styles.cardContainer, { padding: 28, backgroundColor: '#0f1714' }, style]}>
       {children}
     </View>
   );
@@ -25,8 +24,8 @@ export function StatCard({ label, value, hint, variant = "default" }: { label: s
   const color = variant === 'gold' ? '#f59e0b' : '#10b981';
 
   return (
-    <View style={styles.statCard} className={cn("rounded-[35px] border p-7 relative overflow-hidden", variant === 'gold' ? 'border-[#f59e0b]/30' : 'border-[#10b981]/30')}>
-      {/* Signature High-Vibrance Halo Glow */}
+    <View style={[styles.cardContainer, styles.statCard, { borderColor: `${color}40`, borderWidth: 1 }]}>
+      {/* Halo Glow */}
       <View
         style={{
           backgroundColor: color,
@@ -36,23 +35,22 @@ export function StatCard({ label, value, hint, variant = "default" }: { label: s
           width: 140,
           height: 140,
           borderRadius: 70,
-          opacity: 0.15,
-          filter: 'blur(40px)' // Note: Standard web CSS blur works on Expo Web
-        } as any}
+          opacity: 0.1,
+        }}
       />
 
-      <Text className="text-[10px] font-black uppercase tracking-[0.4em] mb-3" style={{ color: `${color}cc` }}>
+      <Text style={{ color: `${color}cc`, fontWeight: '900', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 12 }}>
         {label}
       </Text>
 
-      <Text style={{ fontFamily: 'Display-Bold' }} className="text-3xl text-[#fcfcfc] tracking-tighter leading-none">
+      <Text style={{ fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 32, letterSpacing: -1 }}>
         {value}
       </Text>
 
       {hint && (
-        <View className="mt-4 flex-row">
-          <View style={{ backgroundColor: `${color}15`, borderColor: `${color}30` }} className="px-3 py-1 rounded-full border">
-            <Text style={{ color: color }} className="text-[9px] font-black uppercase tracking-widest">{hint}</Text>
+        <View style={{ marginTop: 16, flexDirection: 'row' }}>
+          <View style={{ backgroundColor: `${color}15`, borderColor: `${color}30`, borderWidth: 1, paddingHorizontal: 12, py: 4, borderRadius: 100 }}>
+            <Text style={{ color: color, fontWeight: '900', fontSize: 8, letterSpacing: 1, textTransform: 'uppercase' }}>{hint}</Text>
           </View>
         </View>
       )}
@@ -61,11 +59,20 @@ export function StatCard({ label, value, hint, variant = "default" }: { label: s
 }
 
 const styles = StyleSheet.create({
-  statCard: {
-    backgroundColor: '#0f1714',
+  cardContainer: {
+    borderRadius: 35,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 20 },
     shadowOpacity: 0.4,
     shadowRadius: 30,
+    elevation: 10,
+  },
+  statCard: {
+    backgroundColor: '#0f1714',
+    padding: 28,
+    position: 'relative',
+    overflow: 'hidden',
   }
 });

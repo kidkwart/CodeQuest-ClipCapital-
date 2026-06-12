@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, RefreshControl } from "react-native";
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from "react-native";
 import { useApplyForLoan, useClipScore, useMyLoans } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import { Input } from "@/components/native/input";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { LoanCalculator } from "@/components/native/loan-calculator";
-import { History, TrendingUp } from "lucide-react-native";
+import { Banknote, Clock, ShieldCheck } from "lucide-react-native";
 
 export default function Loans() {
   const { score } = useClipScore();
@@ -22,66 +22,90 @@ export default function Loans() {
     try {
       await apply.mutateAsync({ amount: Number(amount), term_months: 3, purpose });
       setAmount(""); setPurpose("");
-      alert("Application sent! High-tier processing in progress.");
+      alert("Success: Your application is being processed.");
     } catch (e: any) { alert(e.message); }
   }
 
   return (
-    <ScrollView
-      className="flex-1"
-      contentContainerStyle={{ paddingBottom: 140, paddingTop: 60 }}
-      refreshControl={<RefreshControl refreshing={list.isLoading} tintColor="#10B981" />}
-    >
-      <View className="px-6">
-        <PremiumHeader title="ClipLoans" subtitle="Growth Capital" />
+    <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 160, paddingTop: 60 }}
+        refreshControl={<RefreshControl refreshing={list.isLoading} tintColor="#10B981" />}
+      >
+        <View style={{ paddingHorizontal: 24 }}>
+          <PremiumHeader title="ClipLoans" subtitle="Elite Credit" />
 
-        {/* Dynamic Limit Card */}
-        <Card glass className="mb-10 border-gold/20">
-          <Text className="text-gold font-black text-[10px] uppercase tracking-[0.4em] mb-4 text-center">Premium Credit Line</Text>
-          <View className="items-center">
-            <Text style={{ fontFamily: 'Display-Bold' }} className="text-white text-5xl tracking-tighter">GH₵ {maxLoan.toLocaleString()}</Text>
-            <Text className="text-muted-foreground text-[10px] font-bold mt-2 uppercase">Your Dynamic Borrowing Limit</Text>
-          </View>
+          {/* Hero Application Card - THE PREMIUM BOX */}
+          <Card glass style={{ marginBottom: 48, padding: 32, borderColor: '#f59e0b30' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 24 }}>
+               <ShieldCheck size={16} color="#f59e0b" />
+               <Text style={{ color: '#f59e0b', fontFamily: 'Display-Bold', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase' }}>Private Credit Line</Text>
+            </View>
 
-          <View className="mt-8 pt-8 border-t border-white/5 space-y-4">
-            <Input
-              label="Request Amount" value={amount} onChangeText={setAmount}
-              keyboardType="numeric" placeholder="0.00"
-            />
-            <Input
-              label="Business Purpose" value={purpose} onChangeText={setPurpose}
-              placeholder="e.g. Shop Expansion"
-            />
-            <Button title="Unlock Capital" onPress={handleApply} loading={apply.isPending} />
-          </View>
-        </Card>
+            <View style={{ alignItems: 'center', marginBottom: 48 }}>
+              <Text style={{ fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 64, letterSpacing: -3, lineHeight: 64 }}>GH₵ {maxLoan.toLocaleString()}</Text>
+              <Text style={{ color: '#7d8a84', fontFamily: 'Display-Bold', fontSize: 10, marginTop: 12, textTransform: 'uppercase', letterSpacing: 3 }}>Your Borrowing Capacity</Text>
+            </View>
 
-        <LoanCalculator maxAmount={maxLoan} />
+            <View style={{ gap: 24 }}>
+              <Input
+                label="Request Amount"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="numeric"
+                placeholder="0.00 GH₵"
+              />
+              <Input
+                label="Loan Purpose"
+                value={purpose}
+                onChangeText={setPurpose}
+                placeholder="e.g. Shop Expansion"
+              />
+              <Button
+                title="Unlock Capital"
+                onPress={handleApply}
+                loading={apply.isPending}
+                variant="secondary"
+                size="lg"
+                style={{ marginTop: 12 }}
+              />
+            </View>
+          </Card>
 
-        <View className="mt-12">
-          <Text className="text-white/40 font-black text-[10px] uppercase tracking-[0.3em] mb-6 ml-1">Loan Portfolio</Text>
-          {list.data?.length === 0 ? (
-            <Card className="items-center py-10 border-dashed opacity-50">
-               <TrendingUp size={32} color="#405045" />
-               <Text className="text-muted-foreground font-bold mt-4 italic">No active facilities</Text>
-            </Card>
-          ) : (
-            list.data?.map((l) => (
-              <Card key={l.id} className="mb-4">
-                <View className="flex-row justify-between items-center">
-                  <View>
-                    <Text style={{ fontFamily: 'Display-Bold' }} className="text-white text-lg">GH₵ {l.amount}</Text>
-                    <Text className="text-muted-foreground text-[10px] font-bold uppercase">{l.purpose}</Text>
-                  </View>
-                  <View className="bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                    <Text className="text-primary text-[9px] font-black uppercase">{l.status}</Text>
-                  </View>
-                </View>
+          <LoanCalculator maxAmount={maxLoan} />
+
+          <View style={{ marginTop: 64 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 32, marginLeft: 8 }}>
+               <Banknote size={20} color="#10B981" />
+               <Text style={{ color: 'rgba(252,252,252,0.3)', fontFamily: 'Display-Bold', fontSize: 11, letterSpacing: 4, textTransform: 'uppercase' }}>Active Facilities</Text>
+            </View>
+
+            {(list.data ?? []).length === 0 ? (
+              <Card style={{ alignItems: 'center', paddingVertical: 80, borderStyle: 'dashed', opacity: 0.3, backgroundColor: 'transparent' }}>
+                 <Clock size={40} color="#405045" />
+                 <Text style={{ color: 'white', fontFamily: 'Display-Bold', marginTop: 20, fontStyle: 'italic', fontSize: 12 }}>No active facilities found</Text>
               </Card>
-            ))
-          )}
+            ) : (
+              <View style={{ paddingBottom: 40 }}>
+                {list.data?.map((l) => (
+                  <Card key={l.id} style={{ marginBottom: 16, padding: 24, backgroundColor: 'rgba(15,23,20,0.4)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 20 }}>GH₵ {l.amount}</Text>
+                        <Text style={{ color: '#7d8a84', fontFamily: 'Display-Bold', fontSize: 9, textTransform: 'uppercase', marginTop: 6, letterSpacing: 2 }}>{l.purpose}</Text>
+                      </View>
+                      <View style={{ backgroundColor: '#10b98115', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 100, borderWidth: 1, borderColor: '#10b98130' }}>
+                        <Text style={{ color: '#10B981', fontFamily: 'Display-Bold', fontSize: 9, textTransform: 'uppercase', letterSpacing: 1 }}>{l.status}</Text>
+                      </View>
+                    </View>
+                  </Card>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

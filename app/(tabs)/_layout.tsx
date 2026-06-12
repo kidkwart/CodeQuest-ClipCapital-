@@ -9,31 +9,30 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          sceneStyle: { backgroundColor: '#080c0a' }, // FORCE DARK SCENE
           tabBarStyle: {
             position: 'absolute',
-            bottom: 25,
+            bottom: 30,
             left: 20,
             right: 20,
             elevation: 0,
-            backgroundColor: '#111814',
-            borderRadius: 25,
-            height: 70,
+            backgroundColor: 'rgba(26, 36, 31, 0.8)',
+            borderRadius: 30,
+            height: 80,
             borderTopWidth: 0,
             shadowColor: '#000',
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.5,
-            shadowRadius: 20,
-            paddingBottom: Platform.OS === 'ios' ? 0 : 0,
+            shadowOffset: { width: 0, height: 15 },
+            shadowOpacity: 0.4,
+            shadowRadius: 25,
+            paddingBottom: 0,
             overflow: 'hidden',
             borderWidth: 1,
-            borderColor: 'rgba(16, 185, 129, 0.1)'
+            borderColor: 'rgba(255, 255, 255, 0.05)'
           },
           tabBarBackground: () => (
-            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
           ),
           tabBarActiveTintColor: "#10B981",
-          tabBarInactiveTintColor: "#4b5563",
+          tabBarInactiveTintColor: "#7d8a84",
           tabBarShowLabel: false,
         }}
       >
@@ -41,8 +40,8 @@ export default function TabsLayout() {
           name="index"
           options={{
             tabBarIcon: ({ color, focused }) => (
-              <View className={focused ? "bg-primary/10 p-3 rounded-2xl" : "p-3"}>
-                <LayoutDashboard size={24} color={color} />
+              <View className={focused ? "bg-[#10b981]/10 p-4 rounded-[22px] border border-[#10b981]/20" : "p-4"}>
+                <LayoutDashboard size={26} color={color} />
               </View>
             ),
           }}
@@ -51,8 +50,8 @@ export default function TabsLayout() {
           name="susu"
           options={{
             tabBarIcon: ({ color, focused }) => (
-              <View className={focused ? "bg-primary/10 p-3 rounded-2xl" : "p-3"}>
-                <Wallet size={24} color={color} />
+              <View className={focused ? "bg-[#10b981]/10 p-4 rounded-[22px] border border-[#10b981]/20" : "p-4"}>
+                <Wallet size={26} color={color} />
               </View>
             ),
           }}
@@ -61,8 +60,8 @@ export default function TabsLayout() {
           name="loans"
           options={{
             tabBarIcon: ({ color, focused }) => (
-              <View className={focused ? "bg-primary/10 p-3 rounded-2xl" : "p-3"}>
-                <TrendingUp size={24} color={color} />
+              <View className={focused ? "bg-[#10b981]/10 p-4 rounded-[22px] border border-[#10b981]/20" : "p-4"}>
+                <TrendingUp size={26} color={color} />
               </View>
             ),
           }}
@@ -71,8 +70,8 @@ export default function TabsLayout() {
           name="settings"
           options={{
             tabBarIcon: ({ color, focused }) => (
-              <View className={focused ? "bg-primary/10 p-3 rounded-2xl" : "p-3"}>
-                <Settings size={24} color={color} />
+              <View className={focused ? "bg-[#10b981]/10 p-4 rounded-[22px] border border-[#10b981]/20" : "p-4"}>
+                <Settings size={26} color={color} />
               </View>
             ),
           }}
