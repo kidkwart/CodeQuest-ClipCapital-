@@ -9,6 +9,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { ClipScoreBreakdown } from "@/components/native/clipscore-breakdown";
 
+// Finalized Privacy Mode and UI
 export default function Dashboard() {
   const router = useRouter();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
