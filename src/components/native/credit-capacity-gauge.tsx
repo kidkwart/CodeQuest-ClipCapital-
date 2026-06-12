@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop, G, Line } from 'react-native-svg';
 import { Card } from './card';
-import { Zap, ShieldCheck, TrendingUp, ChevronRight } from 'lucide-react-native';
-import Animated, { useAnimatedProps, useSharedValue, withTiming, withDelay } from 'react-native-reanimated';
+import { Zap, ShieldCheck, TrendingUp, ChevronRight, Activity } from 'lucide-react-native';
+import Animated, { useAnimatedProps, useSharedValue, withSpring } from 'react-native-reanimated';
+import { BouncyTap } from './bouncy-tap';
 
 const { width } = Dimensions.get('window');
-const GAUGE_SIZE = 160;
-const STROKE_WIDTH = 12;
-const RADIUS = (GAUGE_SIZE - STROKE_WIDTH) / 2;
+const GAUGE_SIZE = 180;
+const STROKE_WIDTH = 14;
+const RADIUS = (GAUGE_SIZE - STROKE_WIDTH - 20) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedG = Animated.createAnimatedComponent(G);
 
 interface Props {
   score: number;
@@ -20,17 +22,35 @@ interface Props {
 }
 
 export function CreditCapacityGauge({ score, limit, loading }: Props) {
-  const percentage = Math.min(100, Math.max(0, ((score - 100) / 750) * 100));
-  const strokeDashoffset = CIRCUMFERENCE - (percentage / 100) * CIRCUMFERENCE;
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    const percentage = Math.min(100, Math.max(0, ((score - 100) / 750) * 100));
+    progress.value = withSpring(percentage / 100, { damping: 15 });
+  }, [score]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
+  }));
 
   const getTier = (s: number) => {
-    if (s >= 800) return { name: "ELITE ARTISAN", color: "#f59e0b", icon: Zap };
-    if (s >= 650) return { name: "MASTER CRAFT", color: "#10b981", icon: ShieldCheck };
-    return { name: "PRO-LEVEL", color: "#3b82f6", icon: TrendingUp };
+    if (s >= 800) return { name: "ELITE ARTISAN", color: "#f59e0b", icon: Zap, label: 'PRESTIGE' };
+    if (s >= 650) return { name: "MASTER CRAFT", color: "#10b981", icon: ShieldCheck, label: 'MASTER' };
+    return { name: "PRO-LEVEL", color: "#3b82f6", icon: TrendingUp, label: 'ESTABLISHED' };
   };
 
   const tier = getTier(score);
   const TierIcon = tier.icon;
+
+  // Generate Ticks
+  const ticks = Array.from({ length: 12 }).map((_, i) => {
+    const angle = (i * 30 * Math.PI) / 180;
+    const x1 = GAUGE_SIZE / 2 + (RADIUS + 8) * Math.cos(angle);
+    const y1 = GAUGE_SIZE / 2 + (RADIUS + 8) * Math.sin(angle);
+    const x2 = GAUGE_SIZE / 2 + (RADIUS + 14) * Math.cos(angle);
+    const y2 = GAUGE_SIZE / 2 + (RADIUS + 14) * Math.sin(angle);
+    return <Line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.1)" strokeWidth="1" />;
+  });
 
   if (loading) {
     return (
@@ -44,12 +64,12 @@ export function CreditCapacityGauge({ score, limit, loading }: Props) {
     <Card glass style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.supTitle}>CREDIT CAPACITY</Text>
-          <Text style={styles.mainTitle}>Financial Power</Text>
+          <Text style={styles.supTitle}>VAULT PROTOCOL</Text>
+          <Text style={styles.mainTitle}>Financial Capacity</Text>
         </View>
-        <View style={[styles.tierBadge, { backgroundColor: `${tier.color}10`, borderColor: `${tier.color}30` }]}>
-           <TierIcon size={10} color={tier.color} fill={tier.color} />
-           <Text style={[styles.tierText, { color: tier.color }]}>{tier.name}</Text>
+        <View style={[styles.tierBadge, { borderColor: `${tier.color}40`, backgroundColor: `${tier.color}08` }]}>
+           <Activity size={10} color={tier.color} />
+           <Text style={[styles.tierText, { color: tier.color }]}>{tier.label} STATUS</Text>
         </View>
       </View>
 
@@ -61,16 +81,33 @@ export function CreditCapacityGauge({ score, limit, loading }: Props) {
                 <Stop offset="0" stopColor={tier.color} stopOpacity="1" />
                 <Stop offset="1" stopColor="#064e3b" stopOpacity="1" />
               </LinearGradient>
+              <LinearGradient id="recessed" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="rgba(0,0,0,0.5)" stopOpacity="1" />
+                <Stop offset="1" stopColor="rgba(255,255,255,0.02)" stopOpacity="0.5" />
+              </LinearGradient>
             </Defs>
-            {/* Background Circle */}
+
+            {ticks}
+
+            {/* Recessed Track */}
             <Circle
               cx={GAUGE_SIZE / 2}
               cy={GAUGE_SIZE / 2}
               r={RADIUS}
-              stroke="rgba(255,255,255,0.03)"
+              stroke="url(#recessed)"
+              strokeWidth={STROKE_WIDTH + 4}
+              fill="none"
+            />
+
+            <Circle
+              cx={GAUGE_SIZE / 2}
+              cy={GAUGE_SIZE / 2}
+              r={RADIUS}
+              stroke="rgba(255,255,255,0.02)"
               strokeWidth={STROKE_WIDTH}
               fill="none"
             />
+
             {/* Active Progress */}
             <AnimatedCircle
               cx={GAUGE_SIZE / 2}
@@ -79,38 +116,52 @@ export function CreditCapacityGauge({ score, limit, loading }: Props) {
               stroke="url(#gaugeGrad)"
               strokeWidth={STROKE_WIDTH}
               strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={strokeDashoffset}
+              animatedProps={animatedProps}
               strokeLinecap="round"
               fill="none"
               transform={`rotate(-90 ${GAUGE_SIZE / 2} ${GAUGE_SIZE / 2})`}
             />
+
+            {/* Center Hub */}
+            <Circle
+                cx={GAUGE_SIZE / 2}
+                cy={GAUGE_SIZE / 2}
+                r={RADIUS - 12}
+                fill="#0f1714"
+                stroke="rgba(255,255,255,0.03)"
+                strokeWidth="1"
+            />
           </Svg>
+
           <View style={styles.centerText}>
              <Text style={styles.scoreLabel}>CLIPSCORE</Text>
              <Text style={styles.scoreValue}>{score}</Text>
-             <Text style={styles.scoreMax}>Institutional</Text>
+             <View style={styles.verifiedRow}>
+                <ShieldCheck size={10} color="#10b981" />
+                <Text style={styles.scoreMax}>SECURED</Text>
+             </View>
           </View>
         </View>
 
         <View style={styles.statsColumn}>
            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>INSTANT LIMIT</Text>
-              <Text style={styles.statValue}>GH₵ {limit.toLocaleString()}</Text>
+              <Text style={styles.statLabel}>LIQUIDITY LIMIT</Text>
+              <Text style={styles.statValue}>GH₵ {limit.toLocaleString(undefined, { minimumFractionDigits: 0 })}</Text>
            </View>
            <View style={styles.divider} />
            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>LIQUIDITY TIER</Text>
-              <Text style={[styles.statValue, { color: tier.color }]}>{tier.name.split(' ')[0]}</Text>
+              <Text style={styles.statLabel}>CURRENT TIER</Text>
+              <Text style={[styles.statValue, { color: tier.color }]}>{tier.name}</Text>
            </View>
         </View>
       </View>
 
       <View style={styles.footer}>
-         <View style={styles.footerInfo}>
-            <ShieldCheck size={12} color="#10b981" />
-            <Text style={styles.footerText}>Authorized by ClipCapital Governance</Text>
-         </View>
-         <ChevronRight size={14} color="#405045" />
+         <Text style={styles.footerText}>Institutional Credit Assessment • Ver: 4.2.0</Text>
+         <BouncyTap onPress={() => {}} style={styles.auditBtn}>
+            <Text style={styles.auditText}>VIEW AUDIT</Text>
+            <ChevronRight size={10} color="#10b981" />
+         </BouncyTap>
       </View>
     </Card>
   );
@@ -121,15 +172,20 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 40,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 32,
-    backgroundColor: 'rgba(15,23,20,0.4)',
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 36,
+    backgroundColor: '#0d1310',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   supTitle: {
     color: '#10b981',
@@ -141,16 +197,16 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontFamily: 'Display-Bold',
     color: 'white',
-    fontSize: 22,
-    marginTop: 4,
+    fontSize: 24,
+    marginTop: 6,
   },
   tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
   },
   tierText: {
@@ -174,43 +230,54 @@ const styles = StyleSheet.create({
   },
   centerText: {
     alignItems: 'center',
+    backgroundColor: '#0f1714',
+    width: RADIUS * 2 - 10,
+    height: RADIUS * 2 - 10,
+    borderRadius: RADIUS,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.02)'
   },
   scoreLabel: {
-    color: 'rgba(252,252,252,0.3)',
+    color: '#7d8a84',
     fontSize: 8,
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 3,
   },
   scoreValue: {
     fontFamily: 'Display-Bold',
     color: 'white',
-    fontSize: 32,
-    marginVertical: 2,
+    fontSize: 38,
+    marginVertical: 4,
+  },
+  verifiedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   scoreMax: {
     color: '#10b981',
     fontSize: 8,
     fontWeight: '900',
     letterSpacing: 1,
-    textTransform: 'uppercase',
   },
   statsColumn: {
     flex: 1,
-    gap: 16,
+    gap: 20,
   },
   statItem: {
-    gap: 4,
+    gap: 6,
   },
   statLabel: {
-    color: 'rgba(252,252,252,0.3)',
-    fontSize: 8,
+    color: '#405045',
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 2,
   },
   statValue: {
     fontFamily: 'Display-Bold',
     color: 'white',
-    fontSize: 15,
+    fontSize: 16,
   },
   divider: {
     height: 1,
@@ -220,19 +287,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 40,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.03)',
-  },
-  footerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    borderTopColor: 'rgba(255,255,255,0.04)',
   },
   footerText: {
-    color: '#405045',
-    fontSize: 10,
+    color: '#334140',
+    fontSize: 9,
     fontWeight: 'bold',
+    letterSpacing: 0.5
+  },
+  auditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(16,185,129,0.05)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  auditText: {
+    color: '#10b981',
+    fontSize: 9,
+    fontWeight: '900',
   }
 });

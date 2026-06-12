@@ -35,7 +35,7 @@ export default function WalletScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} progressViewOffset={Platform.OS === 'ios' ? 60 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
 
