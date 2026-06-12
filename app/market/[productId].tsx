@@ -199,13 +199,26 @@ export default function ProductDetails() {
 
       <View style={styles.bottomBar}>
         {Platform.OS !== 'web' && <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />}
-        <View style={{ paddingHorizontal: 24, paddingVertical: 24, backgroundColor: Platform.OS === 'web' ? 'rgba(8, 12, 10, 0.9)' : 'transparent' }}>
-          <Button
-            title={isAdded ? "Added to Cart ✓" : "Confirm Order"}
-            variant={isAdded ? "outline" : "default"}
-            size="lg"
-            onPress={handleAddToCart}
-          />
+        <View style={styles.bottomBarInner}>
+          <View style={{ flex: 1 }}>
+            <Button
+              title={isAdded ? "Added ✓" : "Add to Cart"}
+              variant="outline"
+              size="lg"
+              onPress={handleAddToCart}
+            />
+          </View>
+          <View style={{ flex: 1.5 }}>
+            <Button
+              title="Buy Now"
+              variant="default"
+              size="lg"
+              onPress={() => {
+                handleAddToCart();
+                router.push("/market/cart");
+              }}
+            />
+          </View>
         </View>
       </View>
     </View>
@@ -326,5 +339,12 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.05)',
     overflow: 'hidden',
     zIndex: 10
+  },
+  bottomBarInner: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    backgroundColor: Platform.OS === 'web' ? 'rgba(8, 12, 10, 0.9)' : 'transparent'
   }
 });
