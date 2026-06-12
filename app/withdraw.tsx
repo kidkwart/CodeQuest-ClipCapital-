@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Alert, Platform } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useProfile, useMyWithdrawals, useRequestWithdrawal } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
@@ -17,12 +17,29 @@ export default function WithdrawScreen() {
 
   const handleRequest = async () => {
     if (!profile?.account_number) {
-      alert("Please set up your Payout Details in Settings first.");
+      if (Platform.OS === 'web') {
+        if (confirm("Payout details not found. Go to Settings to configure them?")) {
+          router.push("/settings");
+        }
+      } else {
+        Alert.alert(
+          "Setup Required",
+          "Please set up your Payout Details in Settings before making a withdrawal.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Go to Settings", onPress: () => router.push("/settings") }
+          ]
+        );
+      }
       return;
     }
     const amt = Number(amount);
     if (!amt || amt < 5) {
       alert("Minimum withdrawal is GH₵ 5");
+      return;
+    }
+    if (amt > (profile?.wallet_balance || 0)) {
+      alert("Insufficient balance. You cannot withdraw more than what is in your wallet.");
       return;
     }
     try {
@@ -33,9 +50,14 @@ export default function WithdrawScreen() {
         account_name: profile.account_name || profile.display_name
       });
       setAmount("");
-      alert("Withdrawal request sent! Admin will process it shortly.");
-    } catch (e) {
-      alert("Failed to submit request.");
+      if (Platform.OS === 'web') {
+        alert("Withdrawal request sent! Admin will process it shortly.");
+      } else {
+        Alert.alert("Success", "Withdrawal request sent! Admin will process it shortly.");
+      }
+    } catch (e: any) {
+      console.error("Withdrawal Error:", e);
+      alert("Failed to submit request: " + (e.message || "Unknown error"));
     }
   };
 
@@ -76,6 +98,19 @@ export default function WithdrawScreen() {
              </View>
              <Wallet size={160} color="white" style={{ position: 'absolute', right: -40, bottom: -40, opacity: 0.1, transform: [{ rotate: '15deg' }] }} />
           </Card>
+
+          <View style={{ flexDirection: 'row', gap: 12, marginBottom: 40 }}>
+            <TouchableOpacity
+              onPress={() => router.push("/topup")}
+              style={{ flex: 1, height: 56, backgroundColor: '#10b981', borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+            >
+               <Text style={{ fontFamily: 'Display-Bold', color: '#080c0a', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5 }}>Add Funds</Text>
+            </TouchableOpacity>
+            <View style={{ flex: 1, backgroundColor: '#0f1714', borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+               <Text style={{ color: '#7d8a84', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>Available</Text>
+               <Text style={{ color: 'white', fontWeight: 'bold' }}>GH₵ {profile?.wallet_balance || '0.00'}</Text>
+            </View>
+          </View>
 
           <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Request Payout</Text>
           <Card glass style={{ marginBottom: 48, borderColor: 'rgba(16,185,129,0.2)' }}>

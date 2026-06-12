@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image, StyleSheet } from "react-native";
 import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "expo-router";
-import { Mail, Lock, ArrowRight, ShieldCheck, User, Building } from "lucide-react-native";
+import { Mail, Lock, ArrowRight, User, Building } from "lucide-react-native";
 import { KenteBackground } from "@/components/native/effects/kente-pattern";
 
 export default function Login() {
@@ -44,7 +44,6 @@ export default function Login() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
-      {/* Signature Kente Background */}
       <KenteBackground />
 
       <ScrollView
@@ -52,21 +51,16 @@ export default function Login() {
         keyboardShouldPersistTaps="handled"
         style={{ backgroundColor: 'transparent' }}
       >
-        <View className="flex-1 px-8 pt-24 pb-12">
+        <View className="flex-1 px-8 pt-20 pb-12">
 
-          {/* Branding Section */}
-          <View className="items-center mb-12">
-            <View className="relative">
-              <View className="absolute inset-0 bg-primary/30 rounded-full scale-150" />
-              <View className="w-28 h-28 bg-[#0f1714] rounded-[40px] items-center justify-center border border-white/10 shadow-2xl">
-                <ShieldCheck size={56} color="#10B981" />
-              </View>
+          {/* Logo Branding */}
+          <View className="items-center mb-10">
+            <View style={{ width: 280, height: 100, backgroundColor: '#0f1714', borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#10b98130' }}>
+               <Text style={{ fontFamily: 'Display-Bold', color: 'white', fontSize: 40, letterSpacing: -2 }}>
+                 Clip<Text style={{ color: '#10b981' }}>Capital</Text>
+               </Text>
             </View>
-
-            <Text style={{ fontFamily: 'Display-Bold' }} className="mt-8 text-5xl text-white tracking-tighter">
-              Clip<Text className="text-primary">Capital</Text>
-            </Text>
-            <View className="bg-primary/10 px-4 py-1 rounded-full border border-primary/20 mt-2">
+            <View className="bg-primary/10 px-4 py-1 rounded-full border border-primary/20 mt-4">
               <Text className="text-primary font-black text-[10px] uppercase tracking-[0.4em]">Finance. Simplified.</Text>
             </View>
           </View>

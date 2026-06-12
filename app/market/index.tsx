@@ -1,19 +1,47 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, StyleSheet } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, StyleSheet, Dimensions } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useProducts } from "@/lib/app-queries";
 import { useCart } from "@/lib/cart";
 import { Card } from "@/components/native/card";
-import { Button } from "@/components/native/button";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, ShoppingCart, Sparkles, Check } from "lucide-react-native";
+import { ArrowLeft, ShoppingCart, Sparkles, Check, ShoppingBag } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { BouncyTap } from "@/components/native/bouncy-tap";
+
+// Fallback data in case the database is empty or not connecting
+const FALLBACK_PRODUCTS = [
+  {
+    id: "1",
+    name: "Professional Cordless Clipper",
+    price: 850,
+    image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?w=400&q=80",
+    description: "High-performance cordless clipper with precision blades."
+  },
+  {
+    id: "2",
+    name: "Premium Barber Chair",
+    price: 2500,
+    image_url: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80",
+    description: "Heavy-duty hydraulic barber chair with premium leather."
+  },
+  {
+    id: "3",
+    name: "Pro Hair Dryer 2000W",
+    price: 450,
+    image_url: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=400&q=80",
+    description: "Ionic hair dryer for fast drying and smooth results."
+  }
+];
 
 export default function Marketplace() {
   const router = useRouter();
-  const { data: products, isLoading, refetch } = useProducts();
+  const { data: dbProducts, isLoading, refetch } = useProducts();
   const cart = useCart();
-  const [addedItems, setAddedItems] = useState<Record<string, boolean>>({});
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+
+  // Use DB products if they exist, otherwise use fallbacks
+  const products = (dbProducts && dbProducts.length > 0) ? dbProducts : FALLBACK_PRODUCTS;
 
   const handleAdd = (p: any) => {
     cart.add({
@@ -23,17 +51,13 @@ export default function Marketplace() {
       qty: 1
     });
 
-    // Set feedback state
-    setAddedItems(prev => ({ ...prev, [p.id]: true }));
-
-    // Clear feedback after 2 seconds
-    setTimeout(() => {
-      setAddedItems(prev => ({ ...prev, [p.id]: false }));
-    }, 2000);
+    setLastAddedId(p.id);
+    setTimeout(() => setLastAddedId(null), 2000);
   };
 
-  const isInCart = (productId: string) => {
-    return cart.items.some(item => item.product_id === productId);
+  const getItemQty = (productId: string) => {
+    const item = cart.items.find(i => i.product_id === productId);
+    return item ? item.qty : 0;
   };
 
   return (
@@ -42,8 +66,8 @@ export default function Marketplace() {
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={{ marginLeft: 16, height: 40, width: 40, borderRadius: 12, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+            onPress={() => router.push("/(tabs)")}
+            style={styles.navBtn}
           >
             <ArrowLeft size={20} color="#FFF" />
           </TouchableOpacity>
@@ -51,13 +75,13 @@ export default function Marketplace() {
         headerRight: () => (
           <TouchableOpacity
             onPress={() => router.push("/market/cart")}
-            style={{ marginRight: 16, height: 40, width: 40, backgroundColor: '#0f1714', borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+            style={styles.navBtn}
           >
             <View>
               <ShoppingCart size={20} color="#FFF" />
               {cart.items.length > 0 && (
-                <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#10b981', width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: 'black', fontSize: 8, fontWeight: 'bold' }}>{cart.items.length}</Text>
+                <View style={styles.badgeCount}>
+                  <Text style={styles.badgeText}>{cart.items.length}</Text>
                 </View>
               )}
             </View>
@@ -67,71 +91,74 @@ export default function Marketplace() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: 100, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingTop: 100, paddingBottom: 60 }}
         refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="ClipMarket" subtitle="Premium Supplies" />
 
-          <Card glass style={{ marginBottom: 40, padding: 0, overflow: 'hidden', borderColor: 'rgba(16,185,129,0.2)' }}>
+          {/* Partner Banner */}
+          <Card glass style={styles.bannerCard}>
             <LinearGradient colors={['rgba(16, 185, 129, 0.1)', 'transparent']} style={{ padding: 24 }}>
                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <Sparkles size={16} color="#f59e0b" />
-                  <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2 }}>Official Partner Store</Text>
+                  <Text style={styles.bannerTitle}>Official Partner Store</Text>
                </View>
-               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, lineHeight: 18 }}>Genuine equipment sourced directly for Ghana's master artisans. Use your ClipCredit at checkout.</Text>
+               <Text style={styles.bannerSub}>Genuine equipment sourced directly for Ghana's master artisans. Use your ClipCredit at checkout.</Text>
             </LinearGradient>
           </Card>
 
-          {isLoading ? (
-             <View style={{ paddingVertical: 80, alignItems: 'center' }}><Text style={{ color: '#10b981', fontWeight: '900', letterSpacing: 2 }}>SOURCING PRODUCTS...</Text></View>
+          {isLoading && dbProducts?.length === 0 ? (
+             <View style={{ paddingVertical: 80, alignItems: 'center' }}>
+                <Text style={{ color: '#10b981', fontWeight: '900', letterSpacing: 2 }}>CONNECTING TO SUPPLY...</Text>
+             </View>
           ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8, paddingBottom: 40 }}>
-              {products?.map((p) => {
-                const added = addedItems[p.id];
-                const inCart = isInCart(p.id);
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
+              {products.map((p) => {
+                const qty = getItemQty(p.id);
+                const isJustAdded = lastAddedId === p.id;
 
                 return (
                   <View key={p.id} style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
-                    <Card style={{ padding: 0, overflow: 'hidden', borderWeight: 1, borderColor: 'rgba(255,255,255,0.05)', height: '100%', backgroundColor: 'rgba(18,26,22,0.4)' }}>
-                      <Image
-                        source={{ uri: p.image_url || "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=400&q=80" }}
-                        style={{ width: '100%', aspectRatio: 1 }}
-                        resizeMode="cover"
-                      />
-                      <View style={{ padding: 16, flex: 1, justifyContent: 'space-between' }}>
-                        <View>
-                          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }} numberOfLines={2}>{p.name}</Text>
-                          <Text style={{ fontFamily: 'Display-Bold', color: '#f59e0b', fontSize: 18, marginTop: 4 }}>GH₵ {p.price}</Text>
-                        </View>
+                    <BouncyTap
+                      activeOpacity={1}
+                      onPress={() => router.push(`/market/${p.id}`)}
+                      style={{ flex: 1 }}
+                    >
+                      <Card style={styles.productCard}>
+                        <Image
+                          source={{ uri: p.image_url }}
+                          style={styles.productImage}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.productDetails}>
+                          <View>
+                            <Text style={styles.productName} numberOfLines={2}>{p.name}</Text>
+                            <Text style={styles.productPrice}>GH₵ {p.price}</Text>
+                          </View>
 
-                        <TouchableOpacity
-                          onPress={() => handleAdd(p)}
-                          activeOpacity={0.8}
-                          style={{
-                            marginTop: 16,
-                            height: 44,
-                            borderRadius: 14,
-                            backgroundColor: added || inCart ? 'rgba(16, 185, 129, 0.1)' : '#10b981',
-                            borderWidth: 1,
-                            borderColor: added || inCart ? '#10b981' : 'transparent',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 8
-                          }}
-                        >
-                          {added || inCart ? (
-                            <>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleAdd(p);
+                            }}
+                            activeOpacity={0.7}
+                            style={[
+                              styles.addBtn,
+                              (isJustAdded || qty > 0) && styles.addBtnActive
+                            ]}
+                          >
+                            {isJustAdded ? (
                               <Check size={16} color="#10b981" />
-                              <Text style={{ fontFamily: 'Display-Bold', color: '#10b981', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Added</Text>
-                            </>
-                          ) : (
-                            <Text style={{ fontFamily: 'Display-Bold', color: '#0d1310', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Add to Cart</Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    </Card>
+                            ) : qty > 0 ? (
+                              <Text style={styles.addBtnTextActive}>In Cart ({qty})</Text>
+                            ) : (
+                              <Text style={styles.addBtnText}>Add to Cart</Text>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      </Card>
+                    </BouncyTap>
                   </View>
                 );
               })}
@@ -142,3 +169,110 @@ export default function Marketplace() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  navBtn: {
+    marginLeft: 16,
+    marginRight: 16,
+    height: 44,
+    width: 44,
+    borderRadius: 14,
+    backgroundColor: '#0f1714',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)'
+  },
+  badgeCount: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#10b981',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#080c0a'
+  },
+  badgeText: {
+    color: 'black',
+    fontSize: 8,
+    fontWeight: 'bold'
+  },
+  bannerCard: {
+    marginBottom: 40,
+    padding: 0,
+    overflow: 'hidden',
+    borderColor: 'rgba(16,185,129,0.2)'
+  },
+  bannerTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 2
+  },
+  bannerSub: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 11,
+    lineHeight: 18
+  },
+  productCard: {
+    padding: 0,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    height: '100%',
+    backgroundColor: 'rgba(18,26,22,0.4)',
+    borderRadius: 24
+  },
+  productImage: {
+    width: '100%',
+    aspectRatio: 1
+  },
+  productDetails: {
+    padding: 16,
+    flex: 1,
+    justifyContent: 'space-between'
+  },
+  productName: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 13
+  },
+  productPrice: {
+    fontFamily: 'Display-Bold',
+    color: '#f59e0b',
+    fontSize: 18,
+    marginTop: 4
+  },
+  addBtn: {
+    marginTop: 16,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#10b981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addBtnActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: '#10b981',
+  },
+  addBtnText: {
+    fontFamily: 'Display-Bold',
+    color: '#0d1310',
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1
+  },
+  addBtnTextActive: {
+    fontFamily: 'Display-Bold',
+    color: '#10b981',
+    fontSize: 10,
+    textTransform: 'uppercase',
+  }
+});

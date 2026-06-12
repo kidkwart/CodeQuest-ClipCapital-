@@ -88,55 +88,23 @@ export function useAdminStats() {
   return useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase.rpc('get_admin_stats');
+      if (error) throw error;
 
-      const [
-        income,
-        expenses,
-        orders,
-        loans,
-        allLoans,
-        allOrders,
-        allIncome,
-        users
-      ] = await Promise.all([
-        supabase.from("income_entries").select("amount").gte("created_at", today),
-        supabase.from("expense_entries").select("amount").gte("created_at", today),
-        supabase.from("orders").select("total").gte("created_at", today),
-        supabase.from("loan_applications").select("amount").gte("created_at", today).eq("status", "approved"),
-        supabase.from("loan_applications").select("amount, status"),
-        supabase.from("orders").select("total"),
-        supabase.from("income_entries").select("amount"),
-        supabase.from("profiles").select("id", { count: 'exact', head: true }),
-      ]);
-
-      const totalUsers = users.count ?? 0;
-      const dailyIncome = income.data?.reduce((s, i) => s + Number(i.amount), 0) ?? 0;
-      const dailyExpenses = expenses.data?.reduce((s, e) => s + Number(e.amount), 0) ?? 0;
-      const dailySales = orders.data?.reduce((s, o) => s + Number(o.total), 0) ?? 0;
-      const dailyLoans = loans.data?.reduce((s, l) => s + Number(l.amount), 0) ?? 0;
-
-      const totalSales = allOrders.data?.reduce((s, o) => s + Number(o.total), 0) ?? 0;
-      const totalIncome = allIncome.data?.reduce((s, i) => s + Number(i.amount), 0) ?? 0;
-
-      const activeRisk = allLoans.data
-        ?.filter(l => l.status === 'approved' || l.status === 'repaying')
-        .reduce((s, l) => s + Number(l.amount), 0) ?? 0;
-
-      const approvedCount = allLoans.data?.filter(l => l.status === 'approved' || l.status === 'repaying').length ?? 0;
-      const totalApplications = allLoans.data?.length ?? 0;
-      const approvalRate = totalApplications > 0 ? (approvedCount / totalApplications) * 100 : 0;
+      const approvalRate = data.totalApplications > 0
+        ? (data.approvedCount / data.totalApplications) * 100
+        : 0;
 
       return {
-        dailyIncome,
-        dailyExpenses,
-        dailySales,
-        dailyLoans,
-        totalVolume: dailyIncome + dailySales,
-        totalCash: totalSales + totalIncome,
-        activeRisk,
+        dailyIncome: data.dailyIncome,
+        dailyExpenses: data.dailyExpenses,
+        dailySales: data.dailySales,
+        dailyLoans: data.dailyLoans,
+        totalVolume: data.dailyIncome + data.dailySales,
+        totalCash: data.totalSales + data.totalIncome,
+        activeRisk: data.activeRisk,
         approvalRate: Math.round(approvalRate),
-        totalUsers,
+        totalUsers: data.totalUsers,
       };
     },
   });
@@ -239,29 +207,37 @@ export function useIncome() {
 
 export function useAddIncome() {
   const qc = useQueryClient();
+
   return useMutation({
-    mutationFn: async (v: { amount: number; note: string; entry_date: string }) => {
+    mutationFn: async (v: { amount: number; note: string; entry_date?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Authentication required to log income");
+      if (!user) throw new Error("No active session found. Please sign in again.");
 
-      // 1. Log the entry
-      const { error } = await supabase.from("income_entries").insert({
-        ...v,
-        user_id: user.id
+      console.log("Attempting deposit for user:", user.id, "Amount:", v.amount);
+
+      // Use the RPC call for a perfectly synced, atomic transaction
+      const { error } = await supabase.rpc('deposit_funds', {
+        user_uuid: user.id,
+        deposit_amount: v.amount,
+        deposit_note: v.note
       });
-      if (error) throw error;
 
-      // 2. Update wallet balance
-      const { data: p } = await supabase.from("profiles").select("wallet_balance").eq("id", user.id).single();
-      const { error: uErr } = await supabase.from("profiles")
-        .update({ wallet_balance: Number(p?.wallet_balance || 0) + v.amount })
-        .eq("id", user.id);
-      if (uErr) throw uErr;
+      if (error) {
+        console.error("Supabase RPC Error:", error);
+        if (error.code === 'P0001' || error.message.includes('function')) {
+          throw new Error("DATABASE_FUNCTION_MISSING");
+        }
+        throw new Error(error.message);
+      }
+      return { success: true };
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["income"] });
-      qc.invalidateQueries({ queryKey: ["profile"] });
-      qc.invalidateQueries({ queryKey: ["recent-activity"] });
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["income"] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+        qc.invalidateQueries({ queryKey: ["recent-activity"] }),
+        qc.invalidateQueries({ queryKey: ["transaction-history"] }),
+      ]);
     },
   });
 }
@@ -294,24 +270,34 @@ export function useExpenses() {
 
 export function useAddExpense() {
   const qc = useQueryClient();
-  const { user } = useCurrentUser();
   return useMutation({
-    mutationFn: async (v: { amount: number; category: string; note: string; entry_date: string }) => {
-      // 1. Log the entry
-      const { error } = await supabase.from("expense_entries").insert({ ...v, user_id: user!.id });
-      if (error) throw error;
+    mutationFn: async (v: { amount: number; category: string; note: string; entry_date?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No active session found. Please sign in again.");
 
-      // 2. Update wallet balance (deduct)
-      const { data: p } = await supabase.from("profiles").select("wallet_balance").eq("id", user!.id).single();
-      const { error: uErr } = await supabase.from("profiles")
-        .update({ wallet_balance: Number(p?.wallet_balance || 0) - v.amount })
-        .eq("id", user!.id);
-      if (uErr) throw uErr;
+      const { error } = await supabase.rpc('withdraw_funds', {
+        user_uuid: user.id,
+        amount_to_withdraw: v.amount,
+        withdrawal_note: v.note,
+        category_name: v.category
+      });
+
+      if (error) {
+        console.error("Withdraw Error:", error);
+        if (error.message.includes('balance')) {
+          throw new Error("INSUFFICIENT_BALANCE");
+        }
+        throw new Error(error.message);
+      }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["expenses"] });
-      qc.invalidateQueries({ queryKey: ["profile"] });
-      qc.invalidateQueries({ queryKey: ["recent-activity"] });
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["expenses"] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+        qc.invalidateQueries({ queryKey: ["recent-activity"] }),
+        qc.invalidateQueries({ queryKey: ["transaction-history"] }),
+        qc.invalidateQueries({ queryKey: ["admin-stats"] }),
+      ]);
     },
   });
 }
@@ -609,8 +595,8 @@ export function usePendingLoans() {
     queryKey: ["pending-loans"],
     queryFn: async () => {
       const { data, error } = await supabase.from("loan_applications")
-        .select("*, profiles(display_name, business_name)") // Removed !inner to allow loans without profiles to show
-        .in("status", ["pending", "approved", "repaying"])
+        .select("*, profiles:user_id(display_name, business_name)")
+        .eq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -623,36 +609,71 @@ export function useReviewLoan() {
   const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (v: {
-      id: string;
+      id: string | string[];
       status: "approved" | "rejected";
-      decision_note: string;
-      interest_rate?: number;
+      decision_note?: string;
     }) => {
-      // Simulate MoMo Payout for approved loans
-      if (v.status === "approved") {
-        console.log("Simulating MoMo Payout...");
-        // In a real app, you would call a MoMo API here (MTN/Vodafone/AirtelTigo)
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
-      }
+      const ids = Array.isArray(v.id) ? v.id : [v.id];
 
-      const { error } = await supabase.from("loan_applications").update({
-        status: v.status,
-        decision_note: v.decision_note,
-        interest_rate: v.interest_rate ?? 15.0,
-        reviewed_by: user!.id,
-        reviewed_at: new Date().toISOString(),
-        disbursed_at: v.status === "approved" ? new Date().toISOString() : null,
-      }).eq("id", v.id);
-      if (error) throw error;
+      // 1. Update all statuses in one go
+      const { data: updatedLoans, error: updateError } = await supabase
+        .from("loan_applications")
+        .update({
+          status: v.status,
+          decision_note: v.decision_note || (v.status === "approved" ? "Approved by Admin" : "Rejected by Admin"),
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+          disbursed_at: v.status === "approved" ? new Date().toISOString() : null,
+        })
+        .in("id", ids)
+        .select();
+
+      if (updateError) throw updateError;
+      if (!updatedLoans || updatedLoans.length === 0) throw new Error("No loans were updated. Check permissions.");
+
+      // 2. If approved, process deposits for each loan
+      if (v.status === "approved") {
+        for (const loan of updatedLoans) {
+          const { error: rpcError } = await supabase.rpc('deposit_funds', {
+            user_uuid: loan.user_id,
+            deposit_amount: Number(loan.amount),
+            deposit_note: `Loan Disbursement (ID: ${loan.id})`
+          });
+
+          if (rpcError) console.error("Deposit failed for loan", loan.id, rpcError);
+
+          // Non-blocking notification
+          supabase.from("notifications").insert({
+            user_id: loan.user_id,
+            title: "Loan Approved",
+            body: `Your loan of GH₵ ${loan.amount} has been credited to your wallet.`,
+            type: "success"
+          }).then();
+        }
+      }
     },
     onSuccess: () => {
+      // Force refresh multiple queries
       qc.invalidateQueries({ queryKey: ["pending-loans"] });
-      qc.invalidateQueries({ queryKey: ["loans"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      qc.invalidateQueries({ queryKey: ["all-profiles"] });
     },
   });
 }
 
-// ---------- Marketplace ----------
+// ---------- Admin: Support ----------
+export function useAllUserMessages() {
+  return useQuery({
+    queryKey: ["all-admin-messages"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("admin_messages")
+        .select("*, profiles:user_id(display_name, business_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
 export function useProducts() {
   return useQuery({
     queryKey: ["products"],
@@ -954,24 +975,11 @@ export function useSendMessageToAdmin() {
   });
 }
 
-export function useAllUserMessages() {
-  return useQuery({
-    queryKey: ["all-admin-messages"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("admin_messages")
-        .select("*, profiles!inner(display_name, business_name)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
 export function useReplyToUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (v: { user_id: string, message: string }) => {
-      const { error } = await supabase.from("admin_messages").insert({
+      const { error = null } = await supabase.from("admin_messages").insert({
         user_id: v.user_id,
         message: v.message,
         is_from_admin: true
@@ -999,17 +1007,26 @@ export function useMyWithdrawals() {
 
 export function useRequestWithdrawal() {
   const qc = useQueryClient();
-  const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (v: { amount: number, bank_name: string, account_number: string, account_name: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No active session found.");
+
       const { error } = await supabase.from("withdrawal_requests").insert({
         ...v,
-        user_id: user!.id,
+        user_id: user.id,
         status: 'pending'
       });
-      if (error) throw error;
+
+      if (error) {
+        console.error("Withdrawal Request Error:", error);
+        throw new Error(error.message);
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-withdrawals"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-withdrawals"] });
+      qc.invalidateQueries({ queryKey: ["all-withdrawal-requests"] });
+    },
   });
 }
 
@@ -1018,7 +1035,7 @@ export function useAllWithdrawalRequests() {
     queryKey: ["all-withdrawal-requests"],
     queryFn: async () => {
       const { data, error } = await supabase.from("withdrawal_requests")
-        .select("*, profiles!inner(display_name, business_name)")
+        .select("*, profiles!inner(display_name, business_name, wallet_balance)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -1030,16 +1047,51 @@ export function useUpdateWithdrawalStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (v: { id: string, status: string, notes?: string }) => {
-      const { error } = await supabase.from("withdrawal_requests").update({
+      // 1. Get the withdrawal details first (to know the amount and user)
+      const { data: request, error: fetchError } = await supabase
+        .from("withdrawal_requests")
+        .select("amount, user_id")
+        .eq("id", v.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 2. Update the withdrawal status
+      const { error: statusError } = await supabase.from("withdrawal_requests").update({
         status: v.status,
         notes: v.notes,
         processed_at: new Date().toISOString()
       }).eq("id", v.id);
-      if (error) throw error;
+
+      if (statusError) throw statusError;
+
+      // 3. If COMPLETED, deduct the money and log expense using the RPC
+      if (v.status === 'completed') {
+        const { error: rpcError } = await supabase.rpc('withdraw_funds', {
+          user_uuid: request.user_id,
+          amount_to_withdraw: request.amount,
+          withdrawal_note: `Withdrawal Approved (${v.id})`,
+          category_name: 'Withdrawal'
+        });
+
+        if (rpcError) throw rpcError;
+
+        // 4. Create a notification for the user
+        await supabase.from("notifications").insert({
+          user_id: request.user_id,
+          title: "Withdrawal Successful",
+          body: `Your withdrawal of GH₵ ${request.amount} has been processed.`,
+          type: "success"
+        });
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["all-withdrawal-requests"] });
+      qc.invalidateQueries({ queryKey: ["my-withdrawals"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
       qc.invalidateQueries({ queryKey: ["admin-stats"] });
+      qc.invalidateQueries({ queryKey: ["transaction-history"] });
+      qc.invalidateQueries({ queryKey: ["recent-activity"] });
     },
   });
 }
@@ -1064,16 +1116,16 @@ export function useRecentActivity(limit = 10) {
       // In a larger app, we'd use a unified 'transactions' table or a database view.
 
       const [income, expense, repayments, orders, susu] = await Promise.all([
-        supabase.from("income_entries").select("*").eq("user_id", user!.id).order("entry_date", { ascending: false }).limit(limit),
-        supabase.from("expense_entries").select("*").eq("user_id", user!.id).order("entry_date", { ascending: false }).limit(limit),
+        supabase.from("income_entries").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
+        supabase.from("expense_entries").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
         supabase.from("loan_repayments").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
         supabase.from("orders").select("*").eq("buyer_id", user!.id).order("created_at", { ascending: false }).limit(limit),
         supabase.from("susu_contributions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
       ]);
 
       const merged: ActivityItem[] = [
-        ...(income.data ?? []).map(i => ({ id: i.id, type: "income" as const, amount: Number(i.amount), note: i.note || "Income Entry", date: i.entry_date })),
-        ...(expense.data ?? []).map(e => ({ id: e.id, type: "expense" as const, amount: Number(e.amount), note: e.category || "Expense Entry", date: e.entry_date })),
+        ...(income.data ?? []).map(i => ({ id: i.id, type: "income" as const, amount: Number(i.amount), note: i.note || "Income Entry", date: i.created_at })),
+        ...(expense.data ?? []).map(e => ({ id: e.id, type: "expense" as const, amount: Number(e.amount), note: e.category || "Expense Entry", date: e.created_at })),
         ...(repayments.data ?? []).map(r => ({ id: r.id, type: "loan_repayment" as const, amount: Number(r.amount), note: "Loan Repayment", date: r.created_at, status: r.status })),
         ...(orders.data ?? []).map(o => ({ id: o.id, type: "order" as const, amount: Number(o.total), note: "Market Purchase", date: o.created_at, status: o.status })),
         ...(susu.data ?? []).map(s => ({ id: s.id, type: "susu_contribution" as const, amount: Number(s.amount), note: "Susu Contribution", date: s.created_at, status: s.status })),
@@ -1158,6 +1210,61 @@ export function useTransactionHistory() {
 
       // Sort by date descending
       return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    },
+  });
+}
+
+// ---------- System Settings & Admin Tools ----------
+
+export function useSystemSettings() {
+  const qc = useQueryClient();
+  return {
+    settings: useQuery({
+      queryKey: ["system-settings"],
+      queryFn: async () => {
+        const { data, error } = await supabase.from("system_settings").select("*").single();
+        if (error) throw error;
+        return data;
+      },
+    }),
+    updateSettings: useMutation({
+      mutationFn: async (updates: any) => {
+        const { error } = await supabase.from("system_settings").update(updates).eq("id", 1);
+        if (error) throw error;
+      },
+      onSuccess: () => qc.invalidateQueries({ queryKey: ["system-settings"] }),
+    }),
+  };
+}
+
+export function useSendBroadcast() {
+  return useMutation({
+    mutationFn: async ({ title, body }: { title: string; body: string }) => {
+      const { data: users } = await supabase.from("profiles").select("id");
+      if (!users) return;
+
+      const notifications = users.map(u => ({
+        user_id: u.id,
+        title,
+        body,
+        type: "system"
+      }));
+
+      const { error } = await supabase.from("notifications").insert(notifications);
+      if (error) throw error;
+    }
+  });
+}
+
+export function useUpdateUserStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("profiles").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-profiles"] });
     },
   });
 }
