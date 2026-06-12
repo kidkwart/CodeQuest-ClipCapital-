@@ -90,7 +90,7 @@ export default function SusuScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={myGroups.isLoading} tintColor="#10B981" onRefresh={() => myGroups.refetch()} progressViewOffset={Platform.OS === 'ios' ? 60 : 0} />}
+        refreshControl={<RefreshControl refreshing={myGroups.isLoading} tintColor="#10B981" onRefresh={() => myGroups.refetch()} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="Susu Circles" subtitle="Community Capital" />

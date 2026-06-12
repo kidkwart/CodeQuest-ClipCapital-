@@ -28,7 +28,7 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 50 : 0 }}>
+      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 100 : 0 }}>
         <ActivityIndicator size="large" color="#10b981" />
       </View>
     );
@@ -95,7 +95,7 @@ function AuthGuard() {
 
   if (!isReady || loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 50 : 0 }}>
+      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 100 : 0 }}>
         <ActivityIndicator size="large" color="#10b981" />
         <Text style={{ color: 'gray', marginTop: 10, fontSize: 10, letterSpacing: 2 }}>SECURE GATEWAY...</Text>
       </View>

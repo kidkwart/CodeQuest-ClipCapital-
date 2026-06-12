@@ -230,7 +230,7 @@ export default function LoansScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={isLoansLoading} onRefresh={refetch} tintColor="#10b981" progressViewOffset={Platform.OS === 'ios' ? 60 : 0} />}
+          refreshControl={<RefreshControl refreshing={isLoansLoading} onRefresh={refetch} tintColor="#10b981" progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
         >
           <View style={{ paddingHorizontal: 24 }}>
             <PremiumHeader title="Credit" subtitle="Institutional Capital" />

@@ -30,6 +30,7 @@ export default function Settings() {
 
   const [formData, setFormData] = useState({
     display_name: "",
+    username: "",
     business_name: "",
     phone_number: "",
   });
@@ -53,6 +54,7 @@ export default function Settings() {
     if (profile) {
       setFormData({
         display_name: profile.display_name || "",
+        username: profile.username || "",
         business_name: profile.business_name || "",
         phone_number: profile.phone_number || "",
       });
@@ -199,7 +201,7 @@ export default function Settings() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={onRefresh} progressViewOffset={Platform.OS === 'ios' ? 60 : 0} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={onRefresh} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="Settings" subtitle="Merchant Portal" />
@@ -224,6 +226,12 @@ export default function Settings() {
                   label="Display Name"
                   value={formData.display_name}
                   onChangeText={(t) => setFormData({...formData, display_name: t})}
+                  containerClassName="mb-6"
+                />
+                <Input
+                  label="Unique Username"
+                  value={formData.username}
+                  onChangeText={(t) => setFormData({...formData, username: t.toLowerCase().replace(/[^a-z0-9_]/g, '')})}
                   containerClassName="mb-6"
                 />
                 <Input

@@ -156,6 +156,7 @@ export default function Login() {
           options: {
             data: {
               display_name: displayName,
+              username: displayName.toLowerCase().replace(/\s/g, '_'), // Standardizing username handle
               business_name: businessName,
             },
           },
