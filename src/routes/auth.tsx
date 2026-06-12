@@ -167,7 +167,8 @@ function AuthPage() {
             <h1 className="mt-6 text-3xl font-display font-extrabold tracking-tight">
               Clip<span className="text-primary">Capital</span>
             </h1>
-            <p className="text-muted-foreground text-sm font-medium mt-1">Ghana's Financial Partner for Trades</p>
+            <p className="text-primary font-black text-[10px] uppercase tracking-[0.2em] mt-1">Finance. Simplified.</p>
+            <p className="text-muted-foreground text-[11px] font-medium mt-1 italic">Ghana's Financial Partner for Trades</p>
           </div>
 
           <Card className="p-1 shadow-2xl shadow-black/[0.03] border-border/40 overflow-hidden bg-surface/50 backdrop-blur-xl">

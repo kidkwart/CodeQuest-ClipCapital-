@@ -51,10 +51,13 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   return (
     <div className="min-h-screen bg-background text-foreground">
       <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-border bg-surface transform transition-transform md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="h-14 flex items-center px-5 border-b border-border">
-          <Link to="/app" className="font-display font-bold text-lg">
+        <div className="h-20 flex flex-col justify-center px-5 border-b border-border">
+          <Link to="/app" className="font-display font-bold text-lg leading-tight">
             Clip<span className="text-gradient-gold">Capital</span>
           </Link>
+          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter mt-0.5">
+            Finance. Simplified.
+          </div>
         </div>
         <nav className="p-3 space-y-1">
           {nav.map((item) => {
