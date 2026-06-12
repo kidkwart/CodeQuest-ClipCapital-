@@ -6,9 +6,9 @@ import { useState } from "react";
 export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
   const [amount, setAmount] = useState(defaultAmount);
   const [term, setTerm] = useState(3);
-  const interestRate = 15; // Default 15%
+  const interestRate = 15; // 15% monthly interest
 
-  const interest = amount * (interestRate / 100);
+  const interest = amount * (interestRate / 100) * term;
   const total = amount + interest;
   const monthly = total / term;
 
@@ -52,7 +52,7 @@ export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
 
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
           <div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Interest (15%)</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Interest (15%/mo)</div>
             <div className="text-sm font-semibold text-foreground">GH₵ {interest.toLocaleString()}</div>
           </div>
           <div>
