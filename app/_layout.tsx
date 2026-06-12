@@ -10,6 +10,10 @@ import { View, ActivityIndicator, StatusBar, Platform, Text } from "react-native
 import { useFonts, SpaceGrotesk_700Bold, SpaceGrotesk_500Medium, SpaceGrotesk_400Regular } from '@expo-google-fonts/space-grotesk';
 import { KenteBackground } from "@/components/native/effects/kente-pattern";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSystemSettings, useMyRoles } from "@/lib/app-queries";
+import { ShieldAlert, RefreshCw } from "lucide-react-native";
+import { BouncyTap } from '@/components/native/bouncy-tap';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const queryClient = new QueryClient();
 
@@ -40,7 +44,9 @@ export default function RootLayout() {
         <StatusBar barStyle="light-content" />
         <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
           <KenteBackground />
-          <AuthGuard />
+          <MaintenanceGuard>
+            <AuthGuard />
+          </MaintenanceGuard>
         </View>
       </SafeAreaProvider>
     </QueryClientProvider>
@@ -119,4 +125,39 @@ function AuthGuard() {
       <Stack.Screen name="notifications" />
     </Stack>
   );
+}
+
+function MaintenanceGuard({ children }: { children: React.ReactNode }) {
+  const { settings } = useSystemSettings();
+  const { user } = useCurrentUser();
+  const roles = useMyRoles();
+
+  const isMaintenanceActive = settings.data?.maintenance_mode ?? false;
+  const isAdmin = roles.data?.includes('admin') || user?.email === 'bernardyawkwarteng8@gmail.com';
+
+  // If maintenance is ON and user is NOT an admin, block access
+  if (isMaintenanceActive && !isAdmin) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+         <LinearGradient
+            colors={['#10b981', '#064e3b']}
+            style={{ width: 100, height: 100, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 32, shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 20 }}
+         >
+            <ShieldAlert size={48} color="#000" strokeWidth={1.5} />
+         </LinearGradient>
+
+         <Text style={{ color: 'white', fontFamily: 'Display-Bold', fontSize: 28, textAlign: 'center', marginBottom: 12 }}>Under Lockdown</Text>
+         <Text style={{ color: '#7d8a84', fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 48 }}>
+           The ClipCapital vault is currently undergoing an institutional upgrade. All transactions and activities have been suspended for security.
+         </Text>
+
+         <BouncyTap onPress={() => settings.refetch()} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+            <RefreshCw size={16} color="#10b981" />
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 12, letterSpacing: 1 }}>CHECK SYSTEM STATUS</Text>
+         </BouncyTap>
+      </View>
+    );
+  }
+
+  return <>{children}</>;
 }
