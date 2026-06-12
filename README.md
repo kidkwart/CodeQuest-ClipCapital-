@@ -118,7 +118,83 @@ This serves the optimized production bundle on `http://localhost:3000` by defaul
 
 ---
 
-## 7. Sign in and start using the app
+## 7. Run and manage Supabase SQL migrations
+
+The database schema lives in the `supabase/migrations/` folder as numbered `.sql` files. Because this project uses **Lovable Cloud**, the managed backend handles most migration execution for you.
+
+### Migrations in Lovable Cloud (production / live database)
+
+When you ask the Lovable agent to change the database, it creates a migration in the `supabase/migrations/` folder and applies it to your live Lovable Cloud database. You do **not** need to run `supabase db push` or `psql` yourself.
+
+To add a new migration yourself, ask the Lovable agent in chat, e.g.:
+
+> "Create a migration that adds a `notifications` table with `user_id`, `title`, `body`, and `read` columns."
+
+The agent will:
+
+1. Write the SQL file into `supabase/migrations/`.
+2. Apply it to the live database after your approval.
+3. Regenerate the TypeScript types in `src/integrations/supabase/types.ts`.
+
+> **Note:** The service role key is not available on Lovable Cloud, so you cannot run the Supabase CLI directly against the production database from your local machine. Always use the Lovable agent or backend UI for production schema changes.
+
+### Local database development (optional)
+
+If you want a fully local database for testing schema changes before applying them, install the **Supabase CLI** and run a local instance:
+
+1. Install the Supabase CLI:
+
+```bash
+# macOS
+brew install supabase/tap/supabase
+
+# Windows (with Scoop)
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+
+# Linux / other
+npm install -g supabase
+```
+
+2. Start the local Supabase stack:
+
+```bash
+supabase init
+supabase start
+```
+
+This runs Postgres, Auth, and other services in Docker. Your local API URL and anon key will be printed to the terminal.
+
+3. Update your local `.env` to point at the local instance:
+
+```env
+VITE_SUPABASE_URL=http://localhost:54321
+VITE_SUPABASE_PUBLISHABLE_KEY=your-local-anon-key
+SUPABASE_URL=http://localhost:54321
+SUPABASE_PUBLISHABLE_KEY=your-local-anon-key
+```
+
+4. Apply migrations to your local database:
+
+```bash
+supabase db reset
+```
+
+This replays every migration in `supabase/migrations/` on a fresh local database.
+
+5. When you are happy with the schema, copy or commit the new migration file. Then ask the Lovable agent to apply it to your Lovable Cloud project.
+
+### Migration best practices
+
+- Keep each migration focused on one schema change (one table, one set of policy changes, etc.).
+- Every table created in the `public` schema must include `GRANT` statements for `authenticated` and `service_role` in the same migration file.
+- Always enable Row Level Security (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`) and write policies in the same migration.
+- Never edit `supabase/migrations/` files that have already been applied to production. Create a new migration to alter the schema instead.
+- After a migration runs, the Lovable agent will regenerate `src/integrations/supabase/types.ts`. Do not edit that file manually.
+
+---
+
+## 8. Sign in and start using the app
 
 1. Open `http://localhost:8080` in your browser.
 2. Go to `/auth` and create an account.
