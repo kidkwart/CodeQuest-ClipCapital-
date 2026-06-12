@@ -60,7 +60,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
       )}
 
       {/* Main Sidebar */}
-      <aside className={`fixed md:sticky top-0 inset-y-0 left-0 z-50 w-64 border-r border-border bg-surface flex flex-col h-screen transform transition-transform duration-300 ease-in-out md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 inset-y-0 left-0 z-50 w-64 border-r border-border bg-surface flex flex-col h-screen transform transition-transform duration-300 ease-in-out lg:sticky lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Logo Section */}
         <div className="h-24 flex items-center justify-between px-5 border-b border-border bg-primary/5 shrink-0">
           <Link to="/app" className="flex items-center gap-3 active:scale-95 transition-transform" onClick={() => setOpen(false)}>
@@ -114,10 +114,9 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative lg:pl-0">
         <header className="h-14 sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 gap-3">
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(!open)}>
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setOpen(!open)}>
             <Menu className="w-5 h-5" />
           </Button>
           <h1 className="font-display font-bold text-base md:text-lg flex-1 truncate">{title}</h1>
