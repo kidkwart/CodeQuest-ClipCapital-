@@ -2,12 +2,15 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { BlurView } from 'expo-blur';
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/context/theme-context";
 
 export function Card({ children, style, className, glass = false }: { children: React.ReactNode; style?: any; className?: string; glass?: boolean }) {
+  const { colors, theme } = useTheme();
+
   if (glass) {
     return (
       <View className={cn("rounded-[35px] overflow-hidden border border-primary/10", className)} style={style}>
-        <BlurView intensity={30} tint="dark" style={{ padding: 24, backgroundColor: 'rgba(15,23,20,0.6)' }}>
+        <BlurView intensity={30} tint={theme} style={{ padding: 24, backgroundColor: theme === 'dark' ? 'rgba(15,23,20,0.6)' : 'rgba(255,255,255,0.6)' }}>
           {children}
         </BlurView>
       </View>
@@ -16,8 +19,16 @@ export function Card({ children, style, className, glass = false }: { children: 
 
   return (
     <View
-      className={cn("rounded-[35px] border border-white/5 bg-surface p-7 shadow-2xl", className)}
-      style={[{ shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.4, shadowRadius: 30, elevation: 10 }, style]}
+      className={cn("rounded-[35px] border border-white/5 p-7 shadow-2xl", className)}
+      style={[{
+        backgroundColor: colors.cardBg,
+        borderColor: colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: theme === 'dark' ? 0.4 : 0.05,
+        shadowRadius: 30,
+        elevation: 10
+      }, style]}
     >
       {children}
     </View>
@@ -25,10 +36,11 @@ export function Card({ children, style, className, glass = false }: { children: 
 }
 
 export function StatCard({ label, value, hint, variant = "default", style, hideValue = false }: { label: string; value: string; hint?: string, variant?: "default" | "gold" | "emerald", style?: any, hideValue?: boolean }) {
-  const color = variant === 'gold' ? '#f59e0b' : '#10b981';
+  const { colors } = useTheme();
+  const color = variant === 'gold' ? colors.gold : colors.primary;
 
   return (
-    <View style={[styles.cardContainer, styles.statCard, { borderColor: `${color}40`, borderWidth: 1 }, style]}>
+    <View style={[styles.cardContainer, styles.statCard, { borderColor: `${color}40`, borderWidth: 1, backgroundColor: colors.surfaceElevated }, style]}>
       {/* Halo Glow */}
       <View
         style={{
@@ -52,7 +64,7 @@ export function StatCard({ label, value, hint, variant = "default", style, hideV
         adjustsFontSizeToFit
         style={{
           fontFamily: 'Display-Bold',
-          color: '#fcfcfc',
+          color: colors.text,
           fontSize: 24,
           letterSpacing: hideValue ? 4 : -0.5
         }}

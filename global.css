@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* FORCE THE BROWSER TO BE DARK EMERALD BLACK */
 html, body, #root {
-  background-color: #080c0a !important;
-  color: #fcfcfc !important;
   margin: 0;
   padding: 0;
   height: 100%;

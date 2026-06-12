@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, Alert, Platform, Modal, Switch, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, Alert, Platform, Modal, Switch, TextInput, Vibration } from "react-native";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, useUpdateProfile } from "@/lib/app-queries";
 import { Input } from "@/components/native/input";
 import { Button } from "@/components/native/button";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X, Eye, EyeOff, Smartphone, BellRing, Fingerprint, Key } from "lucide-react-native";
+import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X, Eye, EyeOff, Smartphone, BellRing, Fingerprint, Key, Palette } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { LinearGradient } from "expo-linear-gradient";
+import { theme as ThemeColors, ThemeType } from "@/lib/theme";
+import { useTheme } from "@/context/theme-context";
 
 // Optional import for biometrics
 let LocalAuthentication: any = null;
@@ -18,8 +20,10 @@ try {
 } catch (e) {}
 
 export default function Settings() {
+  const { colors, theme, toggleTheme } = useTheme();
   const { data: profile, refetch, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
+
   const [refreshing, setRefreshing] = useState(false);
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [showNotifModal, setShowNotifModal] = useState(false);
@@ -28,6 +32,7 @@ export default function Settings() {
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [pin, setPin] = useState("");
 
+  // local states for inputs
   const [formData, setFormData] = useState({
     display_name: "",
     username: "",
@@ -41,6 +46,7 @@ export default function Settings() {
     security_2fa_enabled: false,
     sms_backup_enabled: false,
     biometric_enabled: false,
+    theme_preference: "dark" as ThemeType,
   });
 
   const [payoutData, setPayoutData] = useState({
@@ -70,6 +76,7 @@ export default function Settings() {
         security_2fa_enabled: profile.security_2fa_enabled ?? false,
         sms_backup_enabled: profile.sms_backup_enabled ?? false,
         biometric_enabled: profile.biometric_enabled ?? false,
+        theme_preference: (profile.theme_preference as ThemeType) || "dark",
       });
     }
   }, [profile]);
@@ -87,6 +94,24 @@ export default function Settings() {
   };
 
   const handleTogglePref = async (key: keyof typeof prefs) => {
+    if (key === 'theme_preference') {
+      const currentTheme = prefs.theme_preference;
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+      // 1. Instant UI update
+      setPrefs(p => ({ ...p, theme_preference: nextTheme }));
+      toggleTheme();
+      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
+
+      // 2. Database Sync
+      try {
+        await updateProfile.mutateAsync({ theme_preference: nextTheme });
+      } catch (e: any) {
+        Alert.alert("Sync Error", "Theme choice not saved to vault: " + e.message);
+      }
+      return;
+    }
+
     const newVal = !prefs[key];
 
     // If enabling sensitive features, verify identity
@@ -122,10 +147,17 @@ export default function Settings() {
 
   const handleSave = async () => {
     try {
-      await updateProfile.mutateAsync(formData);
-      alert("Merchant Identity synchronized.");
+      const updateData = {
+        ...formData,
+        ...prefs,
+        ...payoutData
+      };
+
+      await updateProfile.mutateAsync(updateData);
+      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 20);
+      alert("Vault Synchronized: Your merchant identity and preferences are now secured.");
     } catch (e: any) {
-      alert(e.message);
+      alert("Synchronization Failed: " + e.message);
     }
   };
 
@@ -182,46 +214,73 @@ export default function Settings() {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      style={styles.settingRow}
+      style={[styles.settingRow, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
     >
       <View style={[styles.settingIconBox, { backgroundColor: `${color}15` }]}>
         <Icon size={18} color={color} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.settingLabel}>{label}</Text>
-        {value ? <Text style={styles.settingValueText}>{value}</Text> : null}
+        <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
+        {value ? <Text style={[styles.settingValueText, { color: colors.textMuted }]}>{value}</Text> : null}
       </View>
-      <ChevronRight size={14} color="#405045" />
+      <ChevronRight size={14} color={colors.textDim} />
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={onRefresh} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={onRefresh} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="Settings" subtitle="Merchant Portal" />
 
           {/* Verification Status Card */}
-          <Card style={styles.statusCard}>
+          <Card style={[styles.statusCard, { backgroundColor: colors.cardBg, borderColor: colors.primary + '30' }]}>
              <View style={styles.statusHeader}>
-                <View style={styles.sessionBadge}>
-                   <Text style={styles.sessionText}>Active Session</Text>
+                <View style={[styles.sessionBadge, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '20' }]}>
+                   <Text style={[styles.sessionText, { color: colors.primary }]}>Active Session</Text>
                 </View>
-                <BadgeCheck size={18} color="#10b981" />
+                <BadgeCheck size={18} color={colors.primary} />
              </View>
-             <Text style={styles.identityLabel}>Authorized Identity</Text>
-             <Text style={styles.displayName}>{profile?.display_name || 'Artisan Account'}</Text>
+             <Text style={[styles.identityLabel, { color: colors.textMuted }]}>Authorized Identity</Text>
+             <Text style={[styles.displayName, { color: colors.text }]}>{profile?.display_name || 'Artisan Account'}</Text>
           </Card>
+
+          {/* Preferences - THEME FIRST */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Appearance & Signals</Text>
+
+            <SettingRow
+              icon={Palette}
+              label="Display Appearance"
+              color="#3b82f6"
+              value={prefs.theme_preference === 'dark' ? "Midnight Emerald (Dark)" : "Pristine White (Light)"}
+              onPress={() => handleTogglePref('theme_preference')}
+            />
+
+            <SettingRow
+              icon={Bell}
+              label="Alert Notifications"
+              value={prefs.notifications_enabled ? "Enabled" : "Muted"}
+              onPress={() => setShowNotifModal(true)}
+            />
+
+            <SettingRow
+              icon={Shield}
+              label="Security Protocol"
+              value={prefs.security_2fa_enabled ? "High Security" : "Standard"}
+              onPress={() => setShowSecurityModal(true)}
+            />
+          </View>
 
           {/* Identity Form */}
           <View style={styles.section}>
-             <Text style={styles.sectionTitle}>Identity Modification</Text>
-             <Card style={styles.formCard}>
+             <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Identity Modification</Text>
+             <Card style={[styles.formCard, { backgroundColor: colors.cardBg }]}>
                 <Input
                   label="Display Name"
                   value={formData.display_name}
@@ -256,53 +315,41 @@ export default function Settings() {
              </Card>
           </View>
 
-          {/* Preferences */}
+          {/* Payout Preferences */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
-            <SettingRow
-              icon={Bell}
-              label="Alert Notifications"
-              value={prefs.notifications_enabled ? "Enabled" : "Muted"}
-              onPress={() => setShowNotifModal(true)}
-            />
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Liquidation Payouts</Text>
             <SettingRow
               icon={CreditCard}
-              label="Payout Account"
+              label="Payout Destination"
               color="#f59e0b"
               value={profile?.account_number ? `${profile.bank_name} • ${profile.account_number}` : "Not configured"}
               onPress={() => setShowPayoutModal(true)}
-            />
-            <SettingRow
-              icon={Shield}
-              label="Security Protocol"
-              value={prefs.security_2fa_enabled ? "High Security" : "Standard"}
-              onPress={() => setShowSecurityModal(true)}
             />
           </View>
 
           {/* Account Actions */}
           <View style={{ marginBottom: 40 }}>
-            <Text style={styles.sectionTitle}>Account Control</Text>
-            <TouchableOpacity onPress={handleSignOut} style={styles.actionBtn}>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Account Control</Text>
+            <TouchableOpacity onPress={handleSignOut} style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: colors.border }]}>
               <View style={styles.actionIconBox}>
-                <LogOut size={20} color="#fcfcfc" />
+                <LogOut size={20} color={colors.text} />
               </View>
-              <Text style={styles.actionBtnText}>Secure Sign Out</Text>
+              <Text style={[styles.actionBtnText, { color: colors.text }]}>Secure Sign Out</Text>
             </TouchableOpacity>
           </View>
 
           <View style={{ marginBottom: 100 }}>
-            <Text style={[styles.sectionTitle, { color: '#ef4444' }]}>Danger Zone</Text>
+            <Text style={[styles.sectionTitle, { color: colors.destructive }]}>Danger Zone</Text>
             <TouchableOpacity
               onPress={handleDeleteAccount}
-              style={[styles.actionBtn, { backgroundColor: 'rgba(239,68,68,0.05)', borderColor: 'rgba(239,68,68,0.1)' }]}
+              style={[styles.actionBtn, { backgroundColor: colors.destructive + '05', borderColor: colors.destructive + '10' }]}
             >
-              <View style={[styles.actionIconBox, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                <UserX size={20} color="#EF4444" />
+              <View style={[styles.actionIconBox, { backgroundColor: colors.destructive + '10' }]}>
+                <UserX size={20} color={colors.destructive} />
               </View>
-              <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Delete Institutional Account</Text>
+              <Text style={[styles.actionBtnText, { color: colors.destructive }]}>Delete Institutional Account</Text>
             </TouchableOpacity>
-            <Text style={{ color: '#405045', fontSize: 10, textAlign: 'center', marginTop: 12, paddingHorizontal: 20 }}>
+            <Text style={{ color: colors.textDim, fontSize: 10, textAlign: 'center', marginTop: 12, paddingHorizontal: 20 }}>
                 Terminating your account will permanently wipe all vault data and financial history.
             </Text>
           </View>
@@ -313,18 +360,18 @@ export default function Settings() {
       <Modal visible={showSecurityModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Security Protocol</Text>
-              <TouchableOpacity onPress={() => setShowSecurityModal(false)}><X size={24} color="#7d8a84" /></TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Security Protocol</Text>
+              <TouchableOpacity onPress={() => setShowSecurityModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Access PIN Section */}
-              <View style={styles.pinSection}>
+              <View style={[styles.pinSection, { backgroundColor: colors.background, borderColor: colors.border }]}>
                  <View style={styles.pinHeader}>
-                    <Key size={16} color="#10b981" />
-                    <Text style={styles.pinLabel}>ACCESS KEY (4-DIGITS)</Text>
+                    <Key size={16} color={colors.primary} />
+                    <Text style={[styles.pinLabel, { color: colors.textMuted }]}>ACCESS KEY (4-DIGITS)</Text>
                  </View>
                  <View style={styles.pinInputRow}>
                     <TextInput
@@ -332,18 +379,18 @@ export default function Settings() {
                         onChangeText={(t) => setPin(t.slice(0, 4).replace(/[^0-9]/g, ''))}
                         keyboardType="numeric"
                         secureTextEntry
-                        style={styles.pinInput}
+                        style={[styles.pinInput, { color: colors.text, borderColor: colors.border }]}
                         placeholder="0000"
-                        placeholderTextColor="#405045"
+                        placeholderTextColor={colors.textDim}
                     />
-                    <TouchableOpacity onPress={handleSavePin} style={styles.pinSaveBtn}>
+                    <TouchableOpacity onPress={handleSavePin} style={[styles.pinSaveBtn, { backgroundColor: colors.primary }]}>
                         <Check size={18} color="#000" strokeWidth={3} />
                     </TouchableOpacity>
                  </View>
-                 <Text style={styles.pinHint}>This key will be required during 2FA challenges.</Text>
+                 <Text style={[styles.pinHint, { color: colors.textDim }]}>This key will be required during 2FA challenges.</Text>
               </View>
 
-              <View style={styles.modalDivider} />
+              <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
 
               <ToggleRow
                 icon={EyeOff}
@@ -377,10 +424,10 @@ export default function Settings() {
       <Modal visible={showPayoutModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Payout Destination</Text>
-              <TouchableOpacity onPress={() => setShowPayoutModal(false)}><X size={24} color="#7d8a84" /></TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Payout Destination</Text>
+              <TouchableOpacity onPress={() => setShowPayoutModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
             </View>
             <ScrollView>
               <Input label="Provider / Bank" placeholder="MTN, GCB, etc." value={payoutData.bank_name} onChangeText={(t) => setPayoutData({...payoutData, bank_name: t})} containerClassName="mb-6" />
@@ -396,10 +443,10 @@ export default function Settings() {
       <Modal visible={showNotifModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Alert Preferences</Text>
-              <TouchableOpacity onPress={() => setShowNotifModal(false)}><X size={24} color="#7d8a84" /></TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Alert Preferences</Text>
+              <TouchableOpacity onPress={() => setShowNotifModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
             </View>
             <ScrollView>
               <ToggleRow icon={BellRing} label="Push Notifications" desc="Get real-time updates" value={prefs.notifications_enabled} onToggle={() => handleTogglePref('notifications_enabled')} />
@@ -412,53 +459,56 @@ export default function Settings() {
   );
 }
 
-const ToggleRow = ({ icon: Icon, label, desc, value, onToggle }: any) => (
-  <View style={styles.toggleRow}>
-    <View style={styles.toggleLeft}>
-      <View style={styles.toggleIcon}><Icon size={18} color="#10b981" /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.toggleLabel}>{label}</Text>
-        <Text style={styles.toggleDesc}>{desc}</Text>
+const ToggleRow = ({ icon: Icon, label, desc, value, onToggle }: any) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.toggleRow}>
+      <View style={styles.toggleLeft}>
+        <View style={[styles.toggleIcon, { backgroundColor: colors.primary + '10' }]}><Icon size={18} color={colors.primary} /></View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.toggleLabel, { color: colors.text }]}>{label}</Text>
+          <Text style={[styles.toggleDesc, { color: colors.textMuted }]}>{desc}</Text>
+        </View>
       </View>
+      <Switch value={value} onValueChange={onToggle} trackColor={{ false: colors.background, true: colors.primary }} thumbColor="#fff" />
     </View>
-    <Switch value={value} onValueChange={onToggle} trackColor={{ false: "#1a211e", true: "#10b981" }} thumbColor="#fff" />
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
+  container: { flex: 1 },
   scrollContent: { paddingBottom: 160, paddingTop: 60 },
-  statusCard: { marginBottom: 40, padding: 24, backgroundColor: '#0f1714', borderColor: '#10b98130' },
+  statusCard: { marginBottom: 40, padding: 24, borderWidth: 1, borderRadius: 28 },
   statusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sessionBadge: { height: 28, paddingHorizontal: 12, borderRadius: 100, backgroundColor: 'rgba(16,185,129,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' },
-  sessionText: { color: '#10b981', fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase' },
-  identityLabel: { color: 'rgba(252,252,252,0.4)', fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 },
-  displayName: { fontFamily: 'Display-Bold', color: 'white', fontSize: 24, letterSpacing: -0.5 },
+  sessionBadge: { height: 28, paddingHorizontal: 12, borderRadius: 100, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  sessionText: { fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase' },
+  identityLabel: { fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 },
+  displayName: { fontFamily: 'Display-Bold', fontSize: 24, letterSpacing: -0.5 },
   section: { marginBottom: 40 },
-  sectionTitle: { color: 'rgba(252,252,252,0.3)', fontFamily: 'Display-Bold', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 24, marginLeft: 8 },
-  formCard: { padding: 28, backgroundColor: '#0f1714', borderRadius: 32 },
-  settingRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f1714', padding: 20, borderRadius: 24, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.03)' },
+  sectionTitle: { fontFamily: 'Display-Bold', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 24, marginLeft: 8 },
+  formCard: { padding: 28, borderRadius: 32 },
+  settingRow: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 24, marginBottom: 12, borderWidth: 1 },
   settingIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
-  settingLabel: { fontFamily: 'Display-Bold', color: 'white', fontSize: 14 },
-  settingValueText: { color: '#7d8a84', fontSize: 12, marginTop: 2 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.03)', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', marginBottom: 12 },
-  actionIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
-  actionBtnText: { fontFamily: 'Display-Bold', color: 'white', fontSize: 14 },
+  settingLabel: { fontFamily: 'Display-Bold', fontSize: 14 },
+  settingValueText: { fontSize: 12, marginTop: 2 },
+  actionBtn: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 24, borderWidth: 1, marginBottom: 12 },
+  actionIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  actionBtnText: { fontFamily: 'Display-Bold', fontSize: 14 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.85)' },
-  modalContent: { backgroundColor: '#0f1714', borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 32, maxHeight: '90%' },
+  modalContent: { borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 32, maxHeight: '90%', borderWidth: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 },
-  modalTitle: { fontFamily: 'Display-Bold', color: 'white', fontSize: 20 },
-  pinSection: { marginBottom: 24, backgroundColor: 'rgba(255,255,255,0.02)', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  modalTitle: { fontFamily: 'Display-Bold', fontSize: 20 },
+  pinSection: { marginBottom: 24, padding: 20, borderRadius: 24, borderWidth: 1 },
   pinHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-  pinLabel: { color: '#7d8a84', fontWeight: '900', fontSize: 9, letterSpacing: 2 },
+  pinLabel: { fontWeight: '900', fontSize: 9, letterSpacing: 2 },
   pinInputRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  pinInput: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', height: 56, borderRadius: 16, textAlign: 'center', color: 'white', fontFamily: 'Display-Bold', fontSize: 24, letterSpacing: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  pinSaveBtn: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center' },
-  pinHint: { color: '#405045', fontSize: 10, fontWeight: 'bold', marginTop: 12, textAlign: 'center' },
-  modalDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 32 },
+  pinInput: { flex: 1, backgroundColor: 'rgba(0,0,0,0.05)', height: 56, borderRadius: 16, textAlign: 'center', fontFamily: 'Display-Bold', fontSize: 24, letterSpacing: 10, borderWidth: 1 },
+  pinSaveBtn: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  pinHint: { fontSize: 10, fontWeight: 'bold', marginTop: 12, textAlign: 'center' },
+  modalDivider: { height: 1, marginVertical: 32 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   toggleLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 16 },
-  toggleIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(16,185,129,0.1)', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
-  toggleLabel: { color: 'white', fontFamily: 'Display-Bold', fontSize: 14 },
-  toggleDesc: { color: '#7d8a84', fontSize: 12, marginTop: 2 }
+  toggleIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  toggleLabel: { fontFamily: 'Display-Bold', fontSize: 14 },
+  toggleDesc: { fontSize: 12, marginTop: 2 }
 });

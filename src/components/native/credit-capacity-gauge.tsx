@@ -5,6 +5,7 @@ import { Card } from './card';
 import { Zap, ShieldCheck, TrendingUp, ChevronRight, Activity, Shield } from 'lucide-react-native';
 import Animated, { useAnimatedProps, useSharedValue, withSpring } from 'react-native-reanimated';
 import { BouncyTap } from './bouncy-tap';
+import { useTheme } from "@/context/theme-context";
 
 const { width } = Dimensions.get('window');
 const GAUGE_SIZE = 180;
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
+  const { colors, theme } = useTheme();
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
               cx={GAUGE_SIZE / 2}
               cy={GAUGE_SIZE / 2}
               r={RADIUS}
-              stroke="rgba(255,255,255,0.03)"
+              stroke={colors.border}
               strokeWidth={STROKE_WIDTH}
               fill="none"
             />
@@ -109,8 +111,8 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
           </Svg>
 
           <View style={styles.centerInfo}>
-             <Text style={styles.scoreLabel}>CLIPSCORE</Text>
-             <Text style={styles.scoreValue}>{score}</Text>
+             <Text style={[styles.scoreLabel, { color: colors.textMuted }]}>CLIPSCORE</Text>
+             <Text style={[styles.scoreValue, { color: colors.text }]}>{score}</Text>
              <View style={[styles.tierLabel, { backgroundColor: `${tier.color}15` }]}>
                 <Text style={[styles.tierLabelText, { color: tier.color }]}>{tier.label} STATUS</Text>
              </View>
@@ -119,14 +121,14 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
       </View>
 
       {/* 3. Balanced Stats Row */}
-      <View style={styles.statsRow}>
+      <View style={[styles.statsRow, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
         <View style={styles.statBox}>
-           <Text style={styles.statLabel}>LIQUIDITY LIMIT</Text>
-           <Text style={styles.statValue}>GH₵ {limit.toLocaleString()}</Text>
+           <Text style={[styles.statLabel, { color: colors.textDim }]}>LIQUIDITY LIMIT</Text>
+           <Text style={[styles.statValue, { color: colors.text }]}>GH₵ {limit.toLocaleString()}</Text>
         </View>
-        <View style={styles.statDivider} />
+        <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
         <View style={styles.statBox}>
-           <Text style={styles.statLabel}>IDENTITY TIER</Text>
+           <Text style={[styles.statLabel, { color: colors.textDim }]}>IDENTITY TIER</Text>
            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
               <TierIcon size={12} color={tier.color} fill={tier.color} />
               <Text style={[styles.statValue, { color: tier.color }]}>{tier.name.split(' ')[0]}</Text>
@@ -137,8 +139,8 @@ export function CreditCapacityGauge({ score, limit, loading, onAudit }: Props) {
       {/* 4. Footer Audit */}
       <View style={styles.footer}>
          <View style={styles.footerLeft}>
-            <Activity size={12} color="#405045" />
-            <Text style={styles.footerText}>Real-time Credit Assessment</Text>
+            <Activity size={12} color={colors.textDim} />
+            <Text style={[styles.footerText, { color: colors.textDim }]}>Real-time Credit Assessment</Text>
          </View>
          <BouncyTap onPress={onAudit} style={styles.auditBtn}>
             <Text style={styles.auditText}>AUDIT</Text>

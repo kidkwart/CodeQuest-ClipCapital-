@@ -39,8 +39,16 @@ export function useUpdateProfile() {
       sms_backup_enabled?: boolean;
       biometric_enabled?: boolean;
       access_pin?: string;
+      theme_preference?: "dark" | "light";
     }) => {
-      const { error } = await supabase.from("profiles").update(v).eq("id", user!.id);
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("No active session");
+
+      const { error } = await supabase.from("profiles").upsert({
+        id: authUser.id,
+        ...v,
+        updated_at: new Date().toISOString()
+      });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["profile", user?.id] }),

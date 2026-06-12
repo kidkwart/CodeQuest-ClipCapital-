@@ -3,6 +3,7 @@ import { LayoutDashboard, TrendingUp, Wallet, Settings, Users } from "lucide-rea
 import { BlurView } from 'expo-blur';
 import { StyleSheet, View, Platform, Animated, Vibration } from 'react-native';
 import React, { useRef, useEffect } from 'react';
+import { useTheme } from "@/context/theme-context";
 
 function TabIcon({ Icon, color, focused }: { Icon: any, color: string, focused: boolean }) {
   const scaleValue = useRef(new Animated.Value(focused ? 1.2 : 1)).current;
@@ -30,37 +31,39 @@ function TabIcon({ Icon, color, focused }: { Icon: any, color: string, focused: 
 }
 
 export default function TabsLayout() {
+  const { colors, theme } = useTheme();
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Tabs
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
-          tabBarActiveTintColor: "#10B981",
-          tabBarInactiveTintColor: "#405045",
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textDim,
           tabBarStyle: {
             position: 'absolute',
             bottom: 0,
             left: 0,
             right: 0,
             height: Platform.OS === 'ios' ? 94 : 72,
-            backgroundColor: 'rgba(15, 23, 20, 0.95)',
+            backgroundColor: theme === 'dark' ? 'rgba(15, 23, 20, 0.95)' : 'rgba(255, 255, 255, 0.95)',
             borderTopWidth: 1,
-            borderTopColor: 'rgba(255, 255, 255, 0.08)',
+            borderTopColor: colors.border,
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
             paddingTop: 8,
             elevation: 20,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -10 },
-            shadowOpacity: 0.4,
+            shadowOpacity: theme === 'dark' ? 0.4 : 0.1,
             shadowRadius: 15,
           },
           tabBarBackground: () => (
             Platform.OS === 'ios' ? (
               <BlurView
                 intensity={80}
-                tint="dark"
+                tint={theme}
                 style={{ ...StyleSheet.absoluteFillObject, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}
               />
             ) : null
