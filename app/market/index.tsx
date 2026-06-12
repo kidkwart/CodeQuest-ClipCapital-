@@ -1,57 +1,88 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, StyleSheet, Dimensions } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, StyleSheet, Dimensions, ActivityIndicator, TextInput, Vibration, Platform } from "react-native";
 import { useRouter, Stack } from "expo-router";
-import { useProducts } from "@/lib/app-queries";
+import { useProducts, useProfile } from "@/lib/app-queries";
 import { useCart } from "@/lib/cart";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, ShoppingCart, Sparkles, Check, ShoppingBag } from "lucide-react-native";
+import { ArrowLeft, ShoppingCart, Sparkles, Check, ShoppingBag, Star, Zap, ChevronRight, Search, X, ClipboardList } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 
-// Fallback data in case the database is empty or not connecting
+const { width } = Dimensions.get('window');
+
+// Verified professional imagery for master barbers
 const FALLBACK_PRODUCTS = [
   {
-    id: "1",
-    name: "Professional Cordless Clipper",
-    price: 850,
-    image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?w=400&q=80",
-    description: "High-performance cordless clipper with precision blades."
+    id: "38947f6a-4933-4f9e-9d2a-4a2a1a8c9b0e",
+    name: "Wahl Professional Cordless Magic Clip",
+    price: 2450,
+    image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
+    description: "The 'Gold Standard' for Ghanaian master barbers. Features the iconic stagger-tooth blade for the ultimate seamless fade.",
+    category: "Cutting"
   },
   {
-    id: "2",
-    name: "Premium Barber Chair",
-    price: 2500,
-    image_url: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&q=80",
-    description: "Heavy-duty hydraulic barber chair with premium leather."
+    id: "982b6e12-32b4-4b5a-9e12-c2e3f4a5b6c7",
+    name: "BaBylissPRO GoldFX Skeleton Trimmer",
+    price: 3200,
+    image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
+    description: "The world's most desired hitter. 360-degree exposed T-blade for surgical precision lineups.",
+    category: "Cutting"
   },
   {
-    id: "3",
-    name: "Pro Hair Dryer 2000W",
-    price: 450,
-    image_url: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=400&q=80",
-    description: "Ionic hair dryer for fast drying and smooth results."
+    id: "716a5b4c-d3e2-4f1a-b0c9-d8e7f6a5b4c3",
+    name: "Luxury Gold Vintage Hydraulic Barber Chair",
+    price: 7800,
+    image_url: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=800",
+    description: "Industrial-grade heavy-duty hydraulic pump. Hand-stitched premium leather with 24k gold-plated accents.",
+    category: "Furniture"
+  },
+  {
+    id: "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d",
+    name: "Dyson Supersonic™ Pro Stylist Edition",
+    price: 4500,
+    image_url: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?auto=format&fit=crop&q=80&w=800",
+    description: "Intelligent heat control to protect natural shine. Fastest drying for high-volume salons.",
+    category: "Tech"
+  },
+  {
+    id: "f1e2d3c4-b5a6-4f5e-9d8c-7b6a5e4d3c2b",
+    name: "Wahl Professional Cordless Senior",
+    price: 2600,
+    image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
+    description: "The most powerful motor in the Wahl range. Metal bottom housing for durability and high-torque performance.",
+    category: "Cutting"
+  },
+  {
+    id: "e1d2c3b4-a5f6-4e5d-9c8b-7a6f5e4d3c2b",
+    name: "Andis Master Cordless Gold Edition",
+    price: 4200,
+    image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
+    description: "The legendary Master motor now in a high-speed cordless body. Unbreakable aluminum housing.",
+    category: "Cutting"
   }
 ];
 
 export default function Marketplace() {
   const router = useRouter();
   const { data: dbProducts, isLoading, refetch } = useProducts();
+  const { data: profile } = useProfile();
   const cart = useCart();
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Use DB products if they exist, otherwise use fallbacks
-  const products = (dbProducts && dbProducts.length > 0) ? dbProducts : FALLBACK_PRODUCTS;
+  const allProducts = (dbProducts && dbProducts.length > 0) ? dbProducts : FALLBACK_PRODUCTS;
+  const isPrivate = profile?.privacy_mode_enabled ?? false;
+
+  const filteredProducts = allProducts.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleAdd = (p: any) => {
-    cart.add({
-      product_id: p.id,
-      name: p.name,
-      price: p.price,
-      qty: 1
-    });
-
+    cart.add({ product_id: p.id, name: p.name, price: p.price, qty: 1 });
     setLastAddedId(p.id);
+    Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
     setTimeout(() => setLastAddedId(null), 2000);
   };
 
@@ -60,104 +91,164 @@ export default function Marketplace() {
     return item ? item.qty : 0;
   };
 
+  const totalItems = cart.items.reduce((s, i) => s + i.qty, 0);
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
+    <View style={styles.container}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => router.push("/(tabs)")}
-            style={styles.navBtn}
-          >
+          <BouncyTap onPress={() => router.push("/(tabs)")} style={styles.navBtn}>
             <ArrowLeft size={20} color="#FFF" />
-          </TouchableOpacity>
+          </BouncyTap>
         ),
         headerRight: () => (
-          <TouchableOpacity
-            onPress={() => router.push("/market/cart")}
-            style={styles.navBtn}
-          >
-            <View>
-              <ShoppingCart size={20} color="#FFF" />
-              {cart.items.length > 0 && (
-                <View style={styles.badgeCount}>
-                  <Text style={styles.badgeText}>{cart.items.length}</Text>
+          <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
+             <BouncyTap onPress={() => router.push("/market/orders")} style={styles.navBtn}>
+                <ClipboardList size={20} color="#10b981" />
+             </BouncyTap>
+             <BouncyTap onPress={() => router.push("/market/cart")} style={styles.navBtn}>
+                <View>
+                  <ShoppingCart size={20} color="#FFF" />
+                  {totalItems > 0 && (
+                    <View style={styles.badgeCount}>
+                      <Text style={styles.badgeText}>{totalItems}</Text>
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-          </TouchableOpacity>
+             </BouncyTap>
+          </View>
         )
       }} />
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: 100, paddingBottom: 60 }}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
-          <PremiumHeader title="ClipMarket" subtitle="Premium Supplies" />
-
-          {/* Partner Banner */}
-          <Card glass style={styles.bannerCard}>
-            <LinearGradient colors={['rgba(16, 185, 129, 0.1)', 'transparent']} style={{ padding: 24 }}>
-               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <Sparkles size={16} color="#f59e0b" />
-                  <Text style={styles.bannerTitle}>Official Partner Store</Text>
+          {/* Elite Header */}
+          <View style={styles.headerSection}>
+            <Text style={styles.supTitle}>CLIPCAPITAL PREMIUM</Text>
+            <View style={styles.titleRow}>
+               <Text style={styles.mainTitle}>Marketplace</Text>
+               <View style={styles.verifiedTag}>
+                  <Star size={10} color="#000" fill="#000" />
+                  <Text style={styles.verifiedText}>OFFICIAL</Text>
                </View>
-               <Text style={styles.bannerSub}>Genuine equipment sourced directly for Ghana's master artisans. Use your ClipCredit at checkout.</Text>
-            </LinearGradient>
-          </Card>
+            </View>
+            <Text style={styles.subTitle}>Authorized professional equipment supply chain.</Text>
+          </View>
 
-          {isLoading && dbProducts?.length === 0 ? (
-             <View style={{ paddingVertical: 80, alignItems: 'center' }}>
-                <Text style={{ color: '#10b981', fontWeight: '900', letterSpacing: 2 }}>CONNECTING TO SUPPLY...</Text>
+          {/* Functional Search Bar */}
+          <View style={styles.searchBar}>
+             <Search size={18} color={searchQuery ? "#10b981" : "#405045"} />
+             <TextInput
+                style={styles.searchInput}
+                placeholder="Search for tools, furniture..."
+                placeholderTextColor="#405045"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                selectionColor="#10b981"
+             />
+             {searchQuery.length > 0 && (
+               <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <X size={18} color="#405045" />
+               </TouchableOpacity>
+             )}
+          </View>
+
+          {/* Institutional Credit Card Banner */}
+          <BouncyTap onPress={() => router.push("/(tabs)/loans")}>
+            <LinearGradient
+                colors={['#10b981', '#064e3b']}
+                style={styles.creditBanner}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            >
+               <View style={styles.bannerPattern} />
+               <View style={styles.bannerContent}>
+                  <View style={styles.bannerHeader}>
+                     <Text style={styles.bannerLabel}>OXYGEN CREDIT LINE</Text>
+                     <Zap size={16} color="white" fill="white" />
+                  </View>
+                  <Text style={styles.bannerMain}>Scale Your Business</Text>
+                  <Text style={styles.bannerDesc}>Use your ClipScore to unlock interest-free equipment financing. Pay as you earn.</Text>
+                  <View style={styles.bannerFooter}>
+                     <Text style={styles.bannerLink}>VIEW LIMIT</Text>
+                     <ChevronRight size={14} color="white" />
+                  </View>
+               </View>
+            </LinearGradient>
+          </BouncyTap>
+
+          <View style={styles.sectionDivider}>
+             <Text style={styles.sectionTitle}>CURATED FOR MASTER BARBERS</Text>
+             <View style={styles.dividerLine} />
+          </View>
+
+          {isLoading && (!dbProducts || dbProducts.length === 0) ? (
+             <View style={styles.loader}>
+                <ActivityIndicator color="#10b981" />
+                <Text style={styles.loaderText}>SYNCING INVENTORY...</Text>
+             </View>
+          ) : filteredProducts.length === 0 ? (
+             <View style={styles.emptyState}>
+                <Search size={40} color="#1a211e" />
+                <Text style={styles.emptyText}>No matches found for "{searchQuery}"</Text>
              </View>
           ) : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-              {products.map((p) => {
+            <View style={styles.grid}>
+              {filteredProducts.map((p) => {
                 const qty = getItemQty(p.id);
                 const isJustAdded = lastAddedId === p.id;
 
                 return (
-                  <View key={p.id} style={{ width: '50%', paddingHorizontal: 8, marginBottom: 16 }}>
+                  <View key={p.id} style={styles.productWrapper}>
                     <BouncyTap
                       activeOpacity={1}
                       onPress={() => router.push(`/market/${p.id}`)}
                       style={{ flex: 1 }}
                     >
-                      <Card style={styles.productCard}>
-                        <Image
-                          source={{ uri: p.image_url }}
-                          style={styles.productImage}
-                          resizeMode="cover"
-                        />
-                        <View style={styles.productDetails}>
-                          <View>
-                            <Text style={styles.productName} numberOfLines={2}>{p.name}</Text>
-                            <Text style={styles.productPrice}>GH₵ {p.price}</Text>
-                          </View>
+                      <View style={styles.productCard}>
+                        <View style={styles.imageContainer}>
+                           <Image source={{ uri: p.image_url }} style={styles.productImage} />
+                           <LinearGradient
+                             colors={['transparent', 'rgba(8, 12, 10, 0.8)']}
+                             style={styles.imageOverlay}
+                           />
+                           <View style={styles.catBadge}>
+                              <Text style={styles.catText}>{p.category?.toUpperCase()}</Text>
+                           </View>
+                        </View>
+
+                        <View style={styles.productInfo}>
+                          <Text style={styles.productName} numberOfLines={2}>{p.name}</Text>
+                          <Text style={styles.productPrice}>
+                            {isPrivate ? "••••••" : `GH₵ ${p.price.toLocaleString()}`}
+                          </Text>
 
                           <TouchableOpacity
                             onPress={(e) => {
                               e.stopPropagation();
                               handleAdd(p);
                             }}
-                            activeOpacity={0.7}
-                            style={[
-                              styles.addBtn,
-                              (isJustAdded || qty > 0) && styles.addBtnActive
-                            ]}
+                            activeOpacity={0.8}
+                            style={[styles.buyBtn, (isJustAdded || qty > 0) && styles.buyBtnActive]}
                           >
                             {isJustAdded ? (
-                              <Check size={16} color="#10b981" />
+                              <Check size={18} color="#10b981" />
                             ) : qty > 0 ? (
-                              <Text style={styles.addBtnTextActive}>In Cart ({qty})</Text>
+                              <Text style={styles.buyBtnTextActive}>IN CART ({qty})</Text>
                             ) : (
-                              <Text style={styles.addBtnText}>Add to Cart</Text>
+                              <View style={styles.btnRow}>
+                                <ShoppingBag size={14} color="#000" strokeWidth={2.5} />
+                                <Text style={styles.buyBtnText}>BUY NOW</Text>
+                              </View>
                             )}
                           </TouchableOpacity>
                         </View>
-                      </Card>
+                      </View>
                     </BouncyTap>
                   </View>
                 );
@@ -171,108 +262,50 @@ export default function Marketplace() {
 }
 
 const styles = StyleSheet.create({
-  navBtn: {
-    marginLeft: 16,
-    marginRight: 16,
-    height: 44,
-    width: 44,
-    borderRadius: 14,
-    backgroundColor: '#0f1714',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)'
-  },
-  badgeCount: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#10b981',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#080c0a'
-  },
-  badgeText: {
-    color: 'black',
-    fontSize: 8,
-    fontWeight: 'bold'
-  },
-  bannerCard: {
-    marginBottom: 40,
-    padding: 0,
-    overflow: 'hidden',
-    borderColor: 'rgba(16,185,129,0.2)'
-  },
-  bannerTitle: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 2
-  },
-  bannerSub: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
-    lineHeight: 18
-  },
-  productCard: {
-    padding: 0,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    height: '100%',
-    backgroundColor: 'rgba(18,26,22,0.4)',
-    borderRadius: 24
-  },
-  productImage: {
-    width: '100%',
-    aspectRatio: 1
-  },
-  productDetails: {
-    padding: 16,
-    flex: 1,
-    justifyContent: 'space-between'
-  },
-  productName: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 13
-  },
-  productPrice: {
-    fontFamily: 'Display-Bold',
-    color: '#f59e0b',
-    fontSize: 18,
-    marginTop: 4
-  },
-  addBtn: {
-    marginTop: 16,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#10b981',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnActive: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderWidth: 1,
-    borderColor: '#10b981',
-  },
-  addBtnText: {
-    fontFamily: 'Display-Bold',
-    color: '#0d1310',
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 1
-  },
-  addBtnTextActive: {
-    fontFamily: 'Display-Bold',
-    color: '#10b981',
-    fontSize: 10,
-    textTransform: 'uppercase',
-  }
+  container: { flex: 1, backgroundColor: '#080c0a' },
+  scrollContent: { paddingTop: 100, paddingBottom: 80 },
+  navBtn: { height: 44, width: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  badgeCount: { position: 'absolute', top: -5, right: -5, backgroundColor: '#10b981', width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#080c0a' },
+  badgeText: { color: 'black', fontSize: 8, fontWeight: 'bold' },
+  headerSection: { marginBottom: 24 },
+  supTitle: { color: '#10b981', fontWeight: '900', fontSize: 10, letterSpacing: 4, marginBottom: 8 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
+  mainTitle: { fontFamily: 'Display-Bold', color: 'white', fontSize: 32 },
+  verifiedTag: { backgroundColor: '#10b981', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  verifiedText: { color: '#000', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  subTitle: { color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 20 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f1714', paddingHorizontal: 16, borderRadius: 16, gap: 12, marginBottom: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)', height: 56 },
+  searchInput: { color: 'white', fontSize: 14, fontWeight: '500', flex: 1, height: '100%' },
+  creditBanner: { borderRadius: 28, overflow: 'hidden', marginBottom: 40, height: 180 },
+  bannerPattern: { position: 'absolute', right: -40, top: -40, width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(255,255,255,0.05)' },
+  bannerContent: { padding: 24, flex: 1, justifyContent: 'space-between' },
+  bannerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  bannerLabel: { color: 'rgba(255,255,255,0.7)', fontWeight: '900', fontSize: 10, letterSpacing: 2 },
+  bannerMain: { color: 'white', fontFamily: 'Display-Bold', fontSize: 22 },
+  bannerDesc: { color: 'rgba(255,255,255,0.6)', fontSize: 11, lineHeight: 16, maxWidth: '80%' },
+  bannerFooter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bannerLink: { color: 'white', fontWeight: '900', fontSize: 10, letterSpacing: 1 },
+  sectionDivider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
+  sectionTitle: { color: '#405045', fontWeight: '900', fontSize: 9, letterSpacing: 2 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
+  loader: { paddingVertical: 100, alignItems: 'center', gap: 16 },
+  loaderText: { color: '#10b981', fontWeight: '900', letterSpacing: 3, fontSize: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -10 },
+  productWrapper: { width: '50%', paddingHorizontal: 10, marginBottom: 20 },
+  productCard: { backgroundColor: '#0f1714', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
+  imageContainer: { width: '100%', aspectRatio: 0.9, backgroundColor: '#1a211e' },
+  productImage: { width: '100%', height: '100%' },
+  imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%' },
+  catBadge: { position: 'absolute', top: 12, left: 12, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  catText: { color: 'white', fontSize: 7, fontWeight: '900', letterSpacing: 1 },
+  productInfo: { padding: 16 },
+  productName: { color: '#fcfcfc', fontWeight: '700', fontSize: 12, lineHeight: 18, marginBottom: 8, height: 36 },
+  productPrice: { fontFamily: 'Display-Bold', color: '#10b981', fontSize: 18, marginBottom: 16 },
+  buyBtn: { height: 44, borderRadius: 14, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center' },
+  buyBtnActive: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 1, borderColor: '#10b981' },
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  buyBtnText: { fontFamily: 'Display-Bold', color: '#0d1310', fontSize: 11, letterSpacing: 1 },
+  buyBtnTextActive: { fontFamily: 'Display-Bold', color: '#10b981', fontSize: 10 },
+  emptyState: { paddingVertical: 80, alignItems: 'center', opacity: 0.3 },
+  emptyText: { color: 'white', fontWeight: 'bold', marginTop: 16 }
 });

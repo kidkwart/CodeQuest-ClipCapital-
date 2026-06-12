@@ -36,6 +36,8 @@ export function useUpdateProfile() {
       privacy_mode_enabled?: boolean;
       security_2fa_enabled?: boolean;
       sms_backup_enabled?: boolean;
+      biometric_enabled?: boolean;
+      access_pin?: string;
     }) => {
       const { error } = await supabase.from("profiles").update(v).eq("id", user!.id);
       if (error) throw error;
@@ -166,6 +168,50 @@ export function useUserHealth(userId: string) {
   });
 }
 
+export function useLoans() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["loans", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("loan_applications")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+}
+
+export function useApplyLoan() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: { amount: number; duration_days: number; purpose: string }) => {
+      if (!user) throw new Error("You must be logged in to apply for a loan.");
+
+      // Ensure we include all likely required fields
+      const { data, error } = await supabase.from("loan_applications").insert({
+        user_id: user.id,
+        amount: v.amount,
+        balance: Math.round(v.amount * 1.15 * 100) / 100, // 15% interest
+        status: 'pending',
+        purpose: v.purpose,
+        duration_days: v.duration_days,
+        term_months: 1 // fallback if this is used instead
+      }).select().single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["loans", user?.id] });
+    },
+  });
+}
+
 export function useAdjustUser() {
   const qc = useQueryClient();
   return useMutation({
@@ -226,6 +272,7 @@ export function useAddIncome() {
     onSuccess: () => {
       return Promise.all([
         qc.invalidateQueries({ queryKey: ["income"] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
         qc.invalidateQueries({ queryKey: ["recent-activity"] }),
         qc.invalidateQueries({ queryKey: ["admin-stats"] }),
         qc.invalidateQueries({ queryKey: ["user-health"] }),
@@ -340,14 +387,25 @@ export function useMyGroups() {
     queryKey: ["susu-groups", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data: memberships, error: mErr } = await supabase
-        .from("susu_memberships").select("group_id").eq("user_id", user!.id);
-      if (mErr) throw mErr;
-      const ids = memberships.map((m) => m.group_id);
-      if (ids.length === 0) return [];
-      const { data, error } = await supabase.from("susu_groups").select("*").in("id", ids);
-      if (error) throw error;
-      return data;
+      console.log("Fetching memberships for user:", user?.id);
+
+      // We use a single query with an inner join to be as robust as possible.
+      // This ensures we only get groups the user actually belongs to.
+      const { data, error } = await supabase
+        .from("susu_groups")
+        .select(`
+          *,
+          susu_memberships!inner(user_id)
+        `)
+        .eq("susu_memberships.user_id", user!.id);
+
+      if (error) {
+        console.error("Error fetching my groups:", error);
+        throw error;
+      }
+
+      console.log("Successfully loaded my groups:", data?.length);
+      return data || [];
     },
   });
 }
@@ -359,18 +417,26 @@ export function useCreateGroup() {
       // Ensure frequency is Capitalized (e.g., Weekly)
       const freq = v.frequency.charAt(0).toUpperCase() + v.frequency.slice(1).toLowerCase();
 
-      // Use the RPC for atomic creation to avoid RLS race conditions
+      console.log("Calling create_susu_group_v2 with:", { _name: v.name, _contribution: v.contribution, _frequency: freq });
       const { data, error } = await supabase.rpc('create_susu_group_v2', {
         _name: v.name,
         _contribution: v.contribution,
         _frequency: freq
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("RPC Error:", error);
+        if (error.message.includes('unique constraint') || error.code === '23505') {
+          throw new Error("A circle with this name already exists. Please choose a unique name.");
+        }
+        throw error;
+      }
+      console.log("RPC Success, new group ID:", data);
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["susu-groups"] });
+      qc.invalidateQueries({ queryKey: ["all-susu-groups"] });
     },
   });
 }
@@ -379,39 +445,70 @@ export function useJoinGroup() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (inviteCode: string) => {
-      // Find the group by invite code
-      const { data: group, error: groupError } = await supabase
-        .from("susu_groups")
-        .select("id, members_count")
-        .eq("invite_code", inviteCode.trim())
-        .single();
-
-      if (groupError || !group) throw new Error("Invalid invite code");
-
-      // Join the group
-      const { error: joinError } = await supabase.from("susu_memberships").insert({
-        group_id: group.id,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-        payout_order: group.members_count + 1
+      const { data, error } = await supabase.rpc('join_susu_by_invite', {
+        _invite: inviteCode.trim()
       });
 
-      if (joinError) {
-        if (joinError.code === '23505') throw new Error("You are already a member of this group");
-        throw joinError;
+      if (error) {
+        if (error.message.includes('Already a member')) throw new Error("You are already a member of this group");
+        if (error.message.includes('Invalid invite code')) throw new Error("Invalid invite code");
+        throw error;
       }
 
-      return group.id;
+      return data; // This is the group_id
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["susu-groups"] }),
+    onSuccess: () => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["susu-groups"] }),
+        qc.invalidateQueries({ queryKey: ["all-susu-groups"] }),
+      ]);
+    },
+  });
+}
+
+export function useLeaveGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (groupId: string) => {
+      const { error } = await supabase.rpc('leave_susu_group', {
+        _group_id: groupId
+      });
+
+      if (error) {
+        if (error.message.includes('balance')) throw new Error("Insufficient wallet balance for the 100 GHS exit penalty.");
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["susu-groups"] }),
+        qc.invalidateQueries({ queryKey: ["all-susu-groups"] }),
+        qc.invalidateQueries({ queryKey: ["susu-contributions"] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+      ]);
+    },
   });
 }
 
 export function useGroup(id: string) {
   return useQuery({
     queryKey: ["susu-group", id],
+    enabled: !!id && id !== "undefined",
     queryFn: async () => {
-      const { data, error } = await supabase.from("susu_groups").select("*").eq("id", id).single();
+      console.log("Fetching group details for:", id);
+      // Try by ID first
+      let { data, error } = await supabase.from("susu_groups").select("*").eq("id", id).maybeSingle();
+
+      // If not found, try by invite_code (backup)
+      if (!data && !error) {
+         const resp = await supabase.from("susu_groups").select("*").eq("invite_code", id).maybeSingle();
+         data = resp.data;
+         error = resp.error;
+      }
+
       if (error) throw error;
+      if (!data) throw new Error("This circle no longer exists or you don't have access.");
+
       return data;
     },
   });
@@ -450,14 +547,29 @@ export function useRecordContribution() {
     mutationFn: async (v: {
       group_id: string;
       amount: number;
+      cycle_index: number;
       momo_provider: string;
       momo_reference: string;
       status?: string;
     }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No active session");
+
+      // 1. Deduct from wallet
+      const { error: wErr } = await supabase.rpc('withdraw_funds', {
+        user_uuid: user.id,
+        amount_to_withdraw: v.amount,
+        withdrawal_note: `Susu Contribution - ${v.group_id}`,
+        category_name: "Savings"
+      });
+
+      if (wErr) throw new Error(wErr.message);
+
+      // 2. Record contribution
       const { error } = await supabase.from("susu_contributions").insert({
         ...v,
-        user_id: user!.id,
-        status: v.status || "pending"
+        user_id: user.id,
+        status: v.status || "paid"
       });
       if (error) throw error;
     },
@@ -566,16 +678,32 @@ export function useRecordRepayment() {
   const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (v: { loan_id: string; amount: number; momo_provider: string; momo_reference: string, status?: string }) => {
-      // If status is confirmed (from Paystack), it triggers the DB logic to deduct balance instantly
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No active session");
+
+      // 1. If paying with Wallet, deduct funds first
+      if (v.momo_provider === "Wallet") {
+        const { error: wErr } = await supabase.rpc('withdraw_funds', {
+          user_uuid: user.id,
+          amount_to_withdraw: v.amount,
+          withdrawal_note: `Loan Repayment (ID: ${v.loan_id})`,
+          category_name: "Debt"
+        });
+        if (wErr) throw new Error(wErr.message);
+      }
+
+      // 2. Record the repayment
+      // The DB trigger 'on_loan_repayment_sync' must exist to update the loan balance
       const { error } = await supabase.from("loan_repayments").insert({
         ...v,
-        user_id: user!.id,
+        user_id: user.id,
         status: v.status || 'pending'
       });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["loans"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
       qc.invalidateQueries({ queryKey: ["transaction-history"] });
     },
   });
@@ -903,12 +1031,19 @@ export function usePlaceOrder() {
             .from("products")
             .select("vendor_id")
             .eq("id", i.product_id)
-            .single();
+            .maybeSingle();
           vId = pData?.vendor_id;
         }
 
+        // Emergency fallback to admin if vendor is still missing
         if (!vId) {
-          throw new Error(`Missing vendor_id for product: ${i.name}`);
+          console.warn(`Vendor missing for ${i.name}, falling back to admin.`);
+          const { data: adminRole } = await supabase.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+          vId = adminRole?.user_id;
+        }
+
+        if (!vId) {
+          throw new Error(`Critical: No vendor found for product: ${i.name}`);
         }
 
         return {
@@ -1452,7 +1587,17 @@ export function useUpdateUserStatus() {
 
 // ---------- Account Deletion ----------
 export function useDeleteAccount() {
-  // ... existing code ...
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('delete_user_account');
+      if (error) throw error;
+      await supabase.auth.signOut();
+    },
+    onSuccess: () => {
+      qc.clear();
+    },
+  });
 }
 
 // ---------- Revenue Goals ----------

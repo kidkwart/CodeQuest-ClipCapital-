@@ -34,21 +34,24 @@ export interface ButtonProps extends VariantProps<typeof buttonVariants> {
   onPress?: () => void;
   title?: string;
   loading?: boolean;
+  disabled?: boolean;
   className?: string;
   style?: any;
   children?: React.ReactNode;
 }
 
-export function Button({ className, variant, size, onPress, title, loading, style, children, ...props }: ButtonProps) {
+export function Button({ className, variant, size, onPress, title, loading, disabled, style, children, ...props }: ButtonProps) {
   const isDarkText = variant === 'default' || variant === 'secondary';
   const isGold = variant === 'secondary';
   const isEmerald = variant === 'default';
 
+  const isDisabled = disabled || loading;
+
   return (
     <Pressable
       onPress={onPress}
-      disabled={loading}
-      style={style}
+      disabled={isDisabled}
+      style={[style, isDisabled && { opacity: 0.5 }]}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, StyleSheet, TextInput, Platform } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, StyleSheet, TextInput, Platform, Vibration } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useProducts } from '@/lib/app-queries';
 import { useCart } from '@/lib/cart';
 import { Button } from '@/components/native/button';
 import { Card } from '@/components/native/card';
-import { ArrowLeft, ShoppingCart, ShieldCheck, Sparkles, Plus, Minus } from 'lucide-react-native';
+import { ArrowLeft, ShoppingCart, ShieldCheck, Sparkles, Plus, Minus, ClipboardList } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
@@ -14,13 +14,60 @@ const { width } = Dimensions.get('window');
 export default function ProductDetails() {
   const { productId } = useLocalSearchParams();
   const router = useRouter();
-  const { data: products } = useProducts();
+  const { data: dbProducts } = useProducts();
   const cart = useCart();
 
   const [qty, setQty] = useState("1");
   const [isAdded, setIsAdded] = useState(false);
 
-  const product = products?.find(p => p.id === productId);
+  // Fallback products from the main marketplace file
+  const FALLBACK_PRODUCTS = [
+    {
+      id: "38947f6a-4933-4f9e-9d2a-4a2a1a8c9b0e",
+      name: "Wahl Professional Cordless Magic Clip",
+      price: 2450,
+      image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
+      description: "The 'Gold Standard' for Ghanaian master barbers. Features the iconic stagger-tooth blade for the ultimate seamless fade."
+    },
+    {
+      id: "982b6e12-32b4-4b5a-9e12-c2e3f4a5b6c7",
+      name: "BaBylissPRO GoldFX Skeleton Trimmer",
+      price: 3200,
+      image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
+      description: "The world's most desired hitter. 360-degree exposed T-blade for surgical precision lineups."
+    },
+    {
+      id: "716a5b4c-d3e2-4f1a-b0c9-d8e7f6a5b4c3",
+      name: "Luxury Gold Vintage Hydraulic Barber Chair",
+      price: 7800,
+      image_url: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&q=80&w=800",
+      description: "Industrial-grade heavy-duty hydraulic pump. Hand-stitched premium leather with 24k gold-plated accents."
+    },
+    {
+      id: "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5a4b3c2d",
+      name: "Dyson Supersonic™ Pro Stylist Edition",
+      price: 4500,
+      image_url: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?auto=format&fit=crop&q=80&w=800",
+      description: "Intelligent heat control to protect natural shine. Fastest drying for high-volume salons."
+    },
+    {
+      id: "f1e2d3c4-b5a6-4f5e-9d8c-7b6a5e4d3c2b",
+      name: "Wahl Professional Cordless Senior",
+      price: 2600,
+      image_url: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&q=80&w=800",
+      description: "The most powerful motor in the Wahl range. Metal bottom housing for durability and high-torque performance."
+    },
+    {
+      id: "e1d2c3b4-a5f6-4e5d-9c8b-7a6f5e4d3c2b",
+      name: "Andis Master Cordless Gold Edition",
+      price: 4200,
+      image_url: "https://images.unsplash.com/photo-1593702275687-f8b402bf1fb5?auto=format&fit=crop&q=80&w=800",
+      description: "The legendary Master motor now in a high-speed cordless body. Unbreakable aluminum housing."
+    }
+  ];
+
+  const allProducts = [...(dbProducts || []), ...FALLBACK_PRODUCTS];
+  const product = allProducts.find(p => p.id === productId);
 
   if (!product) return null;
 
@@ -35,11 +82,20 @@ export default function ProductDetails() {
     });
 
     setIsAdded(true);
+    Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
     setTimeout(() => setIsAdded(false), 3000);
   };
 
-  const increment = () => setQty(prev => (parseInt(prev) || 0 + 1).toString());
-  const decrement = () => setQty(prev => Math.max(1, (parseInt(prev) || 1) - 1).toString());
+  const increment = () => setQty(prev => {
+    const n = (parseInt(prev) || 0) + 1;
+    return n.toString();
+  });
+  const decrement = () => setQty(prev => {
+    const n = Math.max(1, (parseInt(prev) || 1) - 1);
+    return n.toString();
+  });
+
+  const totalItems = cart.items.reduce((s, i) => s + i.qty, 0);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
@@ -51,16 +107,21 @@ export default function ProductDetails() {
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <TouchableOpacity onPress={() => router.push("/market/cart")} style={styles.headerBtn}>
-            <View>
-               <ShoppingCart size={20} color="#FFF" />
-               {cart.items.length > 0 && (
-                 <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: '#10b981', width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
-                   <Text style={{ color: 'black', fontSize: 8, fontWeight: 'bold' }}>{cart.items.length}</Text>
-                 </View>
-               )}
-            </View>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
+            <TouchableOpacity onPress={() => router.push("/market/orders")} style={styles.headerBtn}>
+              <ClipboardList size={20} color="#10b981" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/market/cart")} style={styles.headerBtn}>
+              <View>
+                 <ShoppingCart size={20} color="#FFF" />
+                 {totalItems > 0 && (
+                   <View style={styles.badge}>
+                     <Text style={styles.badgeTextCount}>{totalItems}</Text>
+                   </View>
+                 )}
+              </View>
+            </TouchableOpacity>
+          </View>
         )
       }} />
 
@@ -81,14 +142,14 @@ export default function ProductDetails() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <View style={styles.badge}>
+                <View style={styles.choiceBadge}>
                   <Sparkles size={10} color="#f59e0b" />
-                  <Text style={styles.badgeText}>Premium Choice</Text>
+                  <Text style={styles.choiceBadgeText}>Premium Choice</Text>
                 </View>
               </View>
               <Text style={styles.title}>{product.name}</Text>
             </View>
-            <Text style={styles.price}>GH₵ {product.price}</Text>
+            <Text style={styles.price}>GH₵ {product.price.toLocaleString()}</Text>
           </View>
 
           <View style={styles.divider} />
@@ -117,7 +178,7 @@ export default function ProductDetails() {
           </View>
 
           <Text style={styles.sectionLabel}>Authenticity Check</Text>
-          <Card glass style={{ marginBottom: 32, padding: 24 }}>
+          <Card style={{ marginBottom: 32, padding: 24, backgroundColor: '#0f1714' }}>
             <View style={{ flexDirection: 'row', gap: 16 }}>
               <ShieldCheck size={24} color="#10b981" />
               <View style={{ flex: 1 }}>
@@ -131,7 +192,7 @@ export default function ProductDetails() {
 
           <Text style={styles.sectionLabel}>Overview</Text>
           <Text style={styles.description}>
-            This professional-grade tool is the standard for high-performance grooming. Engineered for precision and built to last in a high-traffic shop environment.
+            {product.description || "This professional-grade tool is the standard for high-performance grooming. Engineered for precision and built to last in a high-traffic shop environment."}
           </Text>
         </View>
       </ScrollView>
@@ -153,8 +214,6 @@ export default function ProductDetails() {
 
 const styles = StyleSheet.create({
   headerBtn: {
-    marginLeft: 16,
-    marginRight: 16,
     height: 48,
     width: 48,
     borderRadius: 16,
@@ -163,6 +222,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)'
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#10b981',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#080c0a'
+  },
+  badgeTextCount: {
+    color: 'black',
+    fontSize: 8,
+    fontWeight: 'bold'
   },
   title: {
     fontFamily: 'Display-Bold',
@@ -173,11 +250,11 @@ const styles = StyleSheet.create({
   },
   price: {
     fontFamily: 'Display-Bold',
-    color: '#f59e0b',
+    color: '#10b981',
     fontSize: 26,
     marginLeft: 16
   },
-  badge: {
+  choiceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -188,7 +265,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(245,158,11,0.2)'
   },
-  badgeText: {
+  choiceBadgeText: {
     color: '#f59e0b',
     fontWeight: '900',
     fontSize: 9,
@@ -247,6 +324,7 @@ const styles = StyleSheet.create({
     right: 0,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.05)',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    zIndex: 10
   }
 });
