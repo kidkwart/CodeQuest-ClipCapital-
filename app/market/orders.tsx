@@ -4,11 +4,13 @@ import { Stack, useRouter } from "expo-router";
 import { useMyOrders } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, ShoppingBag, Clock, Package, ChevronRight, Hash } from "lucide-react-native";
+import { ArrowLeft, ShoppingBag, Clock, Package, ChevronRight, Hash, Info } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from "@/context/theme-context";
 
 export default function MyOrdersScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: orders, isLoading, refetch } = useMyOrders();
 
   const getStatusColor = (status: string) => {
@@ -23,12 +25,12 @@ export default function MyOrdersScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
-            <ArrowLeft size={20} color="#FFF" />
+          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <ArrowLeft size={20} color={colors.text} />
           </TouchableOpacity>
         )
       }} />
@@ -36,57 +38,57 @@ export default function MyOrdersScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="My Orders" subtitle="Purchase Records" />
 
           {isLoading ? (
             <View style={styles.loader}>
-              <ActivityIndicator color="#10b981" />
-              <Text style={styles.loaderText}>RETRIEVING SHIPMENTS...</Text>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={[styles.loaderText, { color: colors.primary }]}>RETRIEVING SHIPMENTS...</Text>
             </View>
           ) : (orders ?? []).length === 0 ? (
             <View style={styles.emptyState}>
-              <ShoppingBag size={48} color="#405045" />
-              <Text style={styles.emptyText}>No orders found.</Text>
-              <TouchableOpacity onPress={() => router.push("/market")} style={styles.browseBtn}>
-                 <Text style={styles.browseBtnText}>START SHOPPING</Text>
+              <ShoppingBag size={48} color={colors.textDim} />
+              <Text style={[styles.emptyText, { color: colors.text }]}>No orders found.</Text>
+              <TouchableOpacity onPress={() => router.push("/market")} style={[styles.browseBtn, { backgroundColor: colors.primary }]}>
+                 <Text style={[styles.browseBtnText, { color: '#000' }]}>START SHOPPING</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={{ paddingBottom: 40 }}>
               {orders?.map((order) => (
-                <Card key={order.id} style={styles.orderCard}>
+                <Card key={order.id} style={[styles.orderCard, { backgroundColor: colors.cardBg }]}>
                   <View style={styles.orderHeader}>
                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Package size={16} color="#10b981" />
-                        <Text style={styles.orderId}>ORDER #{order.id.slice(0, 8).toUpperCase()}</Text>
+                        <Package size={16} color={colors.primary} />
+                        <Text style={[styles.orderId, { color: colors.text }]}>ORDER #{order.id.slice(0, 8).toUpperCase()}</Text>
                      </View>
                      <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}15` }]}>
                         <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>{order.status.toUpperCase()}</Text>
                      </View>
                   </View>
 
-                  <View style={styles.divider} />
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                   <View style={styles.itemsList}>
                      {(order as any).order_items?.map((item: any, idx: number) => (
                         <View key={item.id} style={styles.itemRow}>
-                           <Text style={styles.itemName} numberOfLines={1}>
+                           <Text style={[styles.itemName, { color: colors.textMuted }]} numberOfLines={1}>
                               {item.products?.name || "Premium Item"}
                            </Text>
-                           <Text style={styles.itemQty}>x{item.qty}</Text>
+                           <Text style={[styles.itemQty, { color: colors.primary }]}>x{item.qty}</Text>
                         </View>
                      ))}
                   </View>
 
-                  <View style={styles.footer}>
+                  <View style={[styles.footer, { borderTopColor: colors.border }]}>
                      <View>
-                        <Text style={styles.totalLabel}>TOTAL AMOUNT</Text>
-                        <Text style={styles.totalValue}>GH₵ {Number(order.total).toLocaleString()}</Text>
+                        <Text style={[styles.totalLabel, { color: colors.textDim }]}>TOTAL AMOUNT</Text>
+                        <Text style={[styles.totalValue, { color: colors.text }]}>GH₵ {Number(order.total).toLocaleString()}</Text>
                      </View>
-                     <Text style={styles.orderDate}>{new Date(order.created_at).toLocaleDateString('en-GB')}</Text>
+                     <Text style={[styles.orderDate, { color: colors.textDim }]}>{new Date(order.created_at).toLocaleDateString('en-GB')}</Text>
                   </View>
                 </Card>
               ))}

@@ -6,14 +6,16 @@ import { usePlaceOrder, useProfile, useMyActiveLoans } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, Trash2, ShoppingBag, Wallet, CreditCard, Banknote, CheckCircle2, AlertCircle, Plus, Minus, ArrowRight, ArrowLeftCircle, Sparkles } from "lucide-react-native";
+import { ArrowLeft, Trash2, ShoppingBag, Wallet, CreditCard, Banknote, CheckCircle2, AlertCircle, Plus, Minus, ArrowRight, ArrowLeftCircle, Sparkles, X } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from "@/context/theme-context";
 
 // Safer conditional import for Paystack
 const PaystackComponent = Platform.OS !== 'web' ? require('react-native-paystack-webview').Paystack : null;
 
 export default function CartScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const cart = useCart();
   const place = usePlaceOrder();
   const { data: profile } = useProfile();
@@ -147,19 +149,19 @@ export default function CartScreen() {
 
   if (cart.items.length === 0) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
         <Stack.Screen options={{ headerShown: false }} />
 
         <View style={styles.emptyContent}>
            <LinearGradient
-             colors={['#10b981', '#064e3b']}
+             colors={theme === 'dark' ? ['#10b981', '#064e3b'] : ['#10b981', '#059669']}
              style={styles.emptyIconCircle}
            >
               <ShoppingBag size={40} color="#000" strokeWidth={2} />
            </LinearGradient>
 
-           <Text style={styles.emptyTitle}>Cart is empty</Text>
-           <Text style={styles.emptySubtitle}>Your premium equipment selections will appear here. Ready to scale your business?</Text>
+           <Text style={[styles.emptyTitle, { color: colors.text }]}>Cart is empty</Text>
+           <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Your premium equipment selections will appear here. Ready to scale your business?</Text>
 
            <TouchableOpacity
              onPress={() => router.push("/market")}
@@ -181,8 +183,8 @@ export default function CartScreen() {
              onPress={() => router.replace("/(tabs)")}
              style={styles.backLink}
            >
-              <ArrowLeft size={14} color="#7d8a84" />
-              <Text style={styles.backLinkText}>Return to Dashboard</Text>
+              <ArrowLeft size={14} color={colors.textDim} />
+              <Text style={[styles.backLinkText, { color: colors.textDim }]}>Return to Dashboard</Text>
            </TouchableOpacity>
         </View>
       </View>
@@ -190,16 +192,16 @@ export default function CartScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {showPaystack && Platform.OS !== 'web' && PaystackComponent && (
-        <View style={[StyleSheet.absoluteFill, { zIndex: 9999, backgroundColor: '#080c0a' }]}>
+        <View style={[StyleSheet.absoluteFill, { zIndex: 9999, backgroundColor: colors.background }]}>
           <PaystackComponent
             paystackKey={PAYSTACK_KEY}
             amount={total * 100}
             billingEmail={profile?.email || "customer@clipcapital.com"}
-            activityIndicatorColor="#10b981"
+            activityIndicatorColor={colors.primary}
             onCancel={() => setShowPaystack(false)}
             onSuccess={(res: any) => handleSuccess(res.transactionRef.reference)}
             autoStart={true}
@@ -208,21 +210,21 @@ export default function CartScreen() {
       )}
 
       {(loading || place.isPending) && (
-        <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#10b981" />
-          <Text style={styles.overlayText}>Processing Order...</Text>
+        <View style={[styles.overlay, { backgroundColor: theme === 'dark' ? 'rgba(8,12,10,0.95)' : 'rgba(255,255,255,0.95)' }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.overlayText, { color: colors.text }]}>Processing Order...</Text>
         </View>
       )}
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <ArrowLeft size={20} color="#FFF" />
+            <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              <ArrowLeft size={20} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleClearCart} style={styles.clearBtn}>
-               <Trash2 size={18} color="#ef4444" />
-               <Text style={styles.clearText}>CLEAR</Text>
+               <Trash2 size={18} color={colors.destructive} />
+               <Text style={[styles.clearText, { color: colors.destructive }]}>CLEAR</Text>
             </TouchableOpacity>
           </View>
 
@@ -230,46 +232,46 @@ export default function CartScreen() {
 
           <View style={styles.itemList}>
             {cart.items.map((item) => (
-              <Card key={item.product_id} style={styles.itemCard}>
+              <Card key={item.product_id} style={[styles.itemCard, { backgroundColor: colors.cardBg }]}>
                 <View style={styles.itemRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                    <Text style={styles.itemPricePer}>GH₵ {item.price.toLocaleString()} each</Text>
+                    <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
+                    <Text style={[styles.itemPricePer, { color: colors.textDim }]}>GH₵ {item.price.toLocaleString()} each</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                     <Text style={styles.itemTotal}>GH₵ {(item.price * item.qty).toLocaleString()}</Text>
+                     <Text style={[styles.itemTotal, { color: colors.primary }]}>GH₵ {(item.price * item.qty).toLocaleString()}</Text>
                   </View>
                 </View>
 
                 <View style={styles.qtyRow}>
-                   <View style={styles.qtyControls}>
-                      <TouchableOpacity onPress={() => updateQty(item.product_id, -1)} style={styles.qtyBtn}>
-                         <Minus size={14} color="#7d8a84" />
+                   <View style={[styles.qtyControls, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                      <TouchableOpacity onPress={() => updateQty(item.product_id, -1)} style={[styles.qtyBtn, { backgroundColor: colors.cardBg }]}>
+                         <Minus size={14} color={colors.textMuted} />
                       </TouchableOpacity>
-                      <Text style={styles.qtyValue}>{item.qty}</Text>
-                      <TouchableOpacity onPress={() => updateQty(item.product_id, 1)} style={styles.qtyBtn}>
-                         <Plus size={14} color="#10b981" />
+                      <Text style={[styles.qtyValue, { color: colors.text }]}>{item.qty}</Text>
+                      <TouchableOpacity onPress={() => updateQty(item.product_id, 1)} style={[styles.qtyBtn, { backgroundColor: colors.cardBg }]}>
+                         <Plus size={14} color={colors.primary} />
                       </TouchableOpacity>
                    </View>
                    <TouchableOpacity onPress={() => cart.remove(item.product_id)} style={styles.removeBtn}>
-                      <Trash2 size={14} color="#ef4444" />
-                      <Text style={styles.removeText}>REMOVE</Text>
+                      <Trash2 size={14} color={colors.destructive} />
+                      <Text style={[styles.removeText, { color: colors.destructive }]}>REMOVE</Text>
                    </TouchableOpacity>
                 </View>
               </Card>
             ))}
           </View>
 
-          <Card style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-               <Text style={styles.summaryLabel}>GRAND TOTAL</Text>
-               <Text style={styles.summaryValue}>GH₵ {total.toLocaleString()}</Text>
+          <Card style={[styles.summaryCard, { backgroundColor: colors.cardBg }]}>
+            <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
+               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>GRAND TOTAL</Text>
+               <Text style={[styles.summaryValue, { color: colors.text }]}>GH₵ {total.toLocaleString()}</Text>
             </View>
 
             {statusMessage.text !== "" && (
               <View style={[styles.statusBox, statusMessage.type === 'error' ? styles.statusError : styles.statusSuccess]}>
-                {statusMessage.type === 'error' ? <AlertCircle size={14} color="#ef4444" /> : <CheckCircle2 size={14} color="#10b981" />}
-                <Text style={[styles.statusText, { color: statusMessage.type === 'error' ? '#ef4444' : '#10b981' }]}>
+                {statusMessage.type === 'error' ? <AlertCircle size={14} color={colors.destructive} /> : <CheckCircle2 size={14} color={colors.primary} />}
+                <Text style={[styles.statusText, { color: statusMessage.type === 'error' ? colors.destructive : colors.primary }]}>
                   {statusMessage.text}
                 </Text>
               </View>
@@ -277,23 +279,23 @@ export default function CartScreen() {
 
             <View style={{ gap: 12 }}>
                 {activeLoan && (
-                   <TouchableOpacity onPress={handleLoanPayment} style={[styles.payBtn, { borderColor: '#f59e0b40', borderWidth: 1 }]}>
-                      <Banknote size={20} color="#f59e0b" />
+                   <TouchableOpacity onPress={handleLoanPayment} style={[styles.payBtn, { backgroundColor: colors.surfaceElevated, borderColor: `${colors.gold}40`, borderWidth: 1 }]}>
+                      <Banknote size={20} color={colors.gold} />
                       <View style={{ flex: 1 }}>
-                         <Text style={styles.payBtnTitle}>Pay with Credit</Text>
-                         <Text style={styles.payBtnSub}>Active Loan Line</Text>
+                         <Text style={[styles.payBtnTitle, { color: colors.text }]}>Pay with Credit</Text>
+                         <Text style={[styles.payBtnSub, { color: colors.textMuted }]}>Active Loan Line</Text>
                       </View>
-                      <ArrowRight size={16} color="#405045" />
+                      <ArrowRight size={16} color={colors.textDim} />
                    </TouchableOpacity>
                 )}
 
-                <TouchableOpacity onPress={handleWalletPayment} style={[styles.payBtn, { borderColor: '#10b98140', borderWidth: 1 }]}>
-                   <Wallet size={20} color="#10b981" />
+                <TouchableOpacity onPress={handleWalletPayment} style={[styles.payBtn, { backgroundColor: colors.surfaceElevated, borderColor: `${colors.primary}40`, borderWidth: 1 }]}>
+                   <Wallet size={20} color={colors.primary} />
                    <View style={{ flex: 1 }}>
-                      <Text style={styles.payBtnTitle}>Pay with Wallet</Text>
-                      <Text style={styles.payBtnSub}>Balance: GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
+                      <Text style={[styles.payBtnTitle, { color: colors.text }]}>Pay with Wallet</Text>
+                      <Text style={[styles.payBtnSub, { color: colors.textMuted }]}>Balance: GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
                    </View>
-                   <ArrowRight size={16} color="#405045" />
+                   <ArrowRight size={16} color={colors.textDim} />
                 </TouchableOpacity>
 
                 <Button
