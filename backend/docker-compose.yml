@@ -1,0 +1,103 @@
+# ClipCapital Backend — Docker Compose (Local Development)
+# Usage: docker compose up --build
+
+services:
+  # ── Backend API ──────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: clipcapital-api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/clipcapital
+      DATABASE_SSL: "false"
+      JWT_SECRET: dev-jwt-secret-min-32-characters-here!!
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 7d
+      BCRYPT_SALT_ROUNDS: "10"
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-sk_test_placeholder}
+      PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY:-pk_test_placeholder}
+      PAYSTACK_WEBHOOK_SECRET: ${PAYSTACK_WEBHOOK_SECRET:-whsec_test_placeholder}
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: http://localhost:8081,http://localhost:3000
+      LOG_LEVEL: debug
+    volumes:
+      - ./src:/app/src
+      - ./tsconfig.json:/app/tsconfig.json
+    command: npx tsx watch src/index.ts
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - clipcapital
+
+  # ── PostgreSQL ───────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: clipcapital-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: clipcapital
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../supabase/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - clipcapital
+
+  # ── Redis (Rate Limiting / Caching) ──────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: clipcapital-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - clipcapital
+
+  # ── Flyway (Migration Runner) ────────────────────────
+  flyway:
+    image: flyway/flyway:10-alpine
+    container_name: clipcapital-flyway
+    environment:
+      FLYWAY_URL: jdbc:postgresql://db:5432/clipcapital
+      FLYWAY_USER: postgres
+      FLYWAY_PASSWORD: postgres
+      FLYWAY_SCHEMAS: public
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+    volumes:
+      - ./database/migrations:/flyway/sql
+    command: migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - clipcapital
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  clipcapital:
+    driver: bridge
