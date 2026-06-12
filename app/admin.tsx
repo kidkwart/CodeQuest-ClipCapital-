@@ -15,7 +15,6 @@ import {
 } from "@/lib/app-queries";
 import { Card, StatCard } from "@/components/native/card";
 import { Button } from "@/components/native/button";
-import { Input } from "@/components/native/input";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { cn } from "@/lib/utils";
 import { PremiumHeader } from "@/components/native/premium-header";
@@ -173,11 +172,7 @@ function LoanQueue() {
     try {
       await review.mutateAsync({ id, status });
       refetch();
-      if (Platform.OS === 'web') {
-        alert(`Success: Loan ${status}.`);
-      } else {
-        Alert.alert("Success", `Loan ${status}.`);
-      }
+      Alert.alert("Success", `Loan ${status}.`);
     } catch (e: any) {
         Alert.alert("Error", e.message);
     }
@@ -388,7 +383,7 @@ function OrderManagement() {
                 <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>GH₵ {order.total}</Text>
                 <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', marginTop: 2 }}>{order.payment_method}</Text>
               </View>
-              <View style={{ paddingHorizontal: 8, py: 4, borderRadius: 6, backgroundColor: order.status === 'completed' ? colors.primary + '15' : colors.gold + '15' }}>
+              <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: order.status === 'completed' ? colors.primary + '15' : colors.gold + '15' }}>
                 <Text style={{ color: order.status === 'completed' ? colors.primary : colors.gold, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>{order.status}</Text>
               </View>
             </View>
@@ -613,48 +608,141 @@ function SettingsSection() {
 
     if (settings.isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
+    const handleUpdateRate = () => {
+        const rate = parseFloat(localRate);
+        if (!isNaN(rate)) {
+            updateSettings.mutate({ interest_rate: rate });
+            Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
+            Alert.alert("Governance Update", `Institutional Interest Rate successfully adjusted to ${rate}%.`);
+        } else {
+            Alert.alert("Invalid Input", "Please enter a numeric percentage.");
+        }
+    };
+
+    const handleBroadcast = async () => {
+      if (!notif.title.trim() || !notif.body.trim()) {
+        return Alert.alert("Required", "Please fill in both the title and the message.");
+      }
+
+      const performBroadcast = async () => {
+        try {
+          await broadcast.mutateAsync({ title: notif.title, body: notif.body });
+          setNotif({ title: "", body: "" });
+          Alert.alert("Success", "Institutional broadcast transmitted to all vault users.");
+        } catch (e: any) {
+          Alert.alert("Error", e.message);
+        }
+      };
+
+      Alert.alert(
+        "Confirm Broadcast",
+        "This message will be transmitted to ALL registered vault users. Proceed?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "TRANSMIT", style: "destructive", onPress: performBroadcast }
+        ]
+      );
+    };
+
     return (
       <Animated.View entering={FadeInDown}>
-        <Card style={{ marginBottom: 24, padding: 20 }}>
-            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>Interest Control</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TextInput
-                    value={localRate}
-                    onChangeText={setLocalRate}
-                    keyboardType="numeric"
-                    style={{ flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: 12, paddingHorizontal: 16, color: colors.text, fontSize: 20, fontWeight: 'bold' }}
-                />
-                <Button title="Update" onPress={() => updateSettings.mutate({ interest_rate: parseFloat(localRate) })} />
+        <View style={{ marginBottom: 32 }}>
+          <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, fontSize: 18 }}>System Governance</Text>
+          <Card style={{ padding: 24 }}>
+            <View style={{ backgroundColor: colors.surfaceElevated, marginBottom: 24, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Base Interest Rate</Text>
+                  <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>Global credit growth percentage</Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ backgroundColor: colors.cardBg, flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, px: 20, height: 60, borderWidth: 1, borderColor: colors.border }}>
+                        <TextInput
+                            value={localRate}
+                            keyboardType="decimal-pad"
+                            onChangeText={setLocalRate}
+                            placeholder="0.0"
+                            placeholderTextColor={colors.textDim}
+                            style={{ flex: 1, color: colors.primary, fontFamily: 'Display-Bold', fontSize: 24 }}
+                            selectionColor={colors.primary}
+                        />
+                        <Text style={{ fontFamily: 'Display-Bold', color: colors.primary, fontSize: 20 }}>%</Text>
+                    </View>
+
+                    <BouncyTap onPress={handleUpdateRate}>
+                       <LinearGradient
+                        colors={[colors.primary, colors.primary + 'cc']}
+                        style={{ width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
+                       >
+                          <Lucide.Check size={28} color="#000" strokeWidth={3} />
+                       </LinearGradient>
+                    </BouncyTap>
+                </View>
             </View>
-        </Card>
 
-        <Card style={{ padding: 20 }}>
-            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>System Lock</Text>
-            <Button
-              title={settings.data?.maintenance_mode ? "UNLOCK SYSTEM" : "LOCK SYSTEM"}
-              variant={settings.data?.maintenance_mode ? "default" : "destructive"}
-              onPress={() => updateSettings.mutate({ maintenance_mode: !settings.data?.maintenance_mode })}
-            />
-        </Card>
+            <View style={{ backgroundColor: colors.surfaceElevated, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ flex: 1, marginRight: 16 }}>
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Vault Lockdown</Text>
+                  <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>Suspend all global activities</Text>
+                </View>
 
-        <Card style={{ marginTop: 24, padding: 20 }}>
-            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>Global Broadcast</Text>
+                <BouncyTap
+                  onPress={async () => {
+                    const newVal = !settings.data?.maintenance_mode;
+                    try {
+                      Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 50, 20, 50]);
+                      await updateSettings.mutateAsync({ maintenance_mode: newVal });
+                      Alert.alert("Vault Protocol", `System Lockdown has been ${newVal ? 'ENGAGED' : 'RELEASED'}.`);
+                    } catch (e: any) {
+                      Alert.alert("Error", e.message);
+                    }
+                  }}
+                >
+                  <LinearGradient
+                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#7f1d1d'] : [colors.primary, colors.primary + 'cc']}
+                    style={{ height: 50, paddingHorizontal: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8 }}
+                  >
+                     {settings.data?.maintenance_mode ? <Lucide.ShieldAlert size={16} color="#000" /> : <Lucide.ShieldCheck size={16} color="#000" />}
+                     <Text style={{ color: '#000', fontWeight: '900', fontSize: 10 }}>{settings.data?.maintenance_mode ? "RELEASE" : "ENGAGE"}</Text>
+                  </LinearGradient>
+                </BouncyTap>
+            </View>
+          </Card>
+        </View>
+
+        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, fontSize: 18 }}>Broadcast Protocol</Text>
+        <Card style={{ padding: 24 }}>
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Signal Title</Text>
             <TextInput
               value={notif.title}
               onChangeText={t => setNotif(prev => ({...prev, title: t}))}
-              placeholder="Title"
+              placeholder="e.g. SYSTEM UPGRADE"
               placeholderTextColor={colors.textDim}
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 12, padding: 12, color: colors.text, marginBottom: 10 }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, borderWeight: 1, borderColor: colors.border }}
             />
+          </View>
+
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Global Transmission</Text>
             <TextInput
               value={notif.body}
               onChangeText={t => setNotif(prev => ({...prev, body: t}))}
-              placeholder="Message"
+              placeholder="Message details..."
               placeholderTextColor={colors.textDim}
               multiline
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 12, padding: 12, color: colors.text, height: 100, textAlignVertical: 'top', marginBottom: 16 }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, height: 120, textAlignVertical: 'top', borderWeight: 1, borderColor: colors.border }}
             />
-            <Button title="Send Signal" onPress={() => broadcast.mutate(notif)} />
+          </View>
+
+          <BouncyTap onPress={handleBroadcast}>
+            <LinearGradient
+              colors={[colors.primary, colors.primary + 'cc']}
+              style={{ height: 60, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+            >
+               <Text style={{ color: '#000', fontWeight: '900', letterSpacing: 1 }}>TRANSMIT SIGNAL</Text>
+            </LinearGradient>
+          </BouncyTap>
         </Card>
       </Animated.View>
     );
@@ -674,11 +762,9 @@ function EmptyState({ icon: Icon, title, subtitle }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 60, paddingBottom: 150 },
+  topNav: { paddingTop: 20 },
   backButton: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", marginLeft: 24, marginBottom: 12, borderWidth: 1 },
   tabScroll: { marginBottom: 32, paddingLeft: 24 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 16 },
-  gridItem: { width: "48%" },
-  maintenanceBtn: { height: 52, borderRadius: 16, paddingHorizontal: 20, justifyContent: 'center' },
-  maintenanceBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  maintenanceBtnText: { color: '#000', fontWeight: '900', fontSize: 10, letterSpacing: 1.5 }
+  gridItem: { width: "48%" }
 });
