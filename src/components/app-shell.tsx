@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History, Settings, MessageCircle, X
+  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History, Settings, MessageCircle, X, ArrowDownToLine
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,7 @@ const baseNav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/income", label: "Income", icon: TrendingUp },
   { to: "/app/expenses", label: "Expenses", icon: Receipt },
+  { to: "/app/withdraw", label: "Withdraw", icon: ArrowDownToLine },
   { to: "/app/susu", label: "Susu", icon: Users },
   { to: "/app/loans", label: "Loans", icon: Banknote },
   { to: "/app/market", label: "Market", icon: Store },
