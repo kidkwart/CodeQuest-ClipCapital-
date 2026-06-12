@@ -127,7 +127,7 @@ This serves the optimized production bundle on `http://localhost:3000` by defaul
 
 ---
 
-## 7. Optional: import your database data
+## 8. Optional: import your database data
 
 The app schema lives in the `supabase/migrations` folder. If you also want the actual marketplace products, seeded users, and sample data, import the CSV exports that were generated earlier:
 
@@ -140,7 +140,7 @@ Alternatively, use the Supabase CLI with the project reference and service role 
 
 ---
 
-## 8. Common commands
+## 9. Common commands
 
 | Command | Description |
 | --- | --- |
@@ -151,7 +151,7 @@ Alternatively, use the Supabase CLI with the project reference and service role 
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### "Failed to resolve import" / build errors
 
@@ -179,7 +179,7 @@ bun dev --port 3000
 
 ---
 
-## 10. Project structure (at a glance)
+## 11. Project structure (at a glance)
 
 ```
 src/
