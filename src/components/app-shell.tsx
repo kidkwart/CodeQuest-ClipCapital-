@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History, Settings, MessageCircle,
+  LayoutDashboard, TrendingUp, Receipt, Users, Banknote, Store, ShoppingBag, ShieldCheck, LogOut, Menu, History, Settings, MessageCircle, X
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +62,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
       {/* Main Sidebar */}
       <aside className={`fixed md:sticky top-0 inset-y-0 left-0 z-50 w-64 border-r border-border bg-surface flex flex-col h-screen transform transition-transform duration-300 ease-in-out md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
         {/* Logo Section */}
-        <div className="h-24 flex flex-col justify-center px-5 border-b border-border bg-primary/5 shrink-0">
+        <div className="h-24 flex items-center justify-between px-5 border-b border-border bg-primary/5 shrink-0">
           <Link to="/app" className="flex items-center gap-3 active:scale-95 transition-transform" onClick={() => setOpen(false)}>
             <img src={logoImg} alt="ClipCapital Logo" className="w-8 h-8 rounded-lg shadow-sm" />
             <div className="flex flex-col">
@@ -74,6 +74,10 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
               </span>
             </div>
           </Link>
+          {/* Close button for mobile */}
+          <Button variant="ghost" size="icon" className="md:hidden -mr-2 text-muted-foreground" onClick={() => setOpen(false)}>
+            <X className="w-5 h-5" />
+          </Button>
         </div>
 
         {/* Navigation - SCROLLABLE */}
