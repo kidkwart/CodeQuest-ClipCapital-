@@ -27,13 +27,6 @@ const pillars = [
 ];
 
 function LandingPage() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/app" });
-    });
-  }, [navigate]);
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="fixed top-0 inset-x-0 z-40 backdrop-blur bg-background/70 border-b border-border/40">
