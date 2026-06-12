@@ -1551,7 +1551,8 @@ export function useSystemSettings() {
         if (error) throw error;
         return data;
       },
-      staleTime: 300000, // 5 minutes
+      staleTime: 10000, // Reduced to 10 seconds for near-instant lockdown
+      refetchInterval: 30000, // Auto-check every 30 seconds as a safety net
     }),
     updateSettings: useMutation({
       mutationFn: async (updates: any) => {
