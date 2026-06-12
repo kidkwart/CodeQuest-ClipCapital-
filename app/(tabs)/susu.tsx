@@ -8,9 +8,11 @@ import { Users, Plus, ChevronRight, X, Info, ShieldCheck, AlertCircle, CheckCirc
 import { useRouter } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 export default function SusuScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile } = useProfile();
   const myGroups = useMyGroups();
   const allGroups = useAllSusuGroups();
@@ -85,12 +87,12 @@ export default function SusuScreen() {
   const availableGroups = (allGroups.data ?? []).filter((g) => !myGroupIds.has(g.id));
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={myGroups.isLoading} tintColor="#10B981" onRefresh={() => myGroups.refetch()} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
+        refreshControl={<RefreshControl refreshing={myGroups.isLoading} tintColor={colors.primary} onRefresh={() => myGroups.refetch()} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="Susu Circles" subtitle="Community Capital" />
@@ -99,7 +101,7 @@ export default function SusuScreen() {
           <View style={styles.actionRow}>
             <BouncyTap style={{ flex: 1 }} onPress={() => setShowCreateModal(true)}>
               <LinearGradient
-                colors={['#10b981', '#064e3b']}
+                colors={theme === 'dark' ? ['#10b981', '#064e3b'] : ['#10b981', '#059669']}
                 style={styles.createCard}
               >
                 <View style={styles.createIconBg}>
@@ -110,15 +112,15 @@ export default function SusuScreen() {
               </LinearGradient>
             </BouncyTap>
 
-            <View style={styles.joinCard}>
-               <Text style={styles.joinLabel}>SECURE JOIN</Text>
-               <View style={styles.joinInputWrap}>
+            <View style={[styles.joinCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+               <Text style={[styles.joinLabel, { color: colors.textMuted }]}>SECURE JOIN</Text>
+               <View style={[styles.joinInputWrap, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
                   <TextInput
                     value={invite}
                     onChangeText={setInvite}
                     placeholder="CODE"
-                    placeholderTextColor="#405045"
-                    style={styles.joinInput}
+                    placeholderTextColor={colors.textDim}
+                    style={[styles.joinInput, { color: colors.text }]}
                     autoCapitalize="characters"
                   />
                   <BouncyTap onPress={() => handleJoin()} disabled={joiningId === "manual"}>
@@ -135,27 +137,27 @@ export default function SusuScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-               <Users size={14} color="#10b981" />
-               <Text style={styles.sectionTitle}>Your Memberships</Text>
+               <Users size={14} color={colors.primary} />
+               <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Your Memberships</Text>
             </View>
             {myGroups.data?.length === 0 ? (
-              <Card style={styles.emptyCard}>
-                <Info size={32} color="#405045" />
-                <Text style={styles.emptyText}>You haven't joined any circles yet. Start or join a circle to grow your liquidity.</Text>
+              <Card style={[styles.emptyCard, { borderColor: colors.border }]}>
+                <Info size={32} color={colors.textDim} />
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>You haven't joined any circles yet. Start or join a circle to grow your liquidity.</Text>
               </Card>
             ) : (
               myGroups.data?.map((g) => (
                 <TouchableOpacity key={g.id} onPress={() => router.push(`/susu/${g.id}`)} activeOpacity={0.8} style={{ marginBottom: 12 }}>
-                  <Card style={styles.groupCard}>
+                  <Card style={[styles.groupCard, { backgroundColor: colors.cardBg }]}>
                     <View style={styles.groupInfo}>
-                      <View style={styles.groupIconBox}><Users size={20} color="#10B981" /></View>
+                      <View style={[styles.groupIconBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '20' }]}><Users size={20} color={colors.primary} /></View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.groupName}>{g.name}</Text>
-                        <Text style={styles.groupSub}>{g.frequency} • {g.members_count} Members</Text>
+                        <Text style={[styles.groupName, { color: colors.text }]}>{g.name}</Text>
+                        <Text style={[styles.groupSub, { color: colors.textMuted }]}>{g.frequency} • {g.members_count} Members</Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={styles.groupAmount}>{isPrivate ? "••••" : `GH₵ ${g.contribution}`}</Text>
-                        <Text style={styles.groupUnit}>PER CYCLE</Text>
+                        <Text style={[styles.groupAmount, { color: colors.primary }]}>{isPrivate ? "••••" : `GH₵ ${g.contribution}`}</Text>
+                        <Text style={[styles.groupUnit, { color: colors.textDim }]}>PER CYCLE</Text>
                       </View>
                     </View>
                   </Card>
@@ -166,20 +168,20 @@ export default function SusuScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-               <Search size={14} color="#10b981" />
-               <Text style={styles.sectionTitle}>Explore Circles</Text>
+               <Search size={14} color={colors.primary} />
+               <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Explore Circles</Text>
             </View>
             {availableGroups.length === 0 ? (
-              <Text style={styles.subText}>No public circles available at this time.</Text>
+              <Text style={[styles.subText, { color: colors.textDim }]}>No public circles available at this time.</Text>
             ) : (
               availableGroups.map((g) => (
-                <Card key={g.id} style={styles.exploreCard}>
+                <Card key={g.id} style={[styles.exploreCard, { backgroundColor: colors.surfaceElevated }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.exploreName}>{g.name}</Text>
+                    <Text style={[styles.exploreName, { color: colors.text }]}>{g.name}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                        <Text style={styles.exploreSub}>GH₵ {g.contribution}</Text>
-                        <View style={styles.dot} />
-                        <Text style={styles.exploreSub}>{g.frequency}</Text>
+                        <Text style={[styles.exploreSub, { color: colors.textMuted }]}>GH₵ {g.contribution}</Text>
+                        <View style={[styles.dot, { backgroundColor: colors.textDim }]} />
+                        <Text style={[styles.exploreSub, { color: colors.textMuted }]}>{g.frequency}</Text>
                     </View>
                   </View>
                   <BouncyTap onPress={() => handleJoin(g.invite_code, g.id)}>
@@ -204,30 +206,30 @@ export default function SusuScreen() {
       <Modal visible={showCreateModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ width: '100%' }}>
-            <Card style={styles.modalContent}>
+            <Card style={[styles.modalContent, { backgroundColor: colors.cardBg }]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>New Susu Circle</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>New Susu Circle</Text>
                 <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                  <X color="#7d8a84" />
+                  <X color={colors.textMuted} />
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Circle Name</Text>
-                <TextInput style={styles.modalInput} placeholder="e.g. Market Women Savings" placeholderTextColor="#405045" value={newName} onChangeText={setNewName} />
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Circle Name</Text>
+                <TextInput style={[styles.modalInput, { backgroundColor: colors.surfaceElevated, color: colors.text, borderColor: colors.border }]} placeholder="e.g. Market Women Savings" placeholderTextColor={colors.textDim} value={newName} onChangeText={setNewName} />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Contribution Amount (GH₵)</Text>
-                <TextInput style={styles.modalInput} placeholder="0.00" placeholderTextColor="#405045" keyboardType="numeric" value={newAmount} onChangeText={setNewAmount} />
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Contribution Amount (GH₵)</Text>
+                <TextInput style={[styles.modalInput, { backgroundColor: colors.surfaceElevated, color: colors.text, borderColor: colors.border }]} placeholder="0.00" placeholderTextColor={colors.textDim} keyboardType="numeric" value={newAmount} onChangeText={setNewAmount} />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Frequency</Text>
+                <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Frequency</Text>
                 <View style={styles.freqRow}>
                   {["Daily", "Weekly", "Monthly"].map((f) => (
-                    <TouchableOpacity key={f} onPress={() => setNewFrequency(f)} style={[styles.freqBtn, newFrequency === f && styles.freqBtnActive]}>
-                      <Text style={[styles.freqBtnText, newFrequency === f && styles.freqBtnTextActive]}>{f}</Text>
+                    <TouchableOpacity key={f} onPress={() => setNewFrequency(f)} style={[styles.freqBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }, newFrequency === f && { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}>
+                      <Text style={[styles.freqBtnText, { color: colors.textMuted }, newFrequency === f && { color: colors.primary }]}>{f}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>

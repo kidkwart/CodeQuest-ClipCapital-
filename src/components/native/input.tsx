@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, TextInput, type TextInputProps, StyleSheet } from "react-native";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/context/theme-context";
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -10,26 +10,28 @@ export interface InputProps extends TextInputProps {
 }
 
 export function Input({ label, error, icon, containerClassName, className, ...props }: InputProps) {
+  const { colors, theme } = useTheme();
+
   return (
     <View className={cn("space-y-4", containerClassName)}>
       {label && (
-        <Text style={{ fontFamily: 'Display-Bold', color: '#10b981', letterSpacing: 4 }} className="text-[9px] uppercase ml-1 opacity-70">
+        <Text style={{ fontFamily: 'Display-Bold', color: colors.primary, letterSpacing: 4 }} className="text-[9px] uppercase ml-1 opacity-70">
           {label}
         </Text>
       )}
       <View
-        style={styles.inputWrapper}
+        style={[styles.inputWrapper, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
         className={cn(
-          "flex-row items-center rounded-[24px] px-6 h-16 border border-white/5",
+          "flex-row items-center rounded-[24px] px-6 h-16 border",
           error && "border-red-500/40",
           className
         )}
       >
         {icon && <View className="mr-4 opacity-50">{icon}</View>}
         <TextInput
-          placeholderTextColor="#405045"
-          selectionColor="#10b981"
-          style={{ fontFamily: 'Display-Medium', fontSize: 15, color: '#fcfcfc' }}
+          placeholderTextColor={colors.textDim}
+          selectionColor={colors.primary}
+          style={{ fontFamily: 'Display-Medium', fontSize: 15, color: colors.text }}
           className="flex-1 h-full"
           {...props}
         />
@@ -45,10 +47,9 @@ export function Input({ label, error, icon, containerClassName, className, ...pr
 
 const styles = StyleSheet.create({
   inputWrapper: {
-    backgroundColor: 'rgba(13, 19, 16, 0.8)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 10,
   }
 });
