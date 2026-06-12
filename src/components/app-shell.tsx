@@ -31,7 +31,6 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   const roles = useMyRoles();
   const { user } = useCurrentUser();
 
-  // FORCE ADMIN: Only your specific master email gets access
   const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
 
   const navigate = useNavigate();
@@ -51,10 +50,20 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-border bg-surface transform transition-transform md:translate-x-0 flex flex-col ${open ? "translate-x-0" : "-translate-x-full"}`}>
+    <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
+      {/* Sidebar Overlay for Mobile */}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Main Sidebar */}
+      <aside className={`fixed md:sticky top-0 inset-y-0 left-0 z-50 w-64 border-r border-border bg-surface flex flex-col h-screen transform transition-transform duration-300 ease-in-out md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+        {/* Logo Section */}
         <div className="h-24 flex flex-col justify-center px-5 border-b border-border bg-primary/5 shrink-0">
-          <Link to="/app" className="flex items-center gap-3 active:scale-95 transition-transform">
+          <Link to="/app" className="flex items-center gap-3 active:scale-95 transition-transform" onClick={() => setOpen(false)}>
             <img src={logoImg} alt="ClipCapital Logo" className="w-8 h-8 rounded-lg shadow-sm" />
             <div className="flex flex-col">
               <span className="font-display font-bold text-lg leading-tight tracking-tight">
@@ -66,7 +75,9 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             </div>
           </Link>
         </div>
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+
+        {/* Navigation - SCROLLABLE */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar overscroll-contain">
           {nav.map((item) => {
             const Icon = item.icon;
             const active = item.exact
@@ -77,8 +88,8 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
-                  active ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                  active ? "bg-primary text-white font-bold shadow-md shadow-primary/20" : "text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
                 }`}
               >
                 <Icon className="w-4 h-4" /> {item.label}
@@ -86,26 +97,31 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
             );
           })}
         </nav>
-        <div className="p-3 border-t border-border shrink-0">
-          <div className="px-3 py-2 text-xs">
-            <div className="font-semibold text-foreground truncate">{profile.data?.display_name || "—"}</div>
-            <div className="text-muted-foreground truncate">{profile.data?.business_name || ""}</div>
+
+        {/* Footer Section */}
+        <div className="p-4 border-t border-border bg-muted/10 shrink-0">
+          <div className="px-3 py-2 mb-2 rounded-xl bg-background/50 border border-border/50">
+            <div className="text-[10px] uppercase font-black text-muted-foreground mb-0.5 opacity-50">Account</div>
+            <div className="font-bold text-xs text-foreground truncate">{profile.data?.display_name || "User"}</div>
           </div>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={signOut}>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={signOut}>
             <LogOut className="w-4 h-4" /> Sign out
           </Button>
         </div>
       </aside>
 
-      <div className="md:pl-64">
-        <header className="h-14 sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border flex items-center px-4 gap-3">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <header className="h-14 sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 gap-3">
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(!open)}>
             <Menu className="w-5 h-5" />
           </Button>
-          <h1 className="font-display font-semibold text-lg flex-1">{title}</h1>
+          <h1 className="font-display font-bold text-base md:text-lg flex-1 truncate">{title}</h1>
           <NotificationTray />
         </header>
-        <main className="p-4 md:p-6 max-w-6xl">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 max-w-6xl w-full mx-auto pb-24 scroll-smooth">
+          {children}
+        </main>
       </div>
     </div>
   );
@@ -114,22 +130,22 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
-      <div className="font-semibold text-foreground">{title}</div>
-      {hint && <div className="text-sm mt-1">{hint}</div>}
+      <div className="font-semibold text-foreground text-lg">{title}</div>
+      {hint && <div className="text-sm mt-2 opacity-70">{hint}</div>}
     </div>
   );
 }
 
 export function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl bg-surface border border-border p-5">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className="text-2xl font-display font-bold mt-1">{value}</div>
-      {hint && <div className="text-xs text-muted-foreground mt-1">{hint}</div>}
+    <div className="rounded-2xl bg-surface border border-border p-6 shadow-sm hover:shadow-md transition-shadow">
+      <div className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{label}</div>
+      <div className="text-2xl font-display font-black mt-1 text-foreground">{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground mt-2 font-medium bg-muted/50 px-2 py-0.5 rounded-full inline-block">{hint}</div>}
     </div>
   );
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-xl bg-surface border border-border p-5 ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl bg-surface border border-border p-6 shadow-sm ${className}`}>{children}</div>;
 }

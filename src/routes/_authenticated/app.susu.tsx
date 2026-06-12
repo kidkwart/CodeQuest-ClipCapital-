@@ -45,6 +45,13 @@ function SusuList() {
     }
   }
 
+  async function onManualJoin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!invite.trim()) return;
+    await onJoin(invite.trim());
+    setInvite("");
+  }
+
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     const amount = Number(contribution);
@@ -59,27 +66,20 @@ function SusuList() {
     }
   }
 
-  async function onManualJoin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!invite.trim()) return;
-    await onJoin(invite.trim());
-    setInvite("");
-  }
-
   return (
     <AppShell title="Susu Savings Groups">
       {/* Top Banner */}
       <div className="bg-primary rounded-3xl p-6 mb-8 text-white relative overflow-hidden shadow-xl shadow-primary/20">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex-1">
-            <h2 className="text-2xl font-display font-black mb-2">Savings Circles</h2>
-            <p className="text-primary-foreground/80 text-sm max-w-md font-medium leading-relaxed">
-              Join professional circles or start your own private Susu with friends. Safe, secure, and automated payouts.
+            <h2 className="text-2xl font-display font-black mb-2 leading-none text-white">Savings Circles</h2>
+            <p className="text-primary-foreground/80 text-sm max-w-md font-medium leading-relaxed mt-2">
+              Join professional circles or start your own private Susu. Safe, secure, and automated payouts.
             </p>
           </div>
           <Button
             onClick={() => setShowCreate(!showCreate)}
-            className="bg-white text-primary hover:bg-white/90 font-black uppercase text-[11px] tracking-widest px-6 h-11 rounded-2xl shadow-xl active:scale-95 transition-all gap-2"
+            className="bg-white text-primary hover:bg-white/90 font-black uppercase text-[10px] tracking-widest px-6 h-11 rounded-2xl shadow-xl active:scale-95 transition-all gap-2 border-none"
           >
             <ShieldPlus className="w-4 h-4" />
             {showCreate ? "Close Form" : "Start New Circle"}
@@ -96,27 +96,27 @@ function SusuList() {
             exit={{ height: 0, opacity: 0, marginBottom: 0 }}
             className="overflow-hidden"
           >
-            <Card className="border-primary/20 bg-primary/5">
+            <Card className="border-primary/20 bg-primary/5 shadow-inner">
               <h3 className="font-display font-black text-sm uppercase tracking-tight mb-4 text-primary">New Savings Circle</h3>
               <form onSubmit={onCreate} className="grid md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1">
-                  <Label className="text-[10px] font-bold uppercase ml-1">Circle Name</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. My Private Susu" className="h-11 bg-background" required />
+                  <Label className="text-[10px] font-bold uppercase ml-1 opacity-70">Circle Name</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Osu Barber Savings" className="h-11 bg-background rounded-xl border-border/40 font-bold" required />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] font-bold uppercase ml-1">Contribution (GH₵)</Label>
-                  <Input type="number" min="1" value={contribution} onChange={(e) => setContribution(e.target.value)} placeholder="50" className="h-11 bg-background" required />
+                  <Label className="text-[10px] font-bold uppercase ml-1 opacity-70">Daily Contribution (GH₵)</Label>
+                  <Input type="number" min="1" value={contribution} onChange={(e) => setContribution(e.target.value)} placeholder="50" className="h-11 bg-background rounded-xl border-border/40 font-bold" required />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] font-bold uppercase ml-1">Frequency</Label>
+                  <Label className="text-[10px] font-bold uppercase ml-1 opacity-70">Payout Frequency</Label>
                   <select value={frequency} onChange={(e) => setFrequency(e.target.value)}
-                    className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm font-bold focus:ring-1 focus:ring-primary outline-none">
+                    className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm font-bold focus:ring-1 focus:ring-primary outline-none shadow-sm">
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
                     <option value="Monthly">Monthly</option>
                   </select>
                 </div>
-                <Button type="submit" disabled={create.isPending} className="h-11 font-black uppercase text-[11px] tracking-widest">
+                <Button type="submit" disabled={create.isPending} className="h-11 font-black uppercase text-[10px] tracking-widest rounded-xl shadow-lg shadow-primary/20">
                   {create.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirm & Create"}
                 </Button>
               </form>
@@ -127,7 +127,7 @@ function SusuList() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Left Column: My Groups */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           <div>
             <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
               <Wallet className="w-5 h-5 text-primary" />
@@ -135,7 +135,7 @@ function SusuList() {
             </h3>
 
             {myGroups.isLoading ? (
-              <div className="grid gap-3">
+              <div className="grid sm:grid-cols-2 gap-4">
                 {[1, 2].map(i => <div key={i} className="h-32 rounded-2xl bg-muted animate-pulse" />)}
               </div>
             ) : (myGroups.data ?? []).length === 0 ? (
@@ -176,20 +176,22 @@ function SusuList() {
           </div>
 
           {/* Explore Section */}
-          <div className="pt-4">
+          <div>
             <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
               <Search className="w-5 h-5 text-gold" />
               Available to Join
             </h3>
 
             {allGroups.isLoading ? (
-              <div className="h-40 bg-muted animate-pulse rounded-2xl" />
+              <div className="space-y-3">
+                {[1, 2].map(i => <div key={i} className="h-20 bg-muted animate-pulse rounded-2xl" />)}
+              </div>
             ) : availableGroups.length === 0 ? (
               <EmptyState title="All caught up!" hint="You are currently a member of all available groups." />
             ) : (
               <div className="grid gap-3">
                 {availableGroups.map((g) => (
-                  <Card key={g.id} className="flex flex-col sm:flex-row items-center justify-between gap-4 border-border/50 bg-surface/50">
+                  <Card key={g.id} className="flex flex-col sm:flex-row items-center justify-between gap-4 border-border/50 bg-surface/50 p-4">
                     <div className="flex items-center gap-4 w-full">
                       <div className="h-12 w-12 rounded-2xl bg-gold/10 flex items-center justify-center text-gold shrink-0">
                         <Users className="w-6 h-6" />
@@ -197,7 +199,7 @@ function SusuList() {
                       <div className="min-w-0">
                         <div className="font-bold text-foreground truncate">{g.name}</div>
                         <div className="text-[10px] text-muted-foreground font-medium uppercase italic">
-                          {g.frequency} contribution · Current pot: GH₵ {Number(g.pot).toLocaleString()}
+                          {g.frequency} contribution · Pot: GH₵ {Number(g.pot).toLocaleString()}
                         </div>
                       </div>
                     </div>
@@ -209,7 +211,7 @@ function SusuList() {
                       <Button
                         onClick={() => onJoin(g.invite_code)}
                         disabled={join.isPending}
-                        className="flex-1 sm:flex-none h-10 px-6 font-black uppercase text-[11px] tracking-widest shadow-lg shadow-primary/10"
+                        className="flex-1 sm:flex-none h-10 px-6 font-black uppercase text-[10px] tracking-widest shadow-lg shadow-primary/10"
                       >
                         {join.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Join Circle"}
                       </Button>
@@ -223,36 +225,34 @@ function SusuList() {
 
         {/* Right Column: Invite Panel */}
         <div className="space-y-6">
-          <Card className="bg-muted/20 border-primary/20">
-            <h3 className="font-display font-black text-sm uppercase tracking-tight mb-4 text-primary">Private Invitation</h3>
+          <Card className="bg-muted/20 border-primary/20 p-5">
+            <h3 className="font-display font-black text-xs uppercase tracking-widest mb-4 text-primary">Private Invitation</h3>
             <p className="text-[11px] text-muted-foreground font-medium mb-4 leading-relaxed">
-              If a friend invited you to their private Susu circle, enter their 8-character invite code below.
+              If a friend invited you to their private circle, enter their 8-character invite code below.
             </p>
             <form onSubmit={onManualJoin} className="space-y-3">
-              <div className="relative">
-                <Input
-                  value={invite}
-                  onChange={(e) => setInvite(e.target.value)}
-                  placeholder="Enter Code..."
-                  className="h-12 rounded-xl bg-background border-border/50 font-mono font-bold text-center tracking-widest"
-                  maxLength={8}
-                  required
-                />
-              </div>
-              <Button type="submit" disabled={join.isPending} variant="outline" className="w-full h-11 rounded-xl font-bold border-primary/30 text-primary hover:bg-primary hover:text-white transition-all">
-                {join.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Group"}
+              <Input
+                value={invite}
+                onChange={(e) => setInvite(e.target.value)}
+                placeholder="Enter Code..."
+                className="h-12 rounded-xl bg-background border-border/50 font-mono font-bold text-center tracking-widest text-lg"
+                maxLength={8}
+                required
+              />
+              <Button type="submit" disabled={join.isPending} variant="outline" className="w-full h-11 rounded-xl font-bold border-primary/30 text-primary hover:bg-primary hover:text-white transition-all uppercase text-[10px] tracking-widest">
+                {join.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Now"}
               </Button>
             </form>
           </Card>
 
-          <Card className="bg-gold/5 border-gold/20">
+          <Card className="bg-gold/5 border-gold/20 p-5">
             <h3 className="font-display font-bold text-sm mb-2 text-gold">Why Join?</h3>
             <ul className="space-y-3">
               {[
                 "Get lump sums for new tools",
                 "Interest-free community capital",
                 "Boost your ClipScore identity",
-                "Vetted local professionals only"
+                "Vetted professionals only"
               ].map((text, i) => (
                 <li key={i} className="flex items-start gap-2 text-[11px] font-medium text-gold/80 leading-tight">
                   <div className="h-1.5 w-1.5 rounded-full bg-gold mt-1 shrink-0" />
