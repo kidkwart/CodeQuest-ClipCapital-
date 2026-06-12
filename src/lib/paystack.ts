@@ -12,8 +12,8 @@ export const usePaystack = () => {
   const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
 
   const initializePayment = ({ email, amount, onSuccess, onClose, metadata }: PaystackOptions) => {
-    if (!publicKey || publicKey.includes("PASTE_YOUR_PUBLIC_KEY")) {
-      toast.error("Paystack is not configured yet. Please provide the Public Key.");
+    if (!publicKey || !publicKey.startsWith("pk_")) {
+      toast.error("Paystack is not configured. Please add your Public Key to the .env file.");
       return;
     }
 
@@ -22,8 +22,18 @@ export const usePaystack = () => {
       email: email,
       amount: Math.round(amount * 100), // Paystack takes amount in pesewas
       currency: "GHS",
-      ref: 'CC-' + Math.floor((Math.random() * 1000000000) + 1),
-      metadata: metadata,
+      ref: 'CC-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      metadata: {
+        ...metadata,
+        custom_fields: [
+          {
+            display_name: "Platform",
+            variable_name: "platform",
+            value: "ClipCapital App"
+          },
+          ...(metadata?.custom_fields || [])
+        ]
+      },
       callback: (response: any) => {
         onSuccess(response.reference);
       },

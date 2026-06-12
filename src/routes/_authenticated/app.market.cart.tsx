@@ -59,6 +59,15 @@ function Cart() {
     initializePayment({
       email: user.email,
       amount: total,
+      metadata: {
+        payment_type: "marketplace_order",
+        user_id: user.id,
+        items_count: cart.items.length,
+        custom_fields: [
+          { display_name: "Service", variable_name: "service", value: "Marketplace Purchase" },
+          { display_name: "Items", variable_name: "items", value: cart.items.map(i => i.name).join(", ") }
+        ]
+      },
       onSuccess: async (reference) => {
         try {
           await place.mutateAsync({

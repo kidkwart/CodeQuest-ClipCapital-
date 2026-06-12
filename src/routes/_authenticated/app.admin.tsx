@@ -1,5 +1,5 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { AppShell, Card, EmptyState } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,11 @@ import {
   useMyRoles, usePendingLoans, useReviewLoan,
   useAllProducts, useCreateProduct, useUpdateProduct, useDeleteProduct,
   useAllProductRequests, useAllOrders, useUpdateOrderStatus, useAllProfiles,
-  useAdminStats, useAllUserMessages, useReplyToUser
+  useAdminStats, useAllUserMessages, useReplyToUser, usePendingSusuPayouts
 } from "@/lib/app-queries";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
-import { Trash2, Loader2, Banknote, MessageSquarePlus, ShieldCheck, Package, ExternalLink, Users, TrendingUp, MessageCircle, Send } from "lucide-react";
+import { Trash2, Loader2, Banknote, MessageSquarePlus, ShieldCheck, Package, ExternalLink, Users, TrendingUp, MessageCircle, Send, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +26,6 @@ function Admin() {
   const roles = useMyRoles();
   const { user, loading: userLoading } = useCurrentUser();
 
-  // Wait for both roles and user info to load
   if (roles.isLoading || userLoading) {
     return (
       <AppShell title="Admin">
@@ -40,15 +39,11 @@ function Admin() {
 
   const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
 
-  if (!isAdmin) {
-    console.log("Not admin, redirecting. Email:", user?.email, "Roles:", roles.data);
-    return <Navigate to="/app" />;
-  }
+  if (!isAdmin) return <Navigate to="/app" />;
 
   return (
     <AppShell title="Admin Control Center">
       <div className="space-y-12 pb-20">
-        {/* 1. Daily Performance */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-emerald-500" />
@@ -57,7 +52,6 @@ function Admin() {
           <DailyReport />
         </section>
 
-        {/* 2. Urgent Queues */}
         <div className="grid lg:grid-cols-2 gap-8">
           <section>
             <div className="flex items-center gap-2 mb-4">
@@ -69,23 +63,31 @@ function Admin() {
 
           <section>
             <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-gold" />
+              <h3 className="font-display font-bold text-xl">Susu Payouts</h3>
+            </div>
+            <SusuPayoutQueue />
+          </section>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          <section>
+            <div className="flex items-center gap-2 mb-4">
               <Package className="w-5 h-5 text-primary" />
               <h3 className="font-display font-bold text-xl">Order Management</h3>
             </div>
             <OrderQueue />
           </section>
+
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <MessageSquarePlus className="w-5 h-5 text-gold" />
+              <h3 className="font-display font-bold text-xl">Custom Requests</h3>
+            </div>
+            <ProductRequestQueue />
+          </section>
         </div>
 
-        {/* 3. Product Requests */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <MessageSquarePlus className="w-5 h-5 text-gold" />
-            <h3 className="font-display font-bold text-xl">Custom Requests</h3>
-          </div>
-          <ProductRequestQueue />
-        </section>
-
-        {/* 4. User Base & Support */}
         <div className="grid lg:grid-cols-2 gap-8">
           <section>
             <div className="flex items-center gap-2 mb-4">
@@ -104,7 +106,6 @@ function Admin() {
           </section>
         </div>
 
-        {/* 5. Inventory */}
         <section>
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck className="w-5 h-5 text-primary" />
@@ -122,7 +123,7 @@ function OrderQueue() {
   const updateStatus = useUpdateOrderStatus();
 
   if (orders.isLoading) return <div className="text-muted-foreground animate-pulse">Loading orders...</div>;
-  if ((orders.data ?? []).length === 0) return <EmptyState title="No orders yet" hint="Customers haven't purchased any items." />;
+  if ((orders.data ?? []).length === 0) return <EmptyState title="No orders yet" />;
 
   return (
     <div className="grid gap-4">
@@ -145,9 +146,7 @@ function OrderQueue() {
                 {o.status}
               </div>
             </div>
-
             <div className="text-xl font-display font-black text-primary">GH₵ {Number(o.total).toLocaleString()}</div>
-
             <div className="space-y-1">
               {(o as any).order_items?.map((item: any) => (
                 <div key={item.id} className="text-[11px] flex justify-between text-muted-foreground italic">
@@ -155,7 +154,6 @@ function OrderQueue() {
                 </div>
               ))}
             </div>
-
             <div className="flex gap-2 pt-2 border-t border-dashed border-border mt-1">
               {o.status === "pending" && (
                 <Button size="sm" className="flex-1 bg-emerald-600 h-8 text-[10px]" onClick={() => updateStatus.mutate({ id: o.id, status: "paid" })}>
@@ -167,9 +165,6 @@ function OrderQueue() {
                   Mark Delivered
                 </Button>
               )}
-              <Button size="sm" variant="outline" className="flex-1 h-8 text-[10px]">
-                Details
-              </Button>
             </div>
           </div>
         </Card>
@@ -178,9 +173,29 @@ function OrderQueue() {
   );
 }
 
+function ProductRequestQueue() {
+  const requests = useAllProductRequests();
+  if (requests.isLoading) return <div className="text-muted-foreground animate-pulse">Loading requests...</div>;
+  if ((requests.data ?? []).length === 0) return <EmptyState title="No custom requests" />;
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {requests.data!.map((r) => (
+        <Card key={r.id} className="border-gold/30 bg-gold/5">
+          <div className="font-bold text-sm">{r.product_name}</div>
+          <div className="text-[10px] text-muted-foreground mt-1 flex justify-between uppercase">
+            <span>By {(r as any).profiles?.display_name}</span>
+            <span className="font-black text-gold">{r.status}</span>
+          </div>
+          {r.note && <p className="mt-2 text-xs text-muted-foreground bg-white/50 p-2 rounded italic">"{r.note}"</p>}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 function UserDirectory() {
   const users = useAllProfiles();
-
   if (users.isLoading) return <div className="text-muted-foreground animate-pulse">Loading users...</div>;
   if ((users.data ?? []).length === 0) return <EmptyState title="No users found" />;
 
@@ -197,7 +212,6 @@ function UserDirectory() {
               <div className="text-[9px] text-muted-foreground uppercase mt-1">{u.business_type || 'User'}</div>
             </div>
           </div>
-
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
               <span className="text-muted-foreground">Business:</span>
@@ -211,6 +225,19 @@ function UserDirectory() {
                 u.clip_score >= 650 ? "text-gold" : "text-red-500"
               )}>{u.clip_score}</span>
             </div>
+            {u.account_number && (
+              <div className="mt-3 p-2 bg-white/50 rounded-lg border border-blue-500/10 text-[10px] space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground uppercase">Bank/MoMo:</span>
+                  <span className="font-bold">{u.bank_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground uppercase">Account:</span>
+                  <span className="font-bold tracking-wider">{u.account_number}</span>
+                </div>
+                <div className="text-muted-foreground italic truncate">{u.account_name}</div>
+              </div>
+            )}
           </div>
         </Card>
       ))}
@@ -220,7 +247,6 @@ function UserDirectory() {
 
 function DailyReport() {
   const stats = useAdminStats();
-
   if (stats.isLoading) return <div className="h-32 rounded-xl bg-muted animate-pulse" />;
 
   return (
@@ -249,101 +275,33 @@ function DailyReport() {
   );
 }
 
-function ProductRequestQueue() {
-  const requests = useAllProductRequests();
-
-  if (requests.isLoading) return <div className="text-muted-foreground animate-pulse">Loading requests...</div>;
-  if ((requests.data ?? []).length === 0) return <EmptyState title="No requests yet" hint="Users haven't requested any custom items." />;
-
-  return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {requests.data!.map((r) => {
-        const profile = (r as any).profiles;
-        return (
-          <Card key={r.id} className="border-gold/20 bg-gold/5">
-            <div className="flex justify-between items-start mb-2">
-              <div className="font-bold text-base">{r.product_name}</div>
-              <div className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gold/10 text-gold uppercase">{r.status}</div>
-            </div>
-            <div className="text-xs text-muted-foreground mb-3">
-              By <span className="font-bold text-foreground">{profile?.display_name || "Unknown"}</span>
-            </div>
-            {r.estimated_price && <div className="text-sm font-semibold mb-1">Target: GH₵ {r.estimated_price}</div>}
-            {r.note && <div className="text-[11px] bg-background p-2 rounded border border-gold/10 italic">"{r.note}"</div>}
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-function ProductManager() {
-  const list = useAllProducts();
-  const create = useCreateProduct();
-  const update = useUpdateProduct();
-  const del = useDeleteProduct();
-  const [form, setForm] = useState({ name: "", description: "", price: "", image_url: "", stock: "1" });
-
-  async function add(e: React.FormEvent) {
-    e.preventDefault();
-    const price = Number(form.price); const stock = Number(form.stock);
-    if (!form.name.trim() || !price) { toast.error("Name and price required"); return; }
-    try {
-      await create.mutateAsync({ name: form.name, description: form.description, price, image_url: form.image_url, stock });
-      setForm({ name: "", description: "", price: "", image_url: "", stock: "1" });
-      toast.success("Product added");
-    } catch (e) { toast.error((e as Error).message); }
-  }
+function SusuPayoutQueue() {
+  const payouts = usePendingSusuPayouts();
+  if (payouts.isLoading) return <div className="h-40 rounded-xl bg-muted animate-pulse" />;
+  if ((payouts.data ?? []).length === 0) return <EmptyState title="All payouts cleared" hint="No groups have active pots ready for disbursement." />;
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      <Card>
-        <h4 className="font-display font-semibold mb-3">Add product</h4>
-        <form onSubmit={add} className="space-y-3">
-          <div><Label className="text-[10px]">Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="h-9 text-sm" /></div>
-          <div><Label className="text-[10px]">Description</Label><Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="h-9 text-sm" /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-[10px]">Price (GH₵)</Label><Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required className="h-9 text-sm" /></div>
-            <div><Label className="text-[10px]">Stock</Label><Input type="number" min="0" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} className="h-9 text-sm" /></div>
+    <div className="space-y-4">
+      {payouts.data!.map((g) => (
+        <Card key={g.id} className="border-gold/20 bg-gold/5">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <div className="font-display font-black text-base">{g.name}</div>
+              <div className="text-[10px] text-muted-foreground uppercase font-bold">Managed by {(g as any).owner?.display_name}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[9px] uppercase font-black text-gold">Current Pot</div>
+              <div className="font-black text-lg text-gold">GH₵ {Number(g.pot).toLocaleString()}</div>
+            </div>
           </div>
-          <div><Label className="text-[10px]">Image URL</Label><Input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://…" className="h-9 text-sm" /></div>
-          <Button type="submit" disabled={create.isPending} className="w-full">Add product</Button>
-        </form>
-      </Card>
-      <Card className="lg:col-span-2">
-        <h4 className="font-display font-semibold mb-3">All products ({list.data?.length ?? 0})</h4>
-        {(list.data ?? []).length === 0 ? (
-          <EmptyState title="No products" />
-        ) : (
-          <ul className="divide-y divide-border max-h-[400px] overflow-y-auto pr-2">
-            {list.data!.map((p) => (
-              <li key={p.id} className="py-3 flex items-center gap-3">
-                {p.image_url ? (
-                  <img src={p.image_url} alt={p.name} className="w-10 h-10 object-cover rounded" />
-                ) : (
-                  <div className="w-10 h-10 rounded bg-muted flex items-center justify-center text-[10px]">No Img</div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate text-sm">{p.name}</div>
-                  <div className="text-[10px] text-muted-foreground">GH₵ {Number(p.price).toLocaleString()}</div>
-                </div>
-                <Input type="number" min="0" defaultValue={p.stock} className="w-16 h-8 text-xs"
-                  onBlur={(e) => {
-                    const stock = Number(e.target.value);
-                    if (stock !== p.stock) update.mutate({ id: p.id, stock });
-                  }} />
-                <Button size="sm" variant={p.active ? "outline" : "default"} className="h-7 text-[10px] px-2"
-                  onClick={() => update.mutate({ id: p.id, active: !p.active })}>
-                  {p.active ? "Hide" : "Show"}
-                </Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => {
-                  if (confirm(`Delete ${p.name}?`)) del.mutate(p.id);
-                }}><Trash2 className="w-3 h-3" /></Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+          <div className="flex items-center justify-between pt-3 border-t border-gold/10">
+            <div className="text-[10px] font-medium text-muted-foreground">{g.members_count} Members · {g.frequency}</div>
+            <Button size="sm" variant="outline" className="h-8 text-[10px] border-gold/30 text-gold hover:bg-gold hover:text-white" asChild>
+              <Link to="/app/susu/$groupId" params={{ groupId: g.id }}>Review Payout →</Link>
+            </Button>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }
@@ -359,14 +317,13 @@ function LoanQueue() {
   return (
     <div className="space-y-4">
       {list.data!.map((l) => {
-        const profile = (l as { profiles?: { display_name?: string; business_name?: string } | null }).profiles;
+        const profile = (l as any).profiles;
         return (
           <Card key={l.id} className="border-primary/20">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="font-display font-bold text-base">{profile?.display_name ?? "User"}</div>
                 <div className="text-[11px] text-muted-foreground">{profile?.business_name ?? "Independent Professional"}</div>
-
                 <div className="mt-4 grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-[9px] text-muted-foreground uppercase font-black">Request</div>
@@ -377,88 +334,33 @@ function LoanQueue() {
                     <div className="font-bold">{l.term_months} Months</div>
                   </div>
                 </div>
-
                 <div className="mt-3 text-xs p-2 bg-muted/30 rounded border border-border/50">
                   <span className="text-muted-foreground font-bold">Purpose:</span> {l.purpose}
                 </div>
               </div>
             </div>
-
             {l.status === "pending" && (
               <div className="mt-6 space-y-4 border-t border-dashed border-border pt-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold">Interest (%)</Label>
-                    <Input
-                      type="number"
-                      placeholder="15.0"
-                      step="0.1"
-                      className="h-8 text-xs"
-                      value={interestById[l.id] ?? "15.0"}
-                      onChange={(e) => setInterestById({ ...interestById, [l.id]: e.target.value })}
-                    />
+                    <Input type="number" placeholder="15.0" step="0.1" className="h-8 text-xs" value={interestById[l.id] ?? "15.0"} onChange={(e) => setInterestById({ ...interestById, [l.id]: e.target.value })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] font-bold">Note</Label>
-                    <Input
-                      placeholder="Reason"
-                      className="h-8 text-xs"
-                      value={noteById[l.id] ?? ""}
-                      onChange={(e) => setNoteById({ ...noteById, [l.id]: e.target.value })}
-                    />
+                    <Input placeholder="Reason" className="h-8 text-xs" value={noteById[l.id] ?? ""} onChange={(e) => setNoteById({ ...noteById, [l.id]: e.target.value })} />
                   </div>
                 </div>
-
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-emerald-600 h-9 text-[10px] font-bold"
-                    disabled={review.isPending}
-                    onClick={async () => {
-                      try {
-                        const promise = review.mutateAsync({
-                          id: l.id,
-                          status: "approved",
-                          decision_note: noteById[l.id] ?? "",
-                          interest_rate: Number(interestById[l.id] ?? 15.0)
-                        });
-                        toast.promise(promise, {
-                          loading: 'Processing MoMo Payout...',
-                          success: 'Loan Approved!',
-                          error: 'Payout failed.',
-                        });
-                        await promise;
-                      } catch (e) { /* error handled by toast */ }
-                    }}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 border-destructive text-destructive h-9 text-[10px] font-bold"
-                    disabled={review.isPending}
-                    onClick={async () => {
-                      try {
-                        await review.mutateAsync({
-                          id: l.id,
-                          status: "rejected",
-                          decision_note: noteById[l.id] ?? ""
-                        });
-                        toast.success("Application Rejected");
-                      } catch (e) { toast.error((e as Error).message); }
-                    }}
-                  >
-                    Reject
-                  </Button>
+                  <Button size="sm" className="flex-1 bg-emerald-600 h-9 text-[10px] font-bold" disabled={review.isPending} onClick={async () => {
+                    const promise = review.mutateAsync({ id: l.id, status: "approved", decision_note: noteById[l.id] ?? "", interest_rate: Number(interestById[l.id] ?? 15.0) });
+                    toast.promise(promise, { loading: 'Processing Payout...', success: 'Loan Approved!', error: 'Payout failed.' });
+                  }}>Approve</Button>
+                  <Button size="sm" variant="outline" className="flex-1 border-destructive text-destructive h-9 text-[10px] font-bold" disabled={review.isPending} onClick={async () => {
+                    await review.mutateAsync({ id: l.id, status: "rejected", decision_note: noteById[l.id] ?? "" });
+                    toast.success("Application Rejected");
+                  }}>Reject</Button>
                 </div>
-              </div>
-            )}
-
-            {l.status !== "pending" && (
-              <div className="mt-4 flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase text-primary bg-primary/10 px-2 rounded-full">{l.status}</span>
-                {l.decision_note && <div className="text-[10px] italic text-muted-foreground">"{l.decision_note}"</div>}
               </div>
             )}
           </Card>
@@ -475,24 +377,17 @@ function AdminSupportChat() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    const channel = supabase
-      .channel('admin-support')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_messages' }, () => {
-        qc.invalidateQueries({ queryKey: ["all-admin-messages"] });
-      })
-      .subscribe();
+    const channel = supabase.channel('admin-support').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_messages' }, () => {
+      qc.invalidateQueries({ queryKey: ["all-admin-messages"] });
+    }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [qc]);
 
   if (isLoading) return <div className="h-40 rounded-xl bg-muted animate-pulse" />;
   if ((allMessages ?? []).length === 0) return <EmptyState title="No messages" />;
 
-  // Group messages by user
   const grouped = (allMessages ?? []).reduce((acc, m) => {
-    if (!acc[m.user_id]) acc[m.user_id] = {
-      profile: (m as any).profiles,
-      messages: []
-    };
+    if (!acc[m.user_id]) acc[m.user_id] = { profile: (m as any).profiles, messages: [] };
     acc[m.user_id].messages.push(m);
     return acc;
   }, {} as Record<string, { profile: any, messages: any[] }>);
@@ -501,49 +396,81 @@ function AdminSupportChat() {
     <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
       {Object.entries(grouped).map(([userId, data]) => (
         <Card key={userId} className="p-0 border-border/50 overflow-hidden shadow-sm">
-          <div className="p-3 bg-muted/20 border-b border-border flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                {data.profile?.display_name?.charAt(0) || 'U'}
-              </div>
-              <div className="text-xs font-bold">{data.profile?.display_name || "Unknown User"}</div>
-            </div>
+          <div className="p-3 bg-muted/20 border-b border-border flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">{data.profile?.display_name?.charAt(0) || 'U'}</div>
+            <div className="text-xs font-bold">{data.profile?.display_name || "Unknown User"}</div>
           </div>
-
           <div className="p-4 space-y-3 bg-background/50">
             {data.messages.slice(0, 5).reverse().map((msg: any) => (
-              <div key={msg.id} className={cn(
-                "max-w-[90%] p-2 rounded-xl text-[11px]",
-                msg.is_from_admin ? "bg-primary/5 self-end ml-auto text-right border border-primary/10" : "bg-muted self-start"
-              )}>
+              <div key={msg.id} className={cn("max-w-[90%] p-2 rounded-xl text-[11px]", msg.is_from_admin ? "bg-primary/5 self-end ml-auto text-right border border-primary/10" : "bg-muted self-start")}>
                 {msg.message}
                 <div className="text-[8px] opacity-50 mt-1 uppercase">{format(new Date(msg.created_at), "HH:mm")}</div>
               </div>
             ))}
           </div>
-
           <div className="p-3 border-t border-border bg-white flex gap-2">
-            <Input
-              value={replyText[userId] ?? ""}
-              onChange={(e) => setReplyText({ ...replyText, [userId]: e.target.value })}
-              placeholder="Reply..."
-              className="h-8 text-xs rounded-lg"
-            />
-            <Button
-              size="sm"
-              className="h-8 w-8 p-0 shrink-0"
-              disabled={reply.isPending || !replyText[userId]}
-              onClick={async () => {
-                await reply.mutateAsync({ user_id: userId, message: replyText[userId] });
-                setReplyText({ ...replyText, [userId]: "" });
-                toast.success("Reply sent");
-              }}
-            >
-              <Send className="w-3.5 h-3.5" />
-            </Button>
+            <Input value={replyText[userId] ?? ""} onChange={(e) => setReplyText({ ...replyText, [userId]: e.target.value })} placeholder="Reply..." className="h-8 text-xs rounded-lg" />
+            <Button size="sm" className="h-8 w-8 p-0 shrink-0" disabled={reply.isPending || !replyText[userId]} onClick={async () => {
+              await reply.mutateAsync({ user_id: userId, message: replyText[userId] });
+              setReplyText({ ...replyText, [userId]: "" });
+              toast.success("Reply sent");
+            }}><Send className="w-3.5 h-3.5" /></Button>
           </div>
         </Card>
       ))}
+    </div>
+  );
+}
+
+function ProductManager() {
+  const { data: products, isLoading } = useAllProducts();
+  const create = useCreateProduct();
+  const update = useUpdateProduct();
+  const del = useDeleteProduct();
+  const [showAdd, setShowAdd] = useState(false);
+  const [newP, setNewP] = useState({ name: "", price: "", stock: "10", description: "", image_url: "" });
+
+  if (isLoading) return <div className="h-40 bg-muted animate-pulse rounded-2xl" />;
+
+  return (
+    <div className="grid lg:grid-cols-3 gap-8">
+      <Card className="lg:col-span-2">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="font-bold text-sm">Inventory List</h4>
+          <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="h-8 text-[10px] uppercase font-black tracking-widest">{showAdd ? "Close" : "Add Product"}</Button>
+        </div>
+        {showAdd && (
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            await create.mutateAsync({ ...newP, price: Number(newP.price), stock: Number(newP.stock), active: true });
+            setShowAdd(false);
+            setNewP({ name: "", price: "", stock: "10", description: "", image_url: "" });
+            toast.success("Product added");
+          }} className="grid sm:grid-cols-2 gap-3 mb-6 p-4 bg-muted/20 rounded-xl">
+            <Input placeholder="Product Name" value={newP.name} onChange={(e) => setNewP({ ...newP, name: e.target.value })} required className="h-9 text-xs" />
+            <Input type="number" placeholder="Price (GH₵)" value={newP.price} onChange={(e) => setNewP({ ...newP, price: e.target.value })} required className="h-9 text-xs" />
+            <Input type="number" placeholder="Stock" value={newP.stock} onChange={(e) => setNewP({ ...newP, stock: e.target.value })} required className="h-9 text-xs" />
+            <Input placeholder="Image URL" value={newP.image_url} onChange={(e) => setNewP({ ...newP, image_url: e.target.value })} className="h-9 text-xs" />
+            <Button type="submit" className="sm:col-span-2 h-9 text-xs font-bold" disabled={create.isPending}>Add to Marketplace</Button>
+          </form>
+        )}
+        <ul className="divide-y divide-border">
+          {products?.map(p => (
+            <li key={p.id} className="py-3 flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-xs truncate">{p.name}</div>
+                <div className="text-[10px] text-muted-foreground">GH₵ {Number(p.price).toLocaleString()}</div>
+              </div>
+              <Input type="number" min="0" defaultValue={p.stock} className="w-16 h-8 text-xs" onBlur={(e) => {
+                const stock = Number(e.target.value);
+                if (stock !== p.stock) update.mutate({ id: p.id, stock });
+              }} />
+              <Button size="sm" variant={p.active ? "outline" : "default"} className="h-7 text-[10px] px-2" onClick={() => update.mutate({ id: p.id, active: !p.active })}>{p.active ? "Hide" : "Show"}</Button>
+              <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(`Delete ${p.name}?`)) del.mutate(p.id); }}><Trash2 className="w-3 h-3" /></Button>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </div>
   );
 }
