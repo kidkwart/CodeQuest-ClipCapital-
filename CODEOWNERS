@@ -1,0 +1,19 @@
+# ClipCapital Backend — CODEOWNERS
+# Lead Dev / Architecture owns all backend infrastructure
+
+# Backend infrastructure (schema, auth, gateway, payments, deployment)
+backend/ @Agyark @kidkwart
+
+# Database migrations — require lead dev sign-off
+backend/database/ @Agyark
+
+# CI/CD and deployment
+.github/ @Agyark
+backend/Dockerfile @Agyark
+backend/docker-compose.yml @Agyark
+backend/fly.toml @Agyark
+
+# Frontend (review only)
+app/ @kidkwart
+src/components/ @kidkwart
+src/hooks/ @kidkwart
