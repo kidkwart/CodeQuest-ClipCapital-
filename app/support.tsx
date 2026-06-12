@@ -59,6 +59,10 @@ export default function SupportScreen() {
     Linking.openURL("https://wa.me/233509511256");
   };
 
+  const initiateCall = () => {
+    Linking.openURL("tel:0599242307");
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -102,7 +106,7 @@ export default function SupportScreen() {
                   </LinearGradient>
                </BouncyTap>
 
-               <BouncyTap onPress={() => {}} style={{ flex: 1 }}>
+               <BouncyTap onPress={initiateCall} style={{ flex: 1 }}>
                   <LinearGradient
                     colors={theme === 'dark' ? ['#1a241f', '#0d1310'] : ['#ffffff', '#f1f5f9']}
                     style={[styles.channelCard, { borderColor: colors.border }]}
@@ -196,36 +200,34 @@ export default function SupportScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
-  headerBtn: { marginLeft: 16, height: 48, width: 48, borderRadius: 16, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  container: { flex: 1 },
+  headerBtn: { marginLeft: 16, height: 48, width: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 150 },
   channelRow: { flexDirection: 'row', gap: 12, marginBottom: 48 },
-  channelCard: { padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)', alignItems: 'center' },
+  channelCard: { padding: 20, borderRadius: 24, borderWidth: 1, alignItems: 'center' },
   channelIconBox: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 5, elevation: 3 },
-  channelTitle: { color: 'white', fontWeight: 'bold', fontSize: 13 },
-  channelStatus: { color: '#10b981', fontSize: 8, fontWeight: '900', letterSpacing: 1.5, marginTop: 4 },
+  channelTitle: { fontWeight: 'bold', fontSize: 13 },
+  channelStatus: { fontSize: 8, fontWeight: '900', letterSpacing: 1.5, marginTop: 4 },
   chatSection: { marginTop: 10 },
   chatDivider: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 40 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.05)' },
-  dividerBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100, backgroundColor: 'rgba(16,185,129,0.05)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
-  dividerText: { color: '#10b981', fontWeight: '900', fontSize: 8, letterSpacing: 2 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100, borderWidth: 1 },
+  dividerText: { fontWeight: '900', fontSize: 8, letterSpacing: 2 },
   emptyChat: { paddingVertical: 60, alignItems: 'center', opacity: 0.3 },
-  emptyText: { color: 'white', fontSize: 12, fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', marginTop: 16, paddingHorizontal: 40, lineHeight: 20 },
+  emptyText: { fontSize: 12, fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', marginTop: 16, paddingHorizontal: 40, lineHeight: 20 },
   msgWrapper: { maxWidth: '85%', marginBottom: 32 },
   msgAdmin: { alignSelf: 'flex-start' },
   msgUser: { alignSelf: 'flex-end' },
   msgBubble: { padding: 20, borderRadius: 28 },
-  bubbleAdmin: { backgroundColor: '#1a241f', borderTopLeftRadius: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
-  bubbleUser: { backgroundColor: '#10b981', borderTopRightRadius: 4, shadowColor: '#10b981', shadowOpacity: 0.15, shadowRadius: 10, elevation: 5 },
+  bubbleAdmin: { borderTopLeftRadius: 4, borderWidth: 1 },
+  bubbleUser: { borderTopRightRadius: 4, shadowOpacity: 0.15, shadowRadius: 10, elevation: 5 },
   msgText: { fontSize: 14, lineHeight: 22 },
-  textAdmin: { color: '#fcfcfc', fontWeight: '500' },
-  textUser: { color: '#0d1310', fontWeight: 'bold' },
   msgMeta: { marginTop: 8, paddingHorizontal: 4 },
-  msgTime: { fontSize: 8, fontWeight: '900', textTransform: 'uppercase', color: '#405045', letterSpacing: 1 },
-  inputBarContainer: { position: 'absolute', bottom: Platform.OS === 'ios' ? 40 : 20, left: 24, right: 24, minHeight: 72, borderRadius: 32, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 },
+  msgTime: { fontSize: 8, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  inputBarContainer: { position: 'absolute', bottom: Platform.OS === 'ios' ? 40 : 20, left: 24, right: 24, minHeight: 72, borderRadius: 32, overflow: 'hidden', borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, elevation: 15 },
   inputBarInner: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 10, paddingVertical: 10 },
   inputWrapper: { flex: 1, minHeight: 52, justifyContent: 'center' },
-  input: { color: 'white', fontWeight: 'bold', fontSize: 14, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 14 : 10, paddingBottom: 10 },
+  input: { fontWeight: 'bold', fontSize: 14, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 14 : 10, paddingBottom: 10 },
   sendBtn: { height: 52, width: 52, borderRadius: 20, overflow: 'hidden' },
   sendBtnGradient: { flex: 1, alignItems: 'center', justifyContent: 'center' }
 });
