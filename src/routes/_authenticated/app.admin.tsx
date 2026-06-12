@@ -8,12 +8,15 @@ import {
   useMyRoles, usePendingLoans, useReviewLoan,
   useAllProducts, useCreateProduct, useUpdateProduct, useDeleteProduct,
   useAllProductRequests, useAllOrders, useUpdateOrderStatus, useAllProfiles,
-  useAdminStats,
+  useAdminStats, useAllUserMessages, useReplyToUser
 } from "@/lib/app-queries";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
-import { Trash2, Loader2, Banknote, MessageSquarePlus, ShieldCheck, Package, ExternalLink, Users, TrendingUp } from "lucide-react";
+import { Trash2, Loader2, Banknote, MessageSquarePlus, ShieldCheck, Package, ExternalLink, Users, TrendingUp, MessageCircle, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/app/admin")({
   component: Admin,
@@ -82,14 +85,24 @@ function Admin() {
           <ProductRequestQueue />
         </section>
 
-        {/* 4. User Base */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 text-blue-500" />
-            <h3 className="font-display font-bold text-xl">User Directory</h3>
-          </div>
-          <UserDirectory />
-        </section>
+        {/* 4. User Base & Support */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5 text-blue-500" />
+              <h3 className="font-display font-bold text-xl">User Directory</h3>
+            </div>
+            <UserDirectory />
+          </section>
+
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <MessageCircle className="w-5 h-5 text-primary" />
+              <h3 className="font-display font-bold text-xl">Support Desk</h3>
+            </div>
+            <AdminSupportChat />
+          </section>
+        </div>
 
         {/* 5. Inventory */}
         <section>
@@ -451,6 +464,86 @@ function LoanQueue() {
           </Card>
         );
       })}
+    </div>
+  );
+}
+
+function AdminSupportChat() {
+  const { data: allMessages, isLoading } = useAllUserMessages();
+  const reply = useReplyToUser();
+  const [replyText, setReplyText] = useState<Record<string, string>>({});
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-support')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'admin_messages' }, () => {
+        qc.invalidateQueries({ queryKey: ["all-admin-messages"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
+
+  if (isLoading) return <div className="h-40 rounded-xl bg-muted animate-pulse" />;
+  if ((allMessages ?? []).length === 0) return <EmptyState title="No messages" />;
+
+  // Group messages by user
+  const grouped = (allMessages ?? []).reduce((acc, m) => {
+    if (!acc[m.user_id]) acc[m.user_id] = {
+      profile: (m as any).profiles,
+      messages: []
+    };
+    acc[m.user_id].messages.push(m);
+    return acc;
+  }, {} as Record<string, { profile: any, messages: any[] }>);
+
+  return (
+    <div className="space-y-6 max-h-[600px] overflow-y-auto pr-2">
+      {Object.entries(grouped).map(([userId, data]) => (
+        <Card key={userId} className="p-0 border-border/50 overflow-hidden shadow-sm">
+          <div className="p-3 bg-muted/20 border-b border-border flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                {data.profile?.display_name?.charAt(0) || 'U'}
+              </div>
+              <div className="text-xs font-bold">{data.profile?.display_name || "Unknown User"}</div>
+            </div>
+          </div>
+
+          <div className="p-4 space-y-3 bg-background/50">
+            {data.messages.slice(0, 5).reverse().map((msg: any) => (
+              <div key={msg.id} className={cn(
+                "max-w-[90%] p-2 rounded-xl text-[11px]",
+                msg.is_from_admin ? "bg-primary/5 self-end ml-auto text-right border border-primary/10" : "bg-muted self-start"
+              )}>
+                {msg.message}
+                <div className="text-[8px] opacity-50 mt-1 uppercase">{format(new Date(msg.created_at), "HH:mm")}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="p-3 border-t border-border bg-white flex gap-2">
+            <Input
+              value={replyText[userId] ?? ""}
+              onChange={(e) => setReplyText({ ...replyText, [userId]: e.target.value })}
+              placeholder="Reply..."
+              className="h-8 text-xs rounded-lg"
+            />
+            <Button
+              size="sm"
+              className="h-8 w-8 p-0 shrink-0"
+              disabled={reply.isPending || !replyText[userId]}
+              onClick={async () => {
+                await reply.mutateAsync({ user_id: userId, message: replyText[userId] });
+                setReplyText({ ...replyText, [userId]: "" });
+                toast.success("Reply sent");
+              }}
+            >
+              <Send className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

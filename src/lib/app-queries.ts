@@ -323,36 +323,20 @@ export function useMyGroups() {
 
 export function useCreateGroup() {
   const qc = useQueryClient();
-  const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (v: { name: string; contribution: number; frequency: string }) => {
-      // Ensure frequency is Capitalized to match DB constraint if migration wasn't run
+      // Ensure frequency is Capitalized (e.g., Weekly)
       const freq = v.frequency.charAt(0).toUpperCase() + v.frequency.slice(1).toLowerCase();
 
-      // Manual invite code fallback in case DB trigger/default isn't applied yet
-      const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-
-      const { data: group, error } = await supabase.from("susu_groups").insert({
-        name: v.name,
-        contribution: v.contribution,
-        frequency: freq,
-        owner_id: user!.id,
-        members_count: 1,
-        pot: 0,
-        status: 'active',
-        invite_code: inviteCode
-      }).select().single();
-
-      if (error) throw error;
-
-      const { error: mErr } = await supabase.from("susu_memberships").insert({
-        group_id: group.id,
-        user_id: user!.id,
-        payout_order: 1,
+      // Use the RPC for atomic creation to avoid RLS race conditions
+      const { data, error } = await supabase.rpc('create_susu_group_v2', {
+        _name: v.name,
+        _contribution: v.contribution,
+        _frequency: freq
       });
 
-      if (mErr) throw mErr;
-      return group;
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["susu-groups"] });

@@ -8,6 +8,8 @@ import { Send, MessageCircle, ShieldCheck, Loader2, Info, ChevronRight, HelpCirc
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/_authenticated/app/support")({
   component: SupportPage,
@@ -18,6 +20,29 @@ function SupportPage() {
   const sendMessage = useSendMessageToAdmin();
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    // Real-time subscription for support messages
+    const channel = supabase
+      .channel('support-chat')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'admin_messages'
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ["admin-messages"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   useEffect(() => {
     if (scrollRef.current) {
