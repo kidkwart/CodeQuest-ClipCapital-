@@ -8,6 +8,7 @@ import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, ShoppingCart, Sparkles, Check, ShoppingBag, Star, Zap, ChevronRight, Search, X, ClipboardList } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 const { width } = Dimensions.get('window');
 
@@ -65,6 +66,7 @@ const FALLBACK_PRODUCTS = [
 
 export default function Marketplace() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: dbProducts, isLoading, refetch } = useProducts();
   const { data: profile } = useProfile();
   const cart = useCart();
@@ -94,22 +96,22 @@ export default function Marketplace() {
   const totalItems = cart.items.reduce((s, i) => s + i.qty, 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <BouncyTap onPress={() => router.push("/(tabs)")} style={styles.navBtn}>
-            <ArrowLeft size={20} color="#FFF" />
+          <BouncyTap onPress={() => router.push("/(tabs)")} style={[styles.navBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
         ),
         headerRight: () => (
           <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
-             <BouncyTap onPress={() => router.push("/market/orders")} style={styles.navBtn}>
-                <ClipboardList size={20} color="#10b981" />
+             <BouncyTap onPress={() => router.push("/market/orders")} style={[styles.navBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                <ClipboardList size={20} color={colors.primary} />
              </BouncyTap>
-             <BouncyTap onPress={() => router.push("/market/cart")} style={styles.navBtn}>
+             <BouncyTap onPress={() => router.push("/market/cart")} style={[styles.navBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <View>
-                  <ShoppingCart size={20} color="#FFF" />
+                  <ShoppingCart size={20} color={colors.text} />
                   {totalItems > 0 && (
                     <View style={styles.badgeCount}>
                       <Text style={styles.badgeText}>{totalItems}</Text>
@@ -124,36 +126,36 @@ export default function Marketplace() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           {/* Elite Header */}
           <View style={styles.headerSection}>
-            <Text style={styles.supTitle}>CLIPCAPITAL PREMIUM</Text>
+            <Text style={[styles.supTitle, { color: colors.primary }]}>CLIPCAPITAL PREMIUM</Text>
             <View style={styles.titleRow}>
-               <Text style={styles.mainTitle}>Marketplace</Text>
-               <View style={styles.verifiedTag}>
+               <Text style={[styles.mainTitle, { color: colors.text }]}>Marketplace</Text>
+               <View style={[styles.verifiedTag, { backgroundColor: colors.primary }]}>
                   <Star size={10} color="#000" fill="#000" />
                   <Text style={styles.verifiedText}>OFFICIAL</Text>
                </View>
             </View>
-            <Text style={styles.subTitle}>Authorized professional equipment supply chain.</Text>
+            <Text style={[styles.subTitle, { color: colors.textMuted }]}>Authorized professional equipment supply chain.</Text>
           </View>
 
           {/* Functional Search Bar */}
-          <View style={styles.searchBar}>
-             <Search size={18} color={searchQuery ? "#10b981" : "#405045"} />
+          <View style={[styles.searchBar, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+             <Search size={18} color={searchQuery ? colors.primary : colors.textDim} />
              <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search for tools, furniture..."
-                placeholderTextColor="#405045"
+                placeholderTextColor={colors.textDim}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                selectionColor="#10b981"
+                selectionColor={colors.primary}
              />
              {searchQuery.length > 0 && (
                <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <X size={18} color="#405045" />
+                  <X size={18} color={colors.textDim} />
                </TouchableOpacity>
              )}
           </View>
@@ -183,19 +185,19 @@ export default function Marketplace() {
           </BouncyTap>
 
           <View style={styles.sectionDivider}>
-             <Text style={styles.sectionTitle}>CURATED FOR MASTER BARBERS</Text>
-             <View style={styles.dividerLine} />
+             <Text style={[styles.sectionTitle, { color: colors.textDim }]}>CURATED FOR MASTER BARBERS</Text>
+             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           {isLoading && (!dbProducts || dbProducts.length === 0) ? (
              <View style={styles.loader}>
-                <ActivityIndicator color="#10b981" />
-                <Text style={styles.loaderText}>SYNCING INVENTORY...</Text>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={[styles.loaderText, { color: colors.primary }]}>SYNCING INVENTORY...</Text>
              </View>
           ) : filteredProducts.length === 0 ? (
              <View style={styles.emptyState}>
-                <Search size={40} color="#1a211e" />
-                <Text style={styles.emptyText}>No matches found for "{searchQuery}"</Text>
+                <Search size={40} color={colors.surfaceElevated} />
+                <Text style={[styles.emptyText, { color: colors.text }]}>No matches found for "{searchQuery}"</Text>
              </View>
           ) : (
             <View style={styles.grid}>
@@ -210,21 +212,21 @@ export default function Marketplace() {
                       onPress={() => router.push(`/market/${p.id}`)}
                       style={{ flex: 1 }}
                     >
-                      <View style={styles.productCard}>
-                        <View style={styles.imageContainer}>
+                      <View style={[styles.productCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                        <View style={[styles.imageContainer, { backgroundColor: colors.surfaceElevated }]}>
                            <Image source={{ uri: p.image_url }} style={styles.productImage} />
                            <LinearGradient
-                             colors={['transparent', 'rgba(8, 12, 10, 0.8)']}
+                             colors={theme === 'dark' ? ['transparent', 'rgba(8, 12, 10, 0.8)'] : ['transparent', 'rgba(255, 255, 255, 0.6)']}
                              style={styles.imageOverlay}
                            />
-                           <View style={styles.catBadge}>
-                              <Text style={styles.catText}>{p.category?.toUpperCase()}</Text>
+                           <View style={[styles.catBadge, { backgroundColor: theme === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)', borderColor: colors.border }]}>
+                              <Text style={[styles.catText, { color: colors.text }]}>{p.category?.toUpperCase()}</Text>
                            </View>
                         </View>
 
                         <View style={styles.productInfo}>
-                          <Text style={styles.productName} numberOfLines={2}>{p.name}</Text>
-                          <Text style={styles.productPrice}>
+                          <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>{p.name}</Text>
+                          <Text style={[styles.productPrice, { color: colors.primary }]}>
                             {isPrivate ? "••••••" : `GH₵ ${p.price.toLocaleString()}`}
                           </Text>
 
@@ -234,16 +236,16 @@ export default function Marketplace() {
                               handleAdd(p);
                             }}
                             activeOpacity={0.8}
-                            style={[styles.buyBtn, (isJustAdded || qty > 0) && styles.buyBtnActive]}
+                            style={[styles.buyBtn, { backgroundColor: colors.primary }, (isJustAdded || qty > 0) && { backgroundColor: colors.primary + '10', borderWidth: 1, borderColor: colors.primary }]}
                           >
                             {isJustAdded ? (
-                              <Check size={18} color="#10b981" />
+                              <Check size={18} color={colors.primary} />
                             ) : qty > 0 ? (
-                              <Text style={styles.buyBtnTextActive}>IN CART ({qty})</Text>
+                              <Text style={[styles.buyBtnTextActive, { color: colors.primary }]}>IN CART ({qty})</Text>
                             ) : (
                               <View style={styles.btnRow}>
                                 <ShoppingBag size={14} color="#000" strokeWidth={2.5} />
-                                <Text style={styles.buyBtnText}>BUY NOW</Text>
+                                <Text style={[styles.buyBtnText, { color: '#0d1310' }]}>BUY NOW</Text>
                               </View>
                             )}
                           </TouchableOpacity>
