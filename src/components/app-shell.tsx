@@ -32,7 +32,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
   const roles = useMyRoles();
   const { user } = useCurrentUser();
 
-  const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
+  const isAdmin = roles.data?.includes("admin");
 
   const navigate = useNavigate();
   const qc = useQueryClient();

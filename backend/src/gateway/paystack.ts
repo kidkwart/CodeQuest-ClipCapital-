@@ -7,6 +7,7 @@ import {
   verifyCharge,
   listTransactions,
 } from "../services/paystack/index.js";
+import { query, queryOne } from "../db.js";
 
 const router = Router();
 
@@ -105,7 +106,12 @@ router.post("/webhook", async (req: Request, res: Response) => {
       return;
     }
 
-    const rawBody = JSON.stringify(req.body);
+    // Use raw body for signature verification
+    const rawBody = (req as any).rawBody;
+    if (!rawBody) {
+      res.status(400).json({ error: "Missing raw body for signature verification" });
+      return;
+    }
 
     // Verify HMAC-SHA512 signature
     const crypto = await import("node:crypto");
@@ -166,31 +172,175 @@ async function handleChargeSuccess(data: any) {
   const { reference, amount, metadata } = data;
   console.log(`[paystack] Charge success: ${reference} — GHS ${amount / 100}`);
 
-  // TODO: Update order/contribution status in database
-  // TODO: Trigger ClipScore recalculation
-  // TODO: Send notification to user
+  try {
+    // Determine the type of payment from metadata
+    const paymentType = metadata?.type;
+    const userId = metadata?.user_id;
+
+    if (!userId) {
+      console.error(`[paystack] No user_id in metadata for reference: ${reference}`);
+      return;
+    }
+
+    switch (paymentType) {
+      case "wallet_topup":
+        // Credit user's wallet
+        await query(
+          `UPDATE profiles SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+          [amount / 100, userId]
+        );
+        break;
+
+      case "loan_repayment":
+        // Update loan repayment status
+        const loanId = metadata?.loan_id;
+        if (loanId) {
+          await query(
+            `UPDATE loan_repayments SET status = 'completed', paid_at = NOW() WHERE id = $1`,
+            [metadata?.repayment_id]
+          );
+          // Update loan balance
+          await query(
+            `UPDATE loan_applications SET amount_repaid = amount_repaid + $1 WHERE id = $2`,
+            [amount / 100, loanId]
+          );
+        }
+        break;
+
+      case "susu_contribution":
+        // Update susu contribution status
+        const contributionId = metadata?.contribution_id;
+        if (contributionId) {
+          await query(
+            `UPDATE susu_contributions SET status = 'completed', paid_at = NOW() WHERE id = $1`,
+            [contributionId]
+          );
+        }
+        break;
+
+      case "order_payment":
+        // Update order status
+        const orderId = metadata?.order_id;
+        if (orderId) {
+          await query(
+            `UPDATE orders SET status = 'paid', paid_at = NOW() WHERE id = $1`,
+            [orderId]
+          );
+        }
+        break;
+
+      default:
+        console.log(`[paystack] Unknown payment type: ${paymentType}`);
+    }
+
+    // Send notification to user
+    await query(
+      `INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
+      [
+        userId,
+        "Payment Successful",
+        `Your payment of GHS ${(amount / 100).toFixed(2)} was successful. Reference: ${reference}`,
+        "payment"
+      ]
+    );
+  } catch (err) {
+    console.error(`[paystack] Error processing charge success:`, err);
+  }
 }
 
 async function handleChargeFailed(data: any) {
-  const { reference, gateway_response } = data;
+  const { reference, gateway_response, metadata } = data;
   console.warn(`[paystack] Charge failed: ${reference} — ${gateway_response}`);
 
-  // TODO: Mark transaction as failed
-  // TODO: Notify user of failure
+  try {
+    const userId = metadata?.user_id;
+    if (userId) {
+      // Send failure notification
+      await query(
+        `INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
+        [
+          userId,
+          "Payment Failed",
+          `Your payment failed: ${gateway_response}. Reference: ${reference}`,
+          "payment"
+        ]
+      );
+    }
+  } catch (err) {
+    console.error(`[paystack] Error processing charge failure:`, err);
+  }
 }
 
 async function handleTransferSuccess(data: any) {
-  const { reference, amount, destination } = data;
+  const { reference, amount, destination, metadata } = data;
   console.log(`[paystack] Transfer success: ${reference} — GHS ${amount / 100} → ${destination}`);
 
-  // TODO: Update withdrawal request status to 'completed'
+  try {
+    const withdrawalId = metadata?.withdrawal_id;
+    if (withdrawalId) {
+      // Update withdrawal request status to completed
+      await query(
+        `UPDATE withdrawal_requests SET status = 'completed', processed_at = NOW() WHERE id = $1`,
+        [withdrawalId]
+      );
+
+      // Get user_id for notification
+      const withdrawal = await queryOne(
+        `SELECT user_id FROM withdrawal_requests WHERE id = $1`,
+        [withdrawalId]
+      );
+
+      if (withdrawal) {
+        await query(
+          `INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
+          [
+            withdrawal.user_id,
+            "Withdrawal Completed",
+            `Your withdrawal of GHS ${(amount / 100).toFixed(2)} has been processed successfully.`,
+            "withdrawal"
+          ]
+        );
+      }
+    }
+  } catch (err) {
+    console.error(`[paystack] Error processing transfer success:`, err);
+  }
 }
 
 async function handleTransferFailed(data: any) {
-  const { reference, gateway_response } = data;
+  const { reference, gateway_response, metadata } = data;
   console.warn(`[paystack] Transfer failed: ${reference} — ${gateway_response}`);
 
-  // TODO: Mark withdrawal as failed, notify admin
+  try {
+    const withdrawalId = metadata?.withdrawal_id;
+    if (withdrawalId) {
+      // Update withdrawal request status to failed
+      await query(
+        `UPDATE withdrawal_requests SET status = 'failed', notes = $1 WHERE id = $2`,
+        [gateway_response, withdrawalId]
+      );
+
+      // Get user_id for notification
+      const withdrawal = await queryOne(
+        `SELECT user_id FROM withdrawal_requests WHERE id = $1`,
+        [withdrawalId]
+      );
+
+      if (withdrawal) {
+        await query(
+          `INSERT INTO notifications (user_id, title, message, type) VALUES ($1, $2, $3, $4)`,
+          [
+            withdrawal.user_id,
+            "Withdrawal Failed",
+            `Your withdrawal request failed: ${gateway_response}. Please try again or contact support.`,
+            "withdrawal"
+          ]
+        );
+      }
+    }
+  } catch (err) {
+    console.error(`[paystack] Error processing transfer failure:`, err);
+  }
 }
 
 export default router;

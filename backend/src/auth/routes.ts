@@ -9,6 +9,7 @@ import {
 } from "./tokens.js";
 import { validateGhanaPhone, isValidGhanaPhone } from "../utils/phone.js";
 import { authenticate } from "./middleware.js";
+import { query, queryOne } from "../db.js";
 
 const router = Router();
 
@@ -28,36 +29,55 @@ router.post("/signup", async (req: Request, res: Response) => {
 
     const normalisedPhone = validateGhanaPhone(body.phone_number);
 
+    // Check if user already exists
+    const existingUser = await queryOne(
+      `SELECT id FROM auth.users WHERE email = $1`,
+      [body.email]
+    );
+
+    if (existingUser) {
+      res.status(409).json({
+        error: "Email already registered",
+        message: "An account with this email already exists",
+      });
+      return;
+    }
+
     // Hash password with BCrypt
     const passwordHash = await hashPassword(body.password);
 
-    // TODO: Insert user into database via Supabase or direct PG connection
-    // const { data, error } = await supabase.auth.signUp({
-    //   email: body.email,
-    //   password: passwordHash,
-    //   phone: normalisedPhone,
-    //   data: {
-    //     display_name: body.display_name,
-    //     business_name: body.business_name,
-    //     business_type: body.business_type,
-    //     phone_number: normalisedPhone,
-    //   },
-    // });
+    // Insert user into auth.users
+    const userId = crypto.randomUUID();
+    await query(
+      `INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW(), NOW())`,
+      [userId, body.email, passwordHash]
+    );
 
-    // Placeholder response
-    const user = {
-      id: crypto.randomUUID(),
+    // Create profile
+    await query(
+      `INSERT INTO profiles (id, display_name, business_name, phone_number, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())`,
+      [userId, body.display_name, body.business_name, normalisedPhone]
+    );
+
+    // Assign default user role
+    await query(
+      `INSERT INTO user_roles (user_id, role, created_at) VALUES ($1, $2, NOW())`,
+      [userId, "user"]
+    );
+
+    const tokens = generateTokenPair({
+      id: userId,
       email: body.email,
       role: "user",
-    };
-
-    const tokens = generateTokenPair(user);
+    });
 
     res.status(201).json({
       message: "Account created successfully",
       user: {
-        id: user.id,
-        email: user.email,
+        id: userId,
+        email: body.email,
         display_name: body.display_name,
         phone_number: normalisedPhone,
         business_type: body.business_type,
@@ -79,36 +99,42 @@ router.post("/login", async (req: Request, res: Response) => {
   try {
     const body = loginSchema.parse(req.body);
 
-    // TODO: Fetch user from DB
-    // const { data: user } = await supabase
-    //   .from('profiles')
-    //   .select('*')
-    //   .eq('email', body.email)
-    //   .single();
+    // Fetch user from DB
+    const user = await queryOne<{
+      id: string;
+      email: string;
+      encrypted_password: string;
+    }>(
+      `SELECT id, email, encrypted_password FROM auth.users WHERE email = $1`,
+      [body.email]
+    );
 
-    // Placeholder — in production, look up user + verify password
-    const user = {
-      id: "placeholder-user-id",
-      email: body.email,
-      role: "user",
-      password_hash: await hashPassword("placeholder"),
-    };
+    if (!user) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
 
-    const valid = await verifyPassword(body.password, user.password_hash);
+    const valid = await verifyPassword(body.password, user.encrypted_password);
     if (!valid) {
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
 
+    // Fetch user role
+    const roleRow = await queryOne<{ role: string }>(
+      `SELECT role FROM user_roles WHERE user_id = $1 LIMIT 1`,
+      [user.id]
+    );
+
     const tokens = generateTokenPair({
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: roleRow?.role ?? "user",
     });
 
     res.json({
       message: "Login successful",
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email, role: roleRow?.role ?? "user" },
       ...tokens,
     });
   } catch (err: any) {
@@ -122,10 +148,10 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 // ─── POST /auth/refresh ─────────────────────────────────
-router.post("/refresh", (req: Request, res: Response) => {
+router.post("/refresh", async (req: Request, res: Response) => {
   try {
     const body = refreshSchema.parse(req.body);
-    const tokens = refreshTokensPair(body.refreshToken);
+    const tokens = await refreshTokensPair(body.refreshToken);
 
     if (!tokens) {
       res.status(401).json({ error: "Invalid or expired refresh token" });

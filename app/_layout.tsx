@@ -144,7 +144,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const roles = useMyRoles();
 
   const isMaintenanceActive = settings.data?.maintenance_mode ?? false;
-  const isAdmin = roles.data?.includes('admin') || user?.email === 'bernardyawkwarteng8@gmail.com';
+  const isAdmin = roles.data?.includes('admin');
 
   // If maintenance is ON and user is NOT an admin, block access
   if (isMaintenanceActive && !isAdmin) {

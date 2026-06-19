@@ -21,7 +21,13 @@ app.use(
 );
 
 // ─── Body Parsing ───────────────────────────────────────
-app.use(express.json({ limit: "1mb" }));
+// Preserve raw body for webhook signature verification
+app.use(express.json({
+  limit: "1mb",
+  verify: (req, _res, buf) => {
+    (req as any).rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // ─── Rate Limiting ──────────────────────────────────────

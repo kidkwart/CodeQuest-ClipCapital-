@@ -62,18 +62,12 @@ export default function Login() {
     if (result.success) {
       setLoading(true);
       try {
-        const savedPass = await AsyncStorage.getItem("biometric_password");
-        if (savedPass) {
-          const { data: { user }, error } = await supabase.auth.signInWithPassword({
-            email: savedEmail,
-            password: savedPass
-          });
-          if (error) throw error;
-
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
           Vibration.vibrate(Platform.OS === 'ios' ? 0 : 20);
-          await checkTwoFactor(user!.id);
+          await checkTwoFactor(session.user.id);
         } else {
-           Alert.alert("Notice", "Password not found for biometrics. Please enter manually once.");
+           Alert.alert("Notice", "No active session found. Please sign in manually.");
         }
       } catch (err: any) {
         Alert.alert("Auth Error", "Please sign in with your password.");
@@ -121,7 +115,7 @@ export default function Login() {
         // Institutional verification delay
         setTimeout(() => {
             setLoading(false);
-            if (otp === profile?.access_pin || otp === "1234") {
+            if (otp === profile?.access_pin) {
                 router.replace("/(tabs)");
             } else {
                 Alert.alert("Institutional Lock", "The provided access key is invalid.");
@@ -148,7 +142,6 @@ export default function Login() {
         if (error) throw error;
 
         await AsyncStorage.setItem("biometric_email", email);
-        await AsyncStorage.setItem("biometric_password", password);
 
         await checkTwoFactor(user!.id);
       } else {
