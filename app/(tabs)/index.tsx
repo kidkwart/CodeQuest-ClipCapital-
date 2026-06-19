@@ -95,7 +95,7 @@ export default function Dashboard() {
                 numberOfLines={2}
                 style={styles.greetingText}
               >
-                Akwaaba,{"\n"}{profile?.display_name || "Artisan"}
+                Akwaaba,{"\n"}@{profile?.username || profile?.display_name?.toLowerCase().replace(/\s/g, '_') || "artisan"}
               </Text>
             </View>
             <View style={styles.headerActions}>
@@ -240,11 +240,11 @@ function ServiceNode({ title, icon: Icon, color, onPress }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#080c0a' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40, marginTop: 10 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, marginTop: 10 },
   supHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   institutionalDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981', marginRight: 8 },
   supHeaderText: { color: '#10b981', fontWeight: '900', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase' },
-  greetingText: { fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 38, lineHeight: 42, letterSpacing: -1.5 },
+  greetingText: { fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
   headerActions: { flexDirection: 'row', gap: 10 },
   headerBtn: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
   headerBtnInstitutional: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#10b98120' },

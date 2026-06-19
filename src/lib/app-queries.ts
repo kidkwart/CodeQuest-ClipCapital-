@@ -22,6 +22,7 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: async (v: {
       display_name?: string;
+      username?: string;
       business_name?: string;
       business_type?: string;
       location?: string;
