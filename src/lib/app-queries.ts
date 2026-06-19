@@ -93,7 +93,7 @@ export function useAllProfiles() {
     queryKey: ["all-profiles"],
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles")
-        .select("id, display_name, business_name, status, clip_score, avatar_url")
+        .select("id, display_name, business_name, location, status, clip_score, avatar_url")
         .order("clip_score", { ascending: false });
       if (error) throw error;
       return data;

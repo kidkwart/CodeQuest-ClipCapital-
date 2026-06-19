@@ -37,6 +37,7 @@ export default function Settings() {
     display_name: "",
     username: "",
     business_name: "",
+    location: "",
     phone_number: "",
   });
 
@@ -62,6 +63,7 @@ export default function Settings() {
         display_name: profile.display_name || "",
         username: profile.username || "",
         business_name: profile.business_name || "",
+        location: profile.location || "",
         phone_number: profile.phone_number || "",
       });
       setPayoutData({
@@ -297,6 +299,13 @@ export default function Settings() {
                   label="Registered Business"
                   value={formData.business_name}
                   onChangeText={(t) => setFormData({...formData, business_name: t})}
+                  containerClassName="mb-6"
+                />
+                <Input
+                  label="Business Location"
+                  value={formData.location}
+                  onChangeText={(t) => setFormData({...formData, location: t})}
+                  placeholder="e.g. Accra, Madina Market"
                   containerClassName="mb-6"
                 />
                 <Input

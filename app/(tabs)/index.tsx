@@ -99,6 +99,12 @@ export default function Dashboard() {
               >
                 Akwaaba,{"\n"}@{profile?.username || profile?.display_name?.toLowerCase().replace(/\s/g, '_') || "artisan"}
               </Text>
+              {profile?.location && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                   <Lucide.MapPin size={10} color={colors.textDim} />
+                   <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: 'bold' }}>{profile.location}</Text>
+                </View>
+              )}
             </View>
             <View style={styles.headerActions}>
               <TouchableOpacity onPress={togglePrivacy} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>

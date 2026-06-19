@@ -580,6 +580,7 @@ function UserDirectory() {
             </View>
             <View>
               <Text style={{ color: colors.text, fontWeight: 'bold' }}>{u.display_name}</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11 }}>{u.location || 'Location Not Set'}</Text>
               <Text style={{ color: u.status === 'banned' ? colors.destructive : colors.primary, fontSize: 10, fontWeight: 'bold' }}>{u.status?.toUpperCase() || 'ACTIVE'}</Text>
             </View>
           </View>
