@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
-import { LayoutDashboard, TrendingUp, Wallet, Settings } from "lucide-react-native";
+import { LayoutDashboard, TrendingUp, Wallet, Settings, Users } from "lucide-react-native";
 import { BlurView } from 'expo-blur';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 export default function TabsLayout() {
   return (
@@ -47,11 +47,21 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="susu"
+          name="wallet"
           options={{
             tabBarIcon: ({ color, focused }) => (
               <View className={focused ? "bg-[#10b981]/10 p-4 rounded-[22px] border border-[#10b981]/20" : "p-4"}>
                 <Wallet size={26} color={color} />
+              </View>
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="susu"
+          options={{
+            tabBarIcon: ({ color, focused }) => (
+              <View className={focused ? "bg-[#10b981]/10 p-4 rounded-[22px] border border-[#10b981]/20" : "p-4"}>
+                <Users size={26} color={color} />
               </View>
             ),
           }}

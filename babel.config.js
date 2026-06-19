@@ -6,6 +6,7 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
+      "babel-plugin-transform-import-meta",
       "react-native-worklets-core/plugin",
       [
         "module-resolver",
@@ -17,7 +18,7 @@ module.exports = function (api) {
           },
         },
       ],
-      "react-native-reanimated/plugin", // ALWAYS LAST
+      "react-native-reanimated/plugin", // MUST BE LAST
     ],
   };
 };

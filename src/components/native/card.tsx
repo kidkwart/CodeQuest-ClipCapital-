@@ -5,7 +5,7 @@ import { BlurView } from 'expo-blur';
 export function Card({ children, style, glass = false }: { children: React.ReactNode; style?: any; glass?: boolean }) {
   if (glass) {
     return (
-      <View style={[styles.cardContainer, { overflow: 'hidden', borderWeight: 1, borderColor: 'rgba(16,185,129,0.1)' }, style]}>
+      <View style={[styles.cardContainer, { overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' }, style]}>
         <BlurView intensity={30} tint="dark" style={{ padding: 24, backgroundColor: 'rgba(15,23,20,0.6)' }}>
           {children}
         </BlurView>

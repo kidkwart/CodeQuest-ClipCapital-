@@ -18,9 +18,19 @@ export default function Loans() {
   const [purpose, setPurpose] = useState("");
 
   async function handleApply() {
-    if (!amount) return;
+    const requestedAmount = Number(amount);
+    if (!requestedAmount || requestedAmount <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+
+    if (requestedAmount > maxLoan) {
+      alert(`Limit Exceeded: Your maximum borrowing capacity is GH₵ ${maxLoan.toLocaleString()}.`);
+      return;
+    }
+
     try {
-      await apply.mutateAsync({ amount: Number(amount), term_months: 3, purpose });
+      await apply.mutateAsync({ amount: requestedAmount, term_months: 3, purpose });
       setAmount(""); setPurpose("");
       alert("Success: Your application is being processed.");
     } catch (e: any) { alert(e.message); }
