@@ -54,7 +54,8 @@ export default function AdminDashboard() {
       <ScrollView
         className="flex-1"
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingTop: 100, paddingBottom: 40 }}
+        automaticallyAdjustKeyboardInsets={true}
+        contentContainerStyle={{ paddingTop: 100, paddingBottom: 150 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor="#10B981" />}
       >
         <View className="px-6">
@@ -712,6 +713,9 @@ function SettingsSection() {
         if (!isNaN(rate)) {
             updateSettings.mutate({ interest_rate: rate });
             Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
+            Alert.alert("Governance Update", `Institutional Interest Rate successfully adjusted to ${rate}%.`);
+        } else {
+            Alert.alert("Invalid Input", "Please enter a numeric percentage.");
         }
     };
 
@@ -745,43 +749,69 @@ function SettingsSection() {
         <View className="mb-8">
           <Text className="text-white font-bold mb-4 text-lg">System Governance</Text>
           <Card className="p-6 border-white/5 bg-[#0f1714]">
-            <View className="flex-row justify-between items-center mb-8">
-                <View className="flex-1">
+            <View className="mb-8 p-4 bg-white/5 rounded-2xl border border-white/5">
+                <View className="mb-4">
                   <Text className="text-white font-bold text-sm">Base Interest Rate</Text>
-                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Global credit growth %</Text>
+                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Global credit growth percentage</Text>
                 </View>
-                <View className="flex-row items-center bg-white/5 rounded-xl px-4 h-12 border border-white/5">
-                    <TextInput
-                        value={localRate}
-                        keyboardType="numeric"
-                        onChangeText={setLocalRate}
-                        onEndEditing={handleUpdateRate}
-                        style={{ color: '#10b981', fontWeight: 'bold', fontSize: 16, textAlign: 'right', width: 45 }}
-                        selectionColor="#10b981"
-                    />
-                    <Text className="text-[#10b981] font-bold ml-1">%</Text>
+
+                <View className="flex-row items-center gap-4">
+                    <View className="flex-1 flex-row items-center bg-[#080c0a] rounded-2xl px-5 h-16 border border-white/10">
+                        <TextInput
+                            value={localRate}
+                            keyboardType="decimal-pad"
+                            onChangeText={setLocalRate}
+                            placeholder="0.0"
+                            placeholderTextColor="#334140"
+                            style={{ flex: 1, color: '#10b981', fontFamily: 'Display-Bold', fontSize: 24 }}
+                            selectionColor="#10b981"
+                        />
+                        <Text style={{ fontFamily: 'Display-Bold' }} className="text-[#10b981] text-xl ml-2">%</Text>
+                    </View>
+
+                    <BouncyTap onPress={handleUpdateRate}>
+                       <LinearGradient
+                        colors={['#10b981', '#059669']}
+                        style={{ width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 10 }}
+                       >
+                          <Lucide.Check size={28} color="#000" strokeWidth={3} />
+                       </LinearGradient>
+                    </BouncyTap>
                 </View>
             </View>
 
-            <View className="flex-row justify-between items-center">
-                <View className="flex-1">
-                  <Text className="text-white font-bold text-sm">Institutional Maintenance</Text>
-                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Suspend all vault activities</Text>
+            <View className="flex-row justify-between items-center p-6 bg-white/5 rounded-2xl border border-white/5">
+                <View className="flex-1 mr-4">
+                  <Text className="text-white font-bold text-sm">Vault Lockdown</Text>
+                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Suspend all global activities</Text>
                 </View>
+
                 <BouncyTap
-                  onPress={() => {
+                  onPress={async () => {
                     const newVal = !settings.data?.maintenance_mode;
-                    updateSettings.mutate({ maintenance_mode: newVal });
-                    Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 10, 5, 10]);
+                    try {
+                      Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 50, 20, 50]);
+                      await updateSettings.mutateAsync({ maintenance_mode: newVal });
+                      Alert.alert("Vault Protocol", `System Lockdown has been ${newVal ? 'ENGAGED' : 'RELEASED'}.`);
+                    } catch (e: any) {
+                      Alert.alert("Error", e.message);
+                    }
                   }}
                 >
                   <LinearGradient
-                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#991b1b'] : ['#10b981', '#065f46']}
-                    style={{ paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 }}
+                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#7f1d1d'] : ['#10b981', '#064e3b']}
+                    style={styles.maintenanceBtn}
                   >
-                    <Text className="font-black text-[10px] text-black tracking-widest">
-                      {settings.data?.maintenance_mode ? "DISABLE MAINTENANCE" : "ENGAGE MAINTENANCE"}
-                    </Text>
+                    <View style={styles.maintenanceBtnInner}>
+                       {settings.data?.maintenance_mode ? (
+                         <Lucide.ShieldAlert size={16} color="#000" strokeWidth={3} />
+                       ) : (
+                         <Lucide.ShieldCheck size={16} color="#000" strokeWidth={3} />
+                       )}
+                       <Text style={styles.maintenanceBtnText}>
+                         {settings.data?.maintenance_mode ? "RELEASE VAULT" : "ENGAGE LOCKDOWN"}
+                       </Text>
+                    </View>
                   </LinearGradient>
                 </BouncyTap>
             </View>
@@ -864,5 +894,26 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#080C0A" },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", marginLeft: 16 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 16 },
-  gridItem: { width: "48%" }
+  gridItem: { width: "48%" },
+  maintenanceBtn: {
+    height: 52,
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4
+  },
+  maintenanceBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10
+  },
+  maintenanceBtnText: {
+    color: '#000',
+    fontWeight: '900',
+    fontSize: 10,
+    letterSpacing: 1.5
+  }
 });
