@@ -4,8 +4,7 @@ import { Stack, useRouter } from "expo-router";
 import { useMyOrders } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, ShoppingBag, Clock, Package, ChevronRight, Hash, Info } from "lucide-react-native";
-import { LinearGradient } from 'expo-linear-gradient';
+import { ArrowLeft, ShoppingBag, Package } from "lucide-react-native";
 import { useTheme } from "@/context/theme-context";
 
 export default function MyOrdersScreen() {
@@ -16,11 +15,11 @@ export default function MyOrdersScreen() {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'paid':
-      case 'completed': return '#10b981';
-      case 'pending': return '#f59e0b';
+      case 'completed': return colors.primary;
+      case 'pending': return colors.gold;
       case 'shipped': return '#3b82f6';
-      case 'cancelled': return '#ef4444';
-      default: return '#7d8a84';
+      case 'cancelled': return colors.destructive;
+      default: return colors.textDim;
     }
   };
 
@@ -73,7 +72,7 @@ export default function MyOrdersScreen() {
                   <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                   <View style={styles.itemsList}>
-                     {(order as any).order_items?.map((item: any, idx: number) => (
+                     {(order as any).order_items?.map((item: any) => (
                         <View key={item.id} style={styles.itemRow}>
                            <Text style={[styles.itemName, { color: colors.textMuted }]} numberOfLines={1}>
                               {item.products?.name || "Premium Item"}
@@ -103,7 +102,7 @@ export default function MyOrdersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 40 },
-  headerBtn: { marginLeft: 16, height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  headerBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   loader: { paddingVertical: 80, alignItems: 'center', gap: 16 },
   loaderText: { fontWeight: '900', letterSpacing: 2, fontSize: 10 },
   emptyState: { paddingVertical: 80, alignItems: 'center', opacity: 0.5 },

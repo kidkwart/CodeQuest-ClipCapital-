@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Alert, Platform, ActivityIndicator, KeyboardAvoidingView, TextInput, Vibration } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Alert, Platform, ActivityIndicator, KeyboardAvoidingView, TextInput, Vibration, SafeAreaView } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { useProfile, useMyWithdrawals, useRequestWithdrawal } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, Wallet, History, Clock, CheckCircle2, AlertCircle, Landmark, ArrowRight, Plus, ChevronRight, Zap } from "lucide-react-native";
+import { ArrowLeft, History, Clock, CheckCircle2, AlertCircle, Landmark, ChevronRight, Plus, Zap, ShieldCheck } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
@@ -94,7 +94,7 @@ export default function WithdrawScreen() {
 
             {/* Account Card */}
             <LinearGradient
-              colors={theme === 'dark' ? ['#1e2923', '#0f1714'] : ['#ffffff', '#f1f5f9']}
+              colors={theme === 'dark' ? ['#1e2923', '#0f1714'] : ['#ffffff', '#f8fafc']}
               style={[styles.accountCard, { borderColor: colors.border }]}
             >
               <View style={{ zIndex: 2 }}>
@@ -206,7 +206,7 @@ export default function WithdrawScreen() {
                 </View>
               ) : (
                 withdrawals?.map((w) => (
-                  <Card key={w.id} style={[styles.historyCard, { backgroundColor: colors.cardBg }]}>
+                  <Card key={w.id} style={[styles.historyCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                     <View style={styles.historyInfo}>
                       <Text style={[styles.historyAmount, { color: colors.text }]}>GH₵ {w.amount.toLocaleString()}</Text>
                       <Text style={[styles.historyDate, { color: colors.textDim }]}>{new Date(w.created_at).toLocaleDateString('en-GB')}</Text>
@@ -227,52 +227,49 @@ export default function WithdrawScreen() {
   );
 }
 
-// Add missing ShieldCheck import
-import { ShieldCheck } from "lucide-react-native";
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
+  container: { flex: 1 },
   scrollContent: { paddingTop: 60, paddingBottom: 60 },
-  headerBtn: { height: 48, width: 48, borderRadius: 16, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  accountCard: { padding: 24, borderRadius: 28, overflow: 'hidden', marginBottom: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  headerBtn: { height: 48, width: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 1 },
+  accountCard: { padding: 24, borderRadius: 28, overflow: 'hidden', marginBottom: 32, borderWidth: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  cardLabel: { color: 'rgba(255,255,255,0.4)', fontWeight: '900', fontSize: 9, letterSpacing: 3 },
-  bankName: { color: 'white', fontWeight: '900', fontSize: 18, letterSpacing: 1 },
-  accNumber: { fontFamily: 'Display-Bold', color: 'white', fontSize: 28, marginTop: 4 },
-  accName: { color: '#10b981', fontWeight: 'bold', fontSize: 10, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  cardIcon: { position: 'absolute', right: -30, bottom: -30, opacity: 0.05, transform: [{ rotate: '-10deg' }] },
-  setupBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 14, alignSelf: 'flex-start', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  setupText: { color: 'white', fontWeight: 'bold', fontSize: 13 },
+  cardLabel: { fontWeight: '900', fontSize: 9, letterSpacing: 3 },
+  bankName: { fontWeight: '900', fontSize: 18, letterSpacing: 1 },
+  accNumber: { fontFamily: 'Display-Bold', fontSize: 28, marginTop: 4 },
+  accName: { fontWeight: 'bold', fontSize: 10, marginTop: 12, textTransform: 'uppercase', letterSpacing: 1 },
+  cardIcon: { position: 'absolute', right: -30, bottom: -30, transform: [{ rotate: '-10deg' }] },
+  setupBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 14, alignSelf: 'flex-start', borderWidth: 1 },
+  setupText: { fontWeight: 'bold', fontSize: 13 },
   balanceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, paddingHorizontal: 8 },
   balanceInfo: { gap: 6 },
-  balanceLabel: { color: 'rgba(252,252,252,0.3)', fontSize: 9, fontWeight: '900', letterSpacing: 2 },
-  balanceValue: { color: 'white', fontFamily: 'Display-Bold', fontSize: 24 },
+  balanceLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 2 },
+  balanceValue: { fontFamily: 'Display-Bold', fontSize: 24 },
   premiumAddBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14 },
   premiumAddBtnText: { color: '#000', fontWeight: '900', fontSize: 10, letterSpacing: 1 },
   section: { marginBottom: 40 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, marginLeft: 8 },
-  sectionTitle: { color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
-  formCard: { padding: 24, backgroundColor: '#0f1714', borderRadius: 28 },
+  sectionTitle: { fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
+  formCard: { padding: 24, borderRadius: 28 },
   inputGroup: { marginBottom: 24 },
-  inputLabel: { color: '#7d8a84', fontSize: 10, fontWeight: '900', marginBottom: 16, letterSpacing: 2 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 20, height: 64 },
-  input: { flex: 1, fontFamily: 'Display-Bold', color: 'white', fontSize: 24, padding: 0 },
-  calcBox: { padding: 16, backgroundColor: 'rgba(16,185,129,0.03)', borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
+  inputLabel: { fontSize: 10, fontWeight: '900', marginBottom: 16, letterSpacing: 2 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, borderWidth: 1, paddingHorizontal: 20, height: 64 },
+  input: { flex: 1, fontFamily: 'Display-Bold', fontSize: 24, padding: 0 },
+  calcBox: { padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1 },
   calcRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  calcLabel: { color: '#7d8a84', fontSize: 11, fontWeight: 'bold' },
-  calcValue: { color: '#10b981', fontSize: 12, fontWeight: '900' },
+  calcLabel: { fontSize: 11, fontWeight: 'bold' },
+  calcValue: { fontSize: 12, fontWeight: '900' },
   statusBox: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1 },
   statusError: { backgroundColor: '#ef444410', borderColor: '#ef444430' },
   statusSuccess: { backgroundColor: '#10b98110', borderColor: '#10b98130' },
   statusText: { fontSize: 12, fontWeight: 'bold', flex: 1 },
   mainConfirmBtn: { height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: 0.2, shadowRadius: 15, elevation: 8 },
   mainConfirmBtnText: { color: '#000', fontWeight: '900', fontSize: 13, letterSpacing: 2 },
-  historyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, marginBottom: 12, backgroundColor: '#0f1714', borderRadius: 20 },
+  historyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, marginBottom: 12, borderRadius: 20, borderWidth: 1 },
   historyInfo: { gap: 6 },
-  historyAmount: { color: 'white', fontFamily: 'Display-Bold', fontSize: 18 },
-  historyDate: { color: '#405045', fontSize: 10, fontWeight: '900' },
+  historyAmount: { fontFamily: 'Display-Bold', fontSize: 18 },
+  historyDate: { fontSize: 10, fontWeight: '900' },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   statusBadgeText: { fontSize: 8, fontWeight: '900', letterSpacing: 0.5 },
   emptyState: { paddingVertical: 40, alignItems: 'center', opacity: 0.3 },
-  emptyText: { color: 'white', fontWeight: 'bold', marginTop: 16, fontSize: 13, fontStyle: 'italic' }
+  emptyText: { fontWeight: 'bold', marginTop: 16, fontSize: 13, fontStyle: 'italic' }
 });
