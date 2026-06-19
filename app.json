@@ -17,7 +17,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.clipcapital.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "ClipCapital uses Face ID to securely unlock your financial vault and authorize transactions."
       }
     },
     "android": {
