@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, SafeAreaView, Platform, StyleSheet, Vibration } from "react-native";
 import { useProfile, useClipScore, useRecentActivity, useAddIncome, useMyRoles, useWeeklyPerformance, useUserHealth, useUpdateProfile } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
-import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid, Zap, MapPin } from "lucide-react-native";
+import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid, Zap, MapPin, FileText, BookOpen } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { BouncyTap } from "@/components/native/bouncy-tap";
@@ -144,11 +144,56 @@ export default function Dashboard() {
             <ServiceNode title="Market" icon={ShoppingBag} color={theme === 'dark' ? colors.gold : "#e11d48"} onPress={() => router.push("/market")} theme={theme} />
             <ServiceNode title="Credit" icon={TrendingUp} color={colors.primary} onPress={() => router.push("/loans")} theme={theme} />
             <ServiceNode title="Payout" icon={ArrowDownToLine} color={theme === 'dark' ? "#3b82f6" : "#2563eb"} onPress={() => router.push("/withdraw")} theme={theme} />
-            {isAdmin ? (
-              <ServiceNode title="Command" icon={ShieldCheck} color={colors.destructive} onPress={() => router.push("/admin")} theme={theme} />
-            ) : (
-              <ServiceNode title="Audit" icon={LayoutGrid} color={colors.primary} onPress={() => router.push("/history")} theme={theme} />
-            )}
+            <ServiceNode title="Audit" icon={LayoutGrid} color={colors.primary} onPress={() => router.push("/history")} theme={theme} />
+          </View>
+
+          {/* Business Tools Section */}
+          <View style={{ marginBottom: 48 }}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Business Growth Tools</Text>
+            </View>
+            <View style={styles.toolsGrid}>
+              <ToolCard
+                title="The Vault"
+                desc="Save for business goals"
+                icon={ShieldCheck}
+                onPress={() => router.push("/vault")}
+                color={colors.primary}
+              />
+              <ToolCard
+                title="Invoices"
+                desc="Create digital receipts"
+                icon={FileText}
+                onPress={() => router.push("/invoices")}
+                color={colors.primary}
+              />
+              <ToolCard
+                title="My QR"
+                desc="Get paid instantly"
+                icon={Zap}
+                onPress={() => router.push("/my-qr")}
+                color={colors.gold}
+              />
+              <ToolCard
+                title="Academy"
+                desc="Master your business"
+                icon={BookOpen}
+                onPress={() => router.push("/academy")}
+                color={colors.primary}
+              />
+              {isAdmin && (
+                <View style={{ width: '100%', marginTop: 8 }}>
+                    <ToolCard
+                    title="Admin Command Center"
+                    desc="Manage global operations, users and risk."
+                    icon={Lock}
+                    onPress={() => router.push("/admin")}
+                    color={colors.destructive}
+                    fullWidth
+                    />
+                </View>
+              )}
+            </View>
           </View>
 
           {/* Revenue Card */}
@@ -237,6 +282,23 @@ export default function Dashboard() {
   );
 }
 
+function ToolCard({ title, desc, icon: Icon, onPress, color, fullWidth }: any) {
+  const { colors } = useTheme();
+  return (
+    <BouncyTap onPress={onPress} style={{ width: fullWidth ? '100%' : '48%' }}>
+      <Card style={{ padding: 16, backgroundColor: colors.cardBg, borderColor: colors.border, height: 120, justifyContent: 'space-between' }}>
+        <View style={[styles.toolIconBox, { backgroundColor: color + '10' }]}>
+          <Icon size={20} color={color} />
+        </View>
+        <View>
+          <Text style={[styles.toolTitle, { color: colors.text }]}>{title}</Text>
+          <Text style={[styles.toolDesc, { color: colors.textMuted }]}>{desc}</Text>
+        </View>
+      </Card>
+    </BouncyTap>
+  );
+}
+
 function ServiceNode({ title, icon: Icon, color, onPress, theme }: any) {
   const { colors } = useTheme();
   return (
@@ -268,6 +330,10 @@ const styles = StyleSheet.create({
   serviceIconContainer: { width: 68, height: 68, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
   serviceGlow: { position: 'absolute', width: 40, height: 40, borderRadius: 20, opacity: 0.03 },
   serviceTitle: { fontWeight: '900', fontSize: 8, textTransform: 'uppercase', letterSpacing: 2 },
+  toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  toolIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  toolTitle: { fontFamily: 'Display-Bold', fontSize: 14, marginBottom: 4 },
+  toolDesc: { fontSize: 10, lineHeight: 14 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 8 },
   sectionTitle: { fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
   sectionStat: { fontWeight: 'bold', fontSize: 11 },

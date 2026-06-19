@@ -200,12 +200,15 @@ export function useApplyLoan() {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
   return useMutation({
-    mutationFn: async (v: { amount: number; duration_days: number; purpose: string }) => {
+    mutationFn: async (v: { amount: number; duration_days: number; purpose: string; insurance_enabled?: boolean }) => {
       if (!user) throw new Error("You must be logged in to apply for a loan.");
 
       // Fetch current interest rate from system settings
       const { data: settings } = await supabase.from("system_settings").select("interest_rate").single();
-      const rateMultiplier = 1 + (Number(settings?.interest_rate || 15) / 100);
+      const baseRate = Number(settings?.interest_rate || 15);
+      const insuranceRate = v.insurance_enabled ? 2.5 : 0; // 2.5% flat insurance fee
+
+      const rateMultiplier = 1 + ((baseRate + insuranceRate) / 100);
 
       const { data, error } = await supabase.from("loan_applications").insert({
         user_id: user.id,
@@ -214,6 +217,8 @@ export function useApplyLoan() {
         status: 'pending',
         purpose: v.purpose,
         duration_days: v.duration_days,
+        insurance_enabled: v.insurance_enabled || false,
+        insurance_premium: v.insurance_enabled ? Math.round(v.amount * 0.025 * 100) / 100 : 0,
         term_months: 1
       }).select().single();
 
@@ -1313,8 +1318,6 @@ export function useUpdateWithdrawalStatus() {
       if (fetchError) throw fetchError;
 
       // 2. If COMPLETED, deduct the money and log expense FIRST
-      // We do this first because if the wallet deduction fails (insufficient funds),
-      // we shouldn't mark the request as completed.
       if (v.status === 'completed') {
         const { error: rpcError } = await supabase.rpc('withdraw_funds', {
           user_uuid: request.user_id,
@@ -1353,6 +1356,24 @@ export function useUpdateWithdrawalStatus() {
       qc.invalidateQueries({ queryKey: ["all-profiles"] });
     },
   });
+}
+
+export function useBulkApproveWithdrawals() {
+    const qc = useQueryClient();
+    const updateOne = useUpdateWithdrawalStatus();
+    return useMutation({
+        mutationFn: async (ids: string[]) => {
+            // Process sequentially to handle wallet deductions correctly
+            for (const id of ids) {
+                await updateOne.mutateAsync({ id, status: 'completed' });
+            }
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["all-withdrawal-requests"] });
+            qc.invalidateQueries({ queryKey: ["admin-stats"] });
+            qc.invalidateQueries({ queryKey: ["all-profiles"] });
+        }
+    });
 }
 
 // ---------- Performance & Growth ----------
@@ -1679,5 +1700,163 @@ export function useCreateReferral() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["referrals"] }),
+  });
+}
+
+// ---------- Savings (The Vault) ----------
+
+export function useSavingsGoals() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["savings-goals", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("savings_goals")
+        .select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCreateSavingsGoal() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: { name: string; target_amount: number; deadline?: string; category?: string }) => {
+      const { error } = await supabase.from("savings_goals").insert({ ...v, user_id: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["savings-goals"] }),
+  });
+}
+
+export function useDepositToVault() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: { goal_id: string; amount: number }) => {
+      const { error } = await supabase.rpc('deposit_to_vault', {
+        goal_id: v.goal_id,
+        amount: v.amount
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["savings-goals"] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+        qc.invalidateQueries({ queryKey: ["transaction-history"] }),
+      ]);
+    },
+  });
+}
+
+// ---------- Digital Invoices ----------
+
+export function useInvoices() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["invoices", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("invoices")
+        .select("*, invoice_items(*)")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCreateInvoice() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: {
+      customer_name: string;
+      customer_phone?: string;
+      items: { description: string; quantity: number; unit_price: number }[]
+    }) => {
+      const total = v.items.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0);
+
+      const { data: inv, error: invErr } = await supabase.from("invoices").insert({
+        user_id: user!.id,
+        customer_name: v.customer_name,
+        customer_phone: v.customer_phone,
+        total_amount: total,
+        status: 'paid'
+      }).select().single();
+
+      if (invErr) throw invErr;
+
+      const items = v.items.map(i => ({ ...i, invoice_id: inv.id }));
+      const { error: itemsErr } = await supabase.from("invoice_items").insert(items);
+
+      if (itemsErr) throw itemsErr;
+
+      // Auto-log as income to boost ClipScore
+      await supabase.from("income_entries").insert({
+        user_id: user!.id,
+        amount: total,
+        note: `Invoice for ${v.customer_name}`
+      });
+
+      return inv;
+    },
+    onSuccess: () => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["invoices"] }),
+        qc.invalidateQueries({ queryKey: ["income"] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+      ]);
+    },
+  });
+}
+
+// ---------- Academy ----------
+
+export function useAcademyContent() {
+  return useQuery({
+    queryKey: ["academy-content"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("academy_content").select("*").order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useAcademyProgress() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["academy-progress", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("academy_progress").select("content_id").eq("user_id", user!.id);
+      if (error) throw error;
+      return data.map(p => p.content_id);
+    },
+  });
+}
+
+export function useCompleteLesson() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (contentId: string) => {
+      const { error } = await supabase.from("academy_progress").insert({
+        user_id: user!.id,
+        content_id: contentId
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["academy-progress", user?.id] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+      ]);
+    },
   });
 }

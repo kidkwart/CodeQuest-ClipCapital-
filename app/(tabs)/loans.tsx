@@ -23,6 +23,7 @@ export default function LoansScreen() {
   const [amount, setAmount] = useState("");
   const [purpose, setPurpose] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [insuranceEnabled, setInsuranceEnabled] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ text: "", type: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,8 +59,9 @@ export default function LoansScreen() {
   };
 
   const parsedAmount = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0;
+  const insuranceAmount = insuranceEnabled ? parsedAmount * 0.025 : 0;
   const interestAmount = parsedAmount * interestRate;
-  const totalRepayable = parsedAmount + interestAmount;
+  const totalRepayable = parsedAmount + interestAmount + insuranceAmount;
 
   const handleApply = async () => {
     setStatusMessage({ text: "", type: "" });
@@ -100,13 +102,15 @@ export default function LoansScreen() {
       await applyLoan.mutateAsync({
         amount: parsedAmount,
         duration_days: 30,
-        purpose: purpose.trim()
+        purpose: purpose.trim(),
+        insurance_enabled: insuranceEnabled
       });
 
       setStatusMessage({ text: "Success! Application sent.", type: "success" });
       setAmount("");
       setPurpose("");
       setAgreed(false);
+      setInsuranceEnabled(false);
       Alert.alert("Success", "Credit request sent! It will be reviewed shortly.");
       refetch();
     } catch (e: any) {
@@ -311,12 +315,26 @@ export default function LoansScreen() {
                        <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Interest ({rawRate}%)</Text>
                        <Text style={[styles.estimateValue, { color: colors.text }]}>+ GH₵ {interestAmount.toLocaleString()}</Text>
                      </View>
+                     {insuranceEnabled && (
+                       <View style={styles.estimateRow}>
+                        <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Insurance (2.5%)</Text>
+                        <Text style={[styles.estimateValue, { color: colors.text }]}>+ GH₵ {insuranceAmount.toLocaleString()}</Text>
+                      </View>
+                     )}
                      <View style={styles.estimateRow}>
                        <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Total to Repay</Text>
                        <Text style={[styles.totalValue, { color: colors.primary }]}>GH₵ {totalRepayable.toLocaleString()}</Text>
                      </View>
                    </View>
                  )}
+
+                 <View style={[styles.termsRow, { marginBottom: 12 }]}>
+                    <Switch value={insuranceEnabled} onValueChange={setInsuranceEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
+                    <View style={{ flex: 1 }}>
+                        <Text style={[styles.termsText, { color: colors.text, fontWeight: 'bold' }]}>Enable Credit Protection</Text>
+                        <Text style={[styles.termsText, { color: colors.textDim, fontSize: 10 }]}>Insure your loan against unforeseen business disruptions.</Text>
+                    </View>
+                 </View>
 
                  <View style={styles.termsRow}>
                     <Switch value={agreed} onValueChange={setAgreed} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />

@@ -310,14 +310,24 @@ export default function Login() {
                 keyboardType="email-address"
               />
 
-              <InputWithIcon
-                label="ACCESS KEY"
-                icon={Lock}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                secureTextEntry
-              />
+              <View>
+                <InputWithIcon
+                  label="ACCESS KEY"
+                  icon={Lock}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
+                  secureTextEntry
+                />
+                {mode === "signin" && (
+                  <TouchableOpacity
+                    onPress={() => router.push("/(auth)/forgot-password")}
+                    style={{ alignSelf: 'flex-end', marginTop: 8, paddingRight: 4 }}
+                  >
+                    <Text style={{ color: colors.primary, fontSize: 11, fontWeight: 'bold', letterSpacing: 0.5 }}>FORGOT ACCESS KEY?</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
 
             <View style={styles.actionRow}>

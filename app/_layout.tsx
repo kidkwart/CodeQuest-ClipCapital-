@@ -88,8 +88,8 @@ function AuthGuard() {
 
       // 2. Handle Authentication
       if (!user) {
-        // If not logged in, force to login unless already in auth
-        if (rootSegment !== "(auth)") {
+        // If not logged in, force to login unless already in auth or reset-password
+        if (rootSegment !== "(auth)" && rootSegment !== "reset-password") {
           router.replace("/(auth)/login");
         } else {
           setIsReady(true);
@@ -126,6 +126,8 @@ function AuthGuard() {
     }}>
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(auth)/login" />
+      <Stack.Screen name="(auth)/forgot-password" />
+      <Stack.Screen name="(auth)/reset-password" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="market" />
       <Stack.Screen name="withdraw" />
@@ -133,6 +135,10 @@ function AuthGuard() {
       <Stack.Screen name="support" />
       <Stack.Screen name="admin" />
       <Stack.Screen name="notifications" />
+      <Stack.Screen name="vault" />
+      <Stack.Screen name="invoices" />
+      <Stack.Screen name="my-qr" />
+      <Stack.Screen name="academy" />
     </Stack>
   );
 }

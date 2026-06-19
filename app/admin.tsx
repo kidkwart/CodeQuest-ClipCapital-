@@ -251,6 +251,7 @@ function WithdrawalQueue() {
   const { data: requests, isLoading, refetch } = useAllWithdrawalRequests();
   const [view, setView] = React.useState<'pending' | 'history'>('pending');
   const updateStatus = useUpdateWithdrawalStatus();
+  const bulkApprove = useBulkApproveWithdrawals();
 
   const handleAction = async (id: string, status: 'completed' | 'rejected') => {
     try {
@@ -262,25 +263,42 @@ function WithdrawalQueue() {
     }
   };
 
+  const handleBulkApprove = () => {
+    const pendingIds = requests?.filter(r => r.status === 'pending').map(r => r.id) || [];
+    if (pendingIds.length === 0) return;
+
+    Alert.alert("Bulk Approval", `Approve and disburse all ${pendingIds.length} pending requests?`, [
+        { text: "Cancel", style: "cancel" },
+        { text: "APPROVE ALL", onPress: () => bulkApprove.mutate(pendingIds) }
+    ]);
+  }
+
   if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   const displayRequests = requests?.filter(r => view === 'pending' ? r.status === 'pending' : r.status !== 'pending') || [];
 
   return (
     <Animated.View entering={FadeInDown}>
-      <View style={{ backgroundColor: colors.surfaceElevated, flexDirection: 'row', padding: 4, borderRadius: 12, marginBottom: 24 }}>
-        <TouchableOpacity
-          onPress={() => setView('pending')}
-          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: view === 'pending' ? colors.cardBg : 'transparent' }}
-        >
-          <Text style={{ fontWeight: 'bold', color: view === 'pending' ? colors.text : colors.textDim }}>Pending</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setView('history')}
-          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: view === 'history' ? colors.cardBg : 'transparent' }}
-        >
-          <Text style={{ fontWeight: 'bold', color: view === 'history' ? colors.text : colors.textDim }}>History</Text>
-        </TouchableOpacity>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <View style={{ backgroundColor: colors.surfaceElevated, flexDirection: 'row', padding: 4, borderRadius: 12, flex: 1, marginRight: 12 }}>
+            <TouchableOpacity
+              onPress={() => setView('pending')}
+              style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: view === 'pending' ? colors.cardBg : 'transparent' }}
+            >
+              <Text style={{ fontWeight: 'bold', color: view === 'pending' ? colors.text : colors.textDim }}>Pending</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setView('history')}
+              style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: view === 'history' ? colors.cardBg : 'transparent' }}
+            >
+              <Text style={{ fontWeight: 'bold', color: view === 'history' ? colors.text : colors.textDim }}>History</Text>
+            </TouchableOpacity>
+          </View>
+          {view === 'pending' && displayRequests.length > 0 && (
+              <BouncyTap onPress={handleBulkApprove} style={{ backgroundColor: colors.primary, paddingHorizontal: 12, height: 44, borderRadius: 12, justifyContent: 'center' }}>
+                  <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 10 }}>BULK PAID</Text>
+              </BouncyTap>
+          )}
       </View>
 
       {displayRequests.length === 0 ? (
@@ -581,7 +599,14 @@ function UserDirectory() {
             <View>
               <Text style={{ color: colors.text, fontWeight: 'bold' }}>{u.display_name}</Text>
               <Text style={{ color: colors.textMuted, fontSize: 11 }}>{u.location || 'Location Not Set'}</Text>
-              <Text style={{ color: u.status === 'banned' ? colors.destructive : colors.primary, fontSize: 10, fontWeight: 'bold' }}>{u.status?.toUpperCase() || 'ACTIVE'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <Text style={{ color: u.status === 'banned' ? colors.destructive : colors.primary, fontSize: 10, fontWeight: 'bold' }}>{u.status?.toUpperCase() || 'ACTIVE'}</Text>
+                {u.clip_score < 400 && (
+                  <View style={{ backgroundColor: colors.destructive + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ color: colors.destructive, fontSize: 8, fontWeight: 'bold' }}>HIGH RISK</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
