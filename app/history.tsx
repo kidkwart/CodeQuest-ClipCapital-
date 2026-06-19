@@ -6,6 +6,7 @@ import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, ArrowUpRight, ArrowDownLeft, ShoppingBag, Wallet, Banknote, Clock, Filter, Calendar } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { BouncyTap } from "@/components/native/bouncy-tap";
 
 export default function HistoryScreen() {
   const router = useRouter();
@@ -36,12 +37,12 @@ export default function HistoryScreen() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity
+          <BouncyTap
             onPress={() => router.back()}
             style={styles.headerBtn}
           >
             <ArrowLeft size={20} color="#FFF" />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 

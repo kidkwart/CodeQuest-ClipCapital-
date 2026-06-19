@@ -613,9 +613,12 @@ export function useDisburseSusuPot() {
         .eq("user_id", v.user_id);
       if (mErr) throw mErr;
 
-      // 3. Clear group pot for next cycle
+      // 3. Clear group pot and increment cycle
+      const { data: gData } = await supabase.from("susu_groups").select("cycle_index").eq("id", v.group_id).single();
+      const nextCycle = (gData?.cycle_index || 1) + 1;
+
       const { error: gErr } = await supabase.from("susu_groups")
-        .update({ pot: 0, cycle_index: 2 }) // Simple logic: bump cycle
+        .update({ pot: 0, cycle_index: nextCycle })
         .eq("id", v.group_id);
       if (gErr) throw gErr;
     },
@@ -623,6 +626,9 @@ export function useDisburseSusuPot() {
       qc.invalidateQueries({ queryKey: ["all-susu-groups"] });
       qc.invalidateQueries({ queryKey: ["susu-group"] });
       qc.invalidateQueries({ queryKey: ["susu-members"] });
+      qc.invalidateQueries({ queryKey: ["transaction-history"] });
+      qc.invalidateQueries({ queryKey: ["recent-activity"] });
+      qc.invalidateQueries({ queryKey: ["profile"] });
     }
   });
 }
@@ -1414,7 +1420,7 @@ export function useWeeklyPerformance() {
 // ---------- Unified Activity ----------
 export type ActivityItem = {
   id: string;
-  type: "income" | "expense" | "loan_repayment" | "order" | "susu_contribution";
+  type: "income" | "expense" | "loan_payout" | "loan_repayment" | "order" | "susu_contribution" | "susu_payout";
   amount: number;
   note: string;
   date: string;
@@ -1427,23 +1433,24 @@ export function useRecentActivity(limit = 10) {
     queryKey: ["recent-activity", user?.id, limit],
     enabled: !!user,
     queryFn: async () => {
-      // We fetch from multiple tables and merge.
-      // In a larger app, we'd use a unified 'transactions' table or a database view.
-
-      const [income, expense, repayments, orders, susu] = await Promise.all([
+      const [income, expense, repayments, orders, susu, susu_payouts, loan_payouts] = await Promise.all([
         supabase.from("income_entries").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
         supabase.from("expense_entries").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
         supabase.from("loan_repayments").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
         supabase.from("orders").select("*").eq("buyer_id", user!.id).order("created_at", { ascending: false }).limit(limit),
         supabase.from("susu_contributions").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
+        supabase.from("susu_payouts").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(limit),
+        supabase.from("loan_applications").select("*").eq("user_id", user!.id).not("disbursed_at", "is", null).order("disbursed_at", { ascending: false }).limit(limit),
       ]);
 
       const merged: ActivityItem[] = [
         ...(income.data ?? []).map(i => ({ id: i.id, type: "income" as const, amount: Number(i.amount), note: i.note || "Income Entry", date: i.created_at })),
-        ...(expense.data ?? []).map(e => ({ id: e.id, type: "expense" as const, amount: Number(e.amount), note: e.category || "Expense Entry", date: e.created_at })),
-        ...(repayments.data ?? []).map(r => ({ id: r.id, type: "loan_repayment" as const, amount: Number(r.amount), note: "Loan Repayment", date: r.created_at, status: r.status })),
-        ...(orders.data ?? []).map(o => ({ id: o.id, type: "order" as const, amount: Number(o.total), note: "Market Purchase", date: o.created_at, status: o.status })),
-        ...(susu.data ?? []).map(s => ({ id: s.id, type: "susu_contribution" as const, amount: Number(s.amount), note: "Susu Contribution", date: s.created_at, status: s.status })),
+        ...(expense.data ?? []).map(e => ({ id: e.id, type: "expense" as const, amount: -Number(e.amount), note: e.category || "Expense Entry", date: e.created_at })),
+        ...(repayments.data ?? []).map(r => ({ id: r.id, type: "loan_repayment" as const, amount: -Number(r.amount), note: "Loan Repayment", date: r.created_at, status: r.status })),
+        ...(orders.data ?? []).map(o => ({ id: o.id, type: "order" as const, amount: -Number(o.total), note: "Market Purchase", date: o.created_at, status: o.status })),
+        ...(susu.data ?? []).map(s => ({ id: s.id, type: "susu_contribution" as const, amount: -Number(s.amount), note: "Susu Contribution", date: s.created_at, status: s.status })),
+        ...(susu_payouts.data ?? []).map(p => ({ id: p.id, type: "susu_payout" as const, amount: Number(p.amount), note: "Susu Pot Payout", date: p.created_at })),
+        ...(loan_payouts.data ?? []).map(l => ({ id: l.id, type: "loan_payout" as const, amount: Number(l.amount), note: "Loan Disbursement", date: l.disbursed_at! })),
       ];
 
       return merged

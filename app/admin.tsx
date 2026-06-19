@@ -9,7 +9,9 @@ import {
   useAllProfiles, useSystemSettings, useSendBroadcast,
   useUpdateUserStatus,
   useAllOrders,
-  useUpdateOrderStatus
+  useUpdateOrderStatus,
+  useAllSusuGroups,
+  useDisburseSusuPot
 } from "@/lib/app-queries";
 import { Card, StatCard } from "@/components/native/card";
 import { Button } from "@/components/native/button";
@@ -20,7 +22,7 @@ import { PremiumHeader } from "@/components/native/premium-header";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"stats" | "loans" | "withdrawals" | "orders" | "chat" | "users" | "settings">("stats");
+  const [activeTab, setActiveTab] = useState<"stats" | "loans" | "withdrawals" | "orders" | "circles" | "chat" | "users" | "settings">("stats");
   const { data: stats, isLoading: statsLoading, refetch: refetchStats, isRefetching } = useAdminStats();
 
   const onRefresh = async () => {
@@ -58,6 +60,7 @@ export default function AdminDashboard() {
             <TabItem active={activeTab === "loans"} label="Credit" icon={Lucide.Banknote} onPress={() => setActiveTab("loans")} />
             <TabItem active={activeTab === "withdrawals"} label="Payouts" icon={Lucide.ArrowDownToLine} onPress={() => setActiveTab("withdrawals")} />
             <TabItem active={activeTab === "orders"} label="Orders" icon={Lucide.ShoppingBag} onPress={() => setActiveTab("orders")} />
+            <TabItem active={activeTab === "circles"} label="Circles" icon={Lucide.Users} onPress={() => setActiveTab("circles")} />
             <TabItem active={activeTab === "chat"} label="Support" icon={Lucide.MessageSquare} onPress={() => setActiveTab("chat")} />
             <TabItem active={activeTab === "users"} label="Users" icon={Lucide.User} onPress={() => setActiveTab("users")} />
             <TabItem active={activeTab === "settings"} label="System" icon={Lucide.ShieldCheck} onPress={() => setActiveTab("settings")} />
@@ -67,6 +70,7 @@ export default function AdminDashboard() {
           {activeTab === "loans" && <LoanQueue />}
           {activeTab === "withdrawals" && <WithdrawalQueue />}
           {activeTab === "orders" && <OrderManagement />}
+          {activeTab === "circles" && <SusuManagement />}
           {activeTab === "chat" && <AdminChatSection />}
           {activeTab === "users" && <UserDirectory />}
           {activeTab === "settings" && <SettingsSection />}
@@ -203,6 +207,12 @@ function LoanQueue() {
 
               {loan.status === 'pending' && (
                 <View className="flex-row gap-3">
+                   <TouchableOpacity
+                    onPress={() => setActiveTab("stats")} // Logic to view user info if needed, but for now just a shortcut
+                    className="bg-white/5 p-3 rounded-full border border-white/5"
+                  >
+                    <Lucide.Search size={24} color="#7d8a84" />
+                  </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleAction(loan.id, 'approved')}
                     disabled={review.isPending}
@@ -442,6 +452,92 @@ function OrderManagement() {
 }
 
 /**
+ * COMPONENT: Susu Management
+ */
+function SusuManagement() {
+  const { data: groups, isLoading, refetch } = useAllSusuGroups();
+  const disburse = useDisburseSusuPot();
+
+  const handleDisburse = async (group: any) => {
+    Alert.alert(
+      "Confirm Disbursement",
+      `Are you sure you want to disburse GH₵ ${group.pot} for ${group.name}? This will mark the current cycle winner as paid and reset the pot.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm",
+          onPress: async () => {
+            try {
+              // Note: Picking winner logic should be server-side or more complex,
+              // for now we pick the owner or the user at current cycle index
+              await disburse.mutateAsync({
+                group_id: group.id,
+                user_id: group.owner_id,
+                amount: group.pot
+              });
+              refetch();
+              Alert.alert("Success", "Pot has been disbursed successfully.");
+            } catch (e: any) {
+              Alert.alert("Error", e.message);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  if (isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+
+  return (
+    <Animated.View entering={FadeInDown}>
+      <Text className="text-white/40 text-[10px] uppercase font-bold mb-4 px-2 tracking-widest">Global Savings Circles</Text>
+
+      {(!groups || groups.length === 0) ? (
+        <EmptyState icon={Lucide.Users} title="No Circles" subtitle="No active Susu circles found." />
+      ) : (
+        groups.map((group) => (
+          <Card key={group.id} className="mb-4 p-5">
+            <View className="flex-row justify-between items-center mb-3">
+              <View className="flex-1">
+                <Text className="text-white font-bold text-lg">{group.name}</Text>
+                <Text className="text-white/40 text-[10px] uppercase font-bold">
+                  {group.frequency} · {group.members_count} Members
+                </Text>
+              </View>
+              <View className="bg-primary/20 px-3 py-1 rounded-full">
+                <Text className="text-primary text-[10px] font-black uppercase">Cycle #{group.cycle_index}</Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+               <View>
+                  <Text style={{ color: '#7d8a84', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 }}>CURRENT POT</Text>
+                  <Text style={{ color: '#10b981', fontFamily: 'Display-Bold', fontSize: 20 }}>GH₵ {group.pot?.toLocaleString()}</Text>
+               </View>
+               <View style={{ alignItems: 'flex-end' }}>
+                  {group.pot > 0 ? (
+                    <TouchableOpacity
+                      onPress={() => handleDisburse(group)}
+                      className="bg-primary px-4 py-2 rounded-lg"
+                    >
+                      <Text className="text-black font-black text-[10px] uppercase">Disburse</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View>
+                      <Text style={{ color: '#7d8a84', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 4 }}>CONTRIBUTION</Text>
+                      <Text style={{ color: 'white', fontWeight: 'bold' }}>GH₵ {group.contribution}</Text>
+                    </View>
+                  )}
+               </View>
+            </View>
+          </Card>
+        ))
+      )}
+    </Animated.View>
+  );
+}
+
+/**
  * COMPONENT: Admin Support / Chat
  */
 function AdminChatSection() {
@@ -496,7 +592,10 @@ function AdminChatSection() {
           </View>
 
           <View className="mb-4">
-            {groupedMessages[userId].msgs.slice(-4).map((m: any) => (
+            {groupedMessages[userId].msgs
+              .sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              .slice(-10) // Show last 10 messages for context
+              .map((m: any) => (
               <View
                 key={m.id}
                 className={cn(
