@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, Platform, StyleSheet } from "react-native";
 import { Card } from "./card";
+import { useSystemSettings } from "@/lib/app-queries";
 
 export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
+  const { settings } = useSystemSettings();
   const [amount, setAmount] = useState(defaultAmount);
   const [term, setTerm] = useState(3);
-  const interestRate = 15;
+  const interestRate = settings.data?.interest_rate || 15;
 
   const interest = amount * (interestRate / 100) * term;
   const total = amount + interest;

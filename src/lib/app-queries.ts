@@ -1002,12 +1002,11 @@ export function usePlaceOrder() {
       loan_id?: string;
       status?: string;
     }) => {
-      console.log("Starting usePlaceOrder mutation with:", v);
       const total = v.items.reduce((s, i) => s + i.price * i.qty, 0);
+      let linkedLoanId = v.loan_id;
 
-      // 1. If paying with Wallet, deduct funds FIRST
+      // 1. If paying with Wallet, deduct funds
       if (v.payment_method === "wallet") {
-        console.log("Processing wallet payment, total:", total);
         const { error: walletError } = await supabase.rpc('withdraw_funds', {
           user_uuid: user!.id,
           amount_to_withdraw: total,
@@ -1015,59 +1014,59 @@ export function usePlaceOrder() {
           category_name: 'Shopping'
         });
         if (walletError) {
-          console.error("Wallet deduction failed:", walletError);
           if (walletError.message.includes('balance')) throw new Error("INSUFFICIENT_BALANCE");
           throw walletError;
         }
       }
 
-      // 2. Create the main order record
+      // 2. If paying with Credit, create an approved loan record
+      else if (v.payment_method === "loan") {
+        const { data: settings } = await supabase.from("system_settings").select("interest_rate").single();
+        const rateMultiplier = 1 + (Number(settings?.interest_rate || 15) / 100);
+
+        const { data: newLoan, error: loanError } = await supabase
+          .from("loan_applications")
+          .insert({
+            user_id: user!.id,
+            amount: total,
+            balance: Math.round(total * rateMultiplier * 100) / 100,
+            status: 'approved',
+            purpose: `Marketplace Purchase`,
+            duration_days: 30,
+            disbursed_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (loanError) throw loanError;
+        linkedLoanId = newLoan.id;
+      }
+
+      // 3. Create the main order record
       const orderData: any = {
         buyer_id: user!.id,
         total,
-        momo_provider: v.momo_provider || (v.payment_method === 'wallet' ? 'Wallet' : "System"),
-        momo_reference: v.momo_reference || "",
+        momo_provider: v.payment_method === 'loan' ? 'Credit Line' : (v.momo_provider || (v.payment_method === 'wallet' ? 'Wallet' : "System")),
+        momo_reference: v.momo_reference || `REF-${Date.now()}`,
         payment_method: v.payment_method === 'wallet' ? 'momo' : v.payment_method,
-        status: v.status || (v.payment_method === "loan" || v.payment_method === "wallet" ? "paid" : "pending")
+        status: v.status || "paid",
+        loan_id: linkedLoanId
       };
 
-      if (v.loan_id) {
-        orderData.loan_id = v.loan_id;
-      }
-
-      console.log("Inserting order into DB:", orderData);
       const { data: order, error } = await supabase.from("orders").insert(orderData).select().single();
+      if (error) throw error;
 
-      if (error) {
-        console.error("Supabase Order Insert Error:", error);
-        throw error;
-      }
-
-      // 3. Insert order items
+      // 4. Insert order items
       const items = await Promise.all(v.items.map(async (i) => {
         let vId = i.vendor_id;
-
-        // If vendor_id is missing in the cart item, try to find it on the product
         if (!vId) {
-          const { data: pData } = await supabase
-            .from("products")
-            .select("vendor_id")
-            .eq("id", i.product_id)
-            .maybeSingle();
+          const { data: pData } = await supabase.from("products").select("vendor_id").eq("id", i.product_id).maybeSingle();
           vId = pData?.vendor_id;
         }
-
-        // Emergency fallback to admin if vendor is still missing
         if (!vId) {
-          console.warn(`Vendor missing for ${i.name}, falling back to admin.`);
           const { data: adminRole } = await supabase.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
           vId = adminRole?.user_id;
         }
-
-        if (!vId) {
-          throw new Error(`Critical: No vendor found for product: ${i.name}`);
-        }
-
         return {
           order_id: order.id,
           product_id: i.product_id,
@@ -1077,11 +1076,8 @@ export function usePlaceOrder() {
         };
       }));
 
-      console.log("Inserting order items:", items);
       const { error: iErr } = await supabase.from("order_items").insert(items);
       if (iErr) {
-        console.error("Supabase Order Items Insert Error:", iErr);
-        // Attempt to rollback the order
         await supabase.from("orders").delete().eq("id", order.id);
         throw iErr;
       }
@@ -1098,6 +1094,7 @@ export function usePlaceOrder() {
       ]);
     },
   });
+}
 }
 
 // ---------- ClipScore (synced from DB) ----------
