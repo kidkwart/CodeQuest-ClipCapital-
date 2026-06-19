@@ -3,15 +3,17 @@ import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from 'react-nat
 import { Card } from './card';
 import { Target, TrendingUp, ShieldCheck, Zap, Info, ArrowUpRight } from 'lucide-react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useTheme } from "@/context/theme-context";
 
 const { width } = Dimensions.get('window');
 
 export function ClipScoreBreakdown({ score, health, loading }: { score: number, health?: any, loading?: boolean }) {
+  const { colors, theme } = useTheme();
   const percentage = Math.min(100, ((score - 600) / 250) * 100);
 
   const getRank = (s: number) => {
-    if (s >= 800) return { name: "PREMIUM", color: "#f59e0b" };
-    if (s >= 700) return { name: "ELITE", color: "#10b981" };
+    if (s >= 800) return { name: "PREMIUM", color: colors.gold };
+    if (s >= 700) return { name: "ELITE", color: colors.primary };
     return { name: "ESTABLISHED", color: "#3b82f6" };
   };
 
@@ -19,8 +21,8 @@ export function ClipScoreBreakdown({ score, health, loading }: { score: number, 
 
   if (loading) {
     return (
-      <Card glass style={styles.container}>
-        <ActivityIndicator color="#10b981" />
+      <Card glass style={[styles.container, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+        <ActivityIndicator color={colors.primary} />
       </Card>
     );
   }
@@ -32,31 +34,31 @@ export function ClipScoreBreakdown({ score, health, loading }: { score: number, 
 
   return (
     <Animated.View entering={FadeInUp.duration(400)}>
-      <Card glass style={styles.container}>
+      <Card glass style={[styles.container, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Growth Audit</Text>
-            <Text style={styles.subtitle}>Last updated: Just now</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Growth Audit</Text>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>Last updated: Just now</Text>
           </View>
-          <View style={[styles.rankBadge, { borderColor: `${rank.color}40` }]}>
+          <View style={[styles.rankBadge, { borderColor: `${rank.color}40`, backgroundColor: colors.surfaceElevated }]}>
             <Text style={[styles.rankText, { color: rank.color }]}>{rank.name} RANK</Text>
           </View>
         </View>
 
         <View style={styles.scoreSection}>
           <View style={styles.scoreInfo}>
-            <Text style={styles.scoreValue}>{score}</Text>
-            <Text style={styles.scoreMax}>/ 850</Text>
+            <Text style={[styles.scoreValue, { color: colors.text }]}>{score}</Text>
+            <Text style={[styles.scoreMax, { color: colors.textDim }]}>/ 850</Text>
           </View>
           <View style={styles.progressContainer}>
-            <View style={[styles.progressBase]} />
+            <View style={[styles.progressBase, { backgroundColor: colors.border }]} />
             <View style={[styles.progressBar, { width: `${percentage}%`, backgroundColor: rank.color }]} />
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        <Text style={styles.sectionLabel}>CRITICAL METRICS</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textDim }]}>CRITICAL METRICS</Text>
 
         <View style={{ gap: 16 }}>
           <MetricRow
@@ -64,14 +66,14 @@ export function ClipScoreBreakdown({ score, health, loading }: { score: number, 
             label="Activity Consistency"
             desc="Daily revenue logs"
             value={activityConsistency}
-            color="#10b981"
+            color={colors.primary}
           />
           <MetricRow
             icon={ShieldCheck}
             label="Susu Contribution"
             desc="Timely payments"
             value={susuStatus}
-            color="#f59e0b"
+            color={colors.gold}
           />
           <MetricRow
             icon={Target}
@@ -82,8 +84,8 @@ export function ClipScoreBreakdown({ score, health, loading }: { score: number, 
           />
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Maintain daily logs to increase your score</Text>
+        <View style={[styles.footer, { borderTopColor: colors.border }]}>
+          <Text style={[styles.footerText, { color: colors.textMuted }]}>Maintain daily logs to increase your score</Text>
         </View>
       </Card>
     </Animated.View>
@@ -91,15 +93,16 @@ export function ClipScoreBreakdown({ score, health, loading }: { score: number, 
 }
 
 function MetricRow({ icon: Icon, label, desc, value, color }: any) {
+  const { colors } = useTheme();
   return (
     <View style={styles.metricRow}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <View style={[styles.iconBox, { backgroundColor: `${color}10` }]}>
+        <View style={[styles.iconBox, { backgroundColor: `${color}10`, borderColor: colors.border }]}>
           <Icon size={18} color={color} />
         </View>
         <View>
-          <Text style={styles.metricLabel}>{label}</Text>
-          <Text style={styles.metricDesc}>{desc}</Text>
+          <Text style={[styles.metricLabel, { color: colors.text }]}>{label}</Text>
+          <Text style={[styles.metricDesc, { color: colors.textMuted }]}>{desc}</Text>
         </View>
       </View>
       <Text style={[styles.metricValue, { color: color }]}>{value}</Text>

@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useTheme } from "@/context/theme-context";
 
 interface Props {
   title: string;
@@ -11,6 +12,7 @@ interface Props {
 
 export function PremiumHeader({ title, subtitle, showBack }: Props) {
   const router = useRouter();
+  const { colors } = useTheme();
 
   return (
     <View style={{ marginBottom: 40 }}>
@@ -18,18 +20,18 @@ export function PremiumHeader({ title, subtitle, showBack }: Props) {
         {showBack && (
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+            style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: colors.cardBg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}
           >
-            <ArrowLeft size={20} color="#fcfcfc" />
+            <ArrowLeft size={20} color={colors.text} />
           </TouchableOpacity>
         )}
         <View style={{ flex: 1 }}>
           {subtitle && (
-            <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 4 }}>
+            <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 4 }}>
               {subtitle}
             </Text>
           )}
-          <Text style={{ fontFamily: 'Display-Bold', color: 'white', fontSize: 40, letterSpacing: -1.5 }}>
+          <Text style={{ fontFamily: 'Display-Bold', color: colors.text, fontSize: 40, letterSpacing: -1.5 }}>
             {title}
           </Text>
         </View>
