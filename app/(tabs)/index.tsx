@@ -109,7 +109,7 @@ export default function Dashboard() {
             </View>
           </View>
 
-+          {/* Premium Financial Power Gauge */}
+          {/* Premium Financial Power Gauge */}
           <CreditCapacityGauge
             score={score}
             limit={score * 5}
