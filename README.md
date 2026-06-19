@@ -1,114 +1,103 @@
-# ClipCapital
+# 🏦 ClipCapital
 
-ClipCapital is a mobile-first micro-finance platform built specifically for Ghana's informal trade workers, such as barbers and hairdressers. It allows users to track income, save with Susu groups, access micro-loans, and shop for supplies.
-
-## Tech Stack
-
-- **Frontend**: React (TanStack Start)
-- **Styling**: Tailwind CSS v4
-- **Database & Auth**: Supabase
-- **Payments**: Paystack Integration
-- **Package Manager**: Bun
+**ClipCapital** is a premium, mobile-first micro-finance ecosystem designed specifically for Ghana’s informal trade sectors. From master barbers to hairstylists, ClipCapital empowers artisans with the tools they need to track revenue, grow through Susu groups, access micro-loans, and source professional-grade equipment.
 
 ---
 
-## Local Development Setup
+## ✨ Premium Features
 
-Follow these steps to get the project running on your local machine.
+### 🛠️ Professional Marketplace
+An integrated supply chain for artisans. Browse and purchase high-end equipment like **Wahl Professional Clippers**, **Dyson Pro Dryers**, and luxury **Barber Chairs**.
+- **Credit Integration:** Purchase equipment using your accumulated credit line.
+- **Order Tracking:** Real-time status updates from pending to shipped.
 
-### 1. Clone the Repository
+### 🛡️ Admin Command Center
+A powerful suite of administrative tools to manage the entire ecosystem:
+- **Financial Oversight:** Monitor total revenue, volume, and active risk.
+- **Loan Management:** Approve or decline micro-loan applications with a single tap.
+- **Global Governance:** Adjust the base interest rate and toggle "Vault Lockdown" (Maintenance Mode) instantly.
+- **Support Hub:** Direct communication channel with users via integrated chat.
+- **User Management:** Audit and manage user accounts and their ClipScores.
 
-```bash
-git clone https://github.com/kidkwart/clipcapital.git
-cd clipcapital
-```
+### 🎨 Themed Experience
+Built with a sophisticated UI that adapts to your environment:
+- **Midnight Emerald:** A deep, high-contrast dark mode for focused work.
+- **Pristine White:** A clean, high-end light mode for a professional business aesthetic.
 
-### 2. Install Tools
+### 📈 Financial Growth
+- **Susu Circles:** Participate in community-driven peer-to-peer savings.
+- **ClipScore:** A proprietary credit-scoring algorithm based on daily revenue logs.
+- **Micro-Loans:** Instant access to liquidity for business expansion.
 
-This project requires **Bun** for fast package management and runtime.
+---
 
-- [Install Bun](https://bun.sh/) if you haven't already:
+## 🚀 Tech Stack
 
+*   **Framework:** [React Native](https://reactnative.dev/) / [Expo](https://expo.dev/)
+*   **Routing:** [Expo Router](https://docs.expo.dev/router/introduction/) (File-based)
+*   **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) via NativeWind
+*   **Backend & Auth:** [Supabase](https://supabase.com/)
+*   **State Management:** [TanStack Query v5](https://tanstack.com/query/latest)
+*   **Animations:** [React Native Reanimated](https://www.reanimated.org/)
+*   **Package Manager:** [Bun](https://bun.sh/)
+
+---
+
+## 🛠️ Local Development
+
+### 1. Prerequisites
+Ensure you have **Bun** installed:
 ```bash
 curl -fsSL https://bun.sh/install | bash
 ```
 
-- Verify the installation:
-
+### 2. Setup
 ```bash
-bun --version
-```
+# Clone the repository
+git clone https://github.com/kidkwart/clipcapital.git
+cd clipcapital
 
-### 3. Install Dependencies
-
-```bash
+# Install dependencies
 bun install
 ```
 
-### 4. Environment Variables
-
-Create a `.env` file in the project root and add your Supabase credentials:
-
+### 3. Environment Configuration
+Create a `.env` file in the root directory:
 ```env
-VITE_SUPABASE_URL=your-project-url
-VITE_SUPABASE_PUBLISHABLE_KEY=your-anon-key
-VITE_PAYSTACK_PUBLIC_KEY=your-paystack-key
+VITE_SUPABASE_URL=your_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+VITE_PAYSTACK_PUBLIC_KEY=your_paystack_key
 ```
 
-### 5. Run the Development Server
-
-```bash
-bun dev
-```
-
-The app will be available at `http://localhost:8080`.
-
----
-
-## Database Management
-
-The database schema is managed via SQL migrations located in `supabase/migrations/`.
-
-### Applying Migrations Locally
-
-If you are using the Supabase CLI:
-
+### 4. Database Setup
+Initialize your database using the Supabase CLI:
 ```bash
 supabase db reset
 ```
 
-This will apply all migrations to your local Docker-based database.
-
----
-
-## Deployment
-
-To build the project for production:
-
+### 5. Launch
 ```bash
-bun run build
-```
-
-To preview the production build:
-
-```bash
-bun run preview
+bun dev
 ```
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
-```
+```text
 src/
-  routes/           # File-based routing (TanStack Router)
-  components/       # UI components (Shadcn UI)
-  lib/              # Business logic, queries, and integrations
-  hooks/            # Custom React hooks
-  integrations/     # Supabase client setup
-supabase/
-  migrations/       # Database schema migrations
+ ├── components/     # Atomic UI components & Native elements
+ ├── hooks/          # Custom React hooks (logic & state)
+ ├── context/        # Theme & Global state providers
+ ├── lib/            # API, Supabase client, and utility functions
+app/
+ ├── (auth)/         # Authentication flow (Login/Signup)
+ ├── (tabs)/         # Core app navigation (Dashboard, Wallet, etc.)
+ ├── market/         # Marketplace & Order management
+ └── admin/          # Exclusive Admin Command Center
 ```
 
-© 2026 ClipCapital. All rights reserved.
-@kidkwart_jr
+---
+
+© 2026 ClipCapital. Engineered for the artisans of the future.
+[@kidkwart_jr](https://github.com/kidkwart)
