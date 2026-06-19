@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
+import { Route as AuthenticatedAppWithdrawRouteImport } from './routes/_authenticated/app.withdraw'
 import { Route as AuthenticatedAppSusuRouteImport } from './routes/_authenticated/app.susu'
 import { Route as AuthenticatedAppSupportRouteImport } from './routes/_authenticated/app.support'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
@@ -51,6 +52,12 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppWithdrawRoute =
+  AuthenticatedAppWithdrawRouteImport.update({
+    id: '/withdraw',
+    path: '/withdraw',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppSusuRoute = AuthenticatedAppSusuRouteImport.update({
   id: '/susu',
   path: '/susu',
@@ -130,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AuthenticatedAppSettingsRoute
   '/app/support': typeof AuthenticatedAppSupportRoute
   '/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
+  '/app/withdraw': typeof AuthenticatedAppWithdrawRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/market/cart': typeof AuthenticatedAppMarketCartRoute
   '/app/susu/$groupId': typeof AuthenticatedAppSusuGroupIdRoute
@@ -147,6 +155,7 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AuthenticatedAppSettingsRoute
   '/app/support': typeof AuthenticatedAppSupportRoute
   '/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
+  '/app/withdraw': typeof AuthenticatedAppWithdrawRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/market/cart': typeof AuthenticatedAppMarketCartRoute
   '/app/susu/$groupId': typeof AuthenticatedAppSusuGroupIdRoute
@@ -167,6 +176,7 @@ export interface FileRoutesById {
   '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRoute
   '/_authenticated/app/support': typeof AuthenticatedAppSupportRoute
   '/_authenticated/app/susu': typeof AuthenticatedAppSusuRouteWithChildren
+  '/_authenticated/app/withdraw': typeof AuthenticatedAppWithdrawRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/market/cart': typeof AuthenticatedAppMarketCartRoute
   '/_authenticated/app/susu/$groupId': typeof AuthenticatedAppSusuGroupIdRoute
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/support'
     | '/app/susu'
+    | '/app/withdraw'
     | '/app/'
     | '/app/market/cart'
     | '/app/susu/$groupId'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/support'
     | '/app/susu'
+    | '/app/withdraw'
     | '/app'
     | '/app/market/cart'
     | '/app/susu/$groupId'
@@ -223,6 +235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/settings'
     | '/_authenticated/app/support'
     | '/_authenticated/app/susu'
+    | '/_authenticated/app/withdraw'
     | '/_authenticated/app/'
     | '/_authenticated/app/market/cart'
     | '/_authenticated/app/susu/$groupId'
@@ -269,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/withdraw': {
+      id: '/_authenticated/app/withdraw'
+      path: '/withdraw'
+      fullPath: '/app/withdraw'
+      preLoaderRoute: typeof AuthenticatedAppWithdrawRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/susu': {
@@ -394,6 +414,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
   AuthenticatedAppSupportRoute: typeof AuthenticatedAppSupportRoute
   AuthenticatedAppSusuRoute: typeof AuthenticatedAppSusuRouteWithChildren
+  AuthenticatedAppWithdrawRoute: typeof AuthenticatedAppWithdrawRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
@@ -408,6 +429,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
   AuthenticatedAppSupportRoute: AuthenticatedAppSupportRoute,
   AuthenticatedAppSusuRoute: AuthenticatedAppSusuRouteWithChildren,
+  AuthenticatedAppWithdrawRoute: AuthenticatedAppWithdrawRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
 

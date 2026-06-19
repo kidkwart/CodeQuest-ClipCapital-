@@ -941,6 +941,68 @@ export function useReplyToUser() {
   });
 }
 
+// ---------- Withdrawals ----------
+export function useMyWithdrawals() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["my-withdrawals", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("withdrawal_requests")
+        .select("*").eq("user_id", user!.id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useRequestWithdrawal() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: { amount: number, bank_name: string, account_number: string, account_name: string }) => {
+      const { error } = await supabase.from("withdrawal_requests").insert({
+        ...v,
+        user_id: user!.id,
+        status: 'pending'
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-withdrawals"] }),
+  });
+}
+
+export function useAllWithdrawalRequests() {
+  return useQuery({
+    queryKey: ["all-withdrawal-requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("withdrawal_requests")
+        .select("*, profiles!inner(display_name, business_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useUpdateWithdrawalStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string, status: string, notes?: string }) => {
+      const { error } = await supabase.from("withdrawal_requests").update({
+        status: v.status,
+        notes: v.notes,
+        processed_at: new Date().toISOString()
+      }).eq("id", v.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-withdrawal-requests"] });
+      qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
+  });
+}
+
 // ---------- Unified Activity ----------
 export type ActivityItem = {
   id: string;
