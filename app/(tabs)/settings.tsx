@@ -138,7 +138,20 @@ export default function Settings() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    Alert.alert(
+      "Confirm Logout",
+      "Are you sure you want to terminate your current session?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Logout",
+          style: "destructive",
+          onPress: async () => {
+            await supabase.auth.signOut();
+          }
+        }
+      ]
+    );
   };
 
   const handleDeleteAccount = async () => {

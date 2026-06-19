@@ -44,6 +44,7 @@ export function AppShell({ children, title }: { children: ReactNode; title: stri
     : baseNav;
 
   async function signOut() {
+    if (!window.confirm("Are you sure you want to sign out?")) return;
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
