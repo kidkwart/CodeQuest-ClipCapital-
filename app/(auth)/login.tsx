@@ -54,7 +54,7 @@ export default function Login() {
     if (!LocalAuthentication) return;
 
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Authorize with Face ID or Passcode',
+      promptMessage: 'Log in with Face ID or Passcode',
       fallbackLabel: 'Use Password',
       disableDeviceFallback: false,
     });
@@ -212,7 +212,7 @@ export default function Login() {
                         <LinearGradient colors={[colors.primary, theme === 'dark' ? '#059669' : colors.primary + 'cc']} style={styles.verifyBtn}>
                             {loading ? <ActivityIndicator color="#000" /> : (
                                 <View style={styles.btnInner}>
-                                    <Text style={[styles.verifyBtnText, { color: '#000' }]}>AUTHORIZE ENTRY</Text>
+                                    <Text style={[styles.verifyBtnText, { color: '#000' }]}>LOG IN</Text>
                                     <Key size={18} color="#000" />
                                 </View>
                             )}
@@ -336,7 +336,7 @@ export default function Login() {
                     ) : (
                       <View style={styles.btnInner}>
                         <Text style={[styles.submitBtnText, { color: '#000' }]}>
-                          {mode === "signin" ? "AUTHORIZE ENTRY" : "REGISTER VAULT"}
+                          {mode === "signin" ? "LOG IN" : "SIGN UP"}
                         </Text>
                         <ArrowRight size={18} color="#000" strokeWidth={3} />
                       </View>

@@ -171,6 +171,7 @@ function LoanQueue() {
   const handleAction = async (id: string | string[], status: 'approved' | 'rejected') => {
     try {
       await review.mutateAsync({ id, status });
+      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
       refetch();
       Alert.alert("Success", `Loan ${status}.`);
     } catch (e: any) {
@@ -255,6 +256,7 @@ function WithdrawalQueue() {
   const handleAction = async (id: string, status: 'completed' | 'rejected') => {
     try {
       await updateStatus.mutateAsync({ id, status });
+      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
       refetch();
       Alert.alert("Success", `Withdrawal ${status === 'completed' ? 'marked as paid' : 'declined'}.`);
     } catch (e: any) {
@@ -341,9 +343,21 @@ function OrderManagement() {
   const handleUpdate = async (id: string, status: string) => {
     try {
       await updateStatus.mutateAsync({ id, status });
+      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
       refetch();
     } catch (e: any) {
       Alert.alert("Error", e.message);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'paid':
+      case 'completed': return colors.primary;
+      case 'pending': return colors.gold;
+      case 'shipped': return '#3b82f6';
+      case 'cancelled': return colors.destructive;
+      default: return colors.textDim;
     }
   };
 
@@ -353,63 +367,117 @@ function OrderManagement() {
 
   return (
     <Animated.View entering={FadeInDown}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+      <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 16, marginLeft: 8 }}>
+        ORDER LOGISTICS & FULFILLMENT
+      </Text>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, marginHorizontal: -24, paddingHorizontal: 24 }}>
         {['all', 'pending', 'paid', 'shipped', 'completed'].map((f) => (
           <TouchableOpacity
             key={f}
-            onPress={() => setFilter(f as any)}
+            onPress={() => {
+                setFilter(f as any);
+                Vibration.vibrate(Platform.OS === 'ios' ? 0 : 5);
+            }}
             style={{
               paddingHorizontal: 16,
-              paddingVertical: 8,
+              paddingVertical: 10,
               borderRadius: 12,
               marginRight: 8,
-              backgroundColor: filter === f ? colors.primary : colors.surfaceElevated,
+              backgroundColor: filter === f ? colors.primary : colors.cardBg,
               borderWidth: 1,
               borderColor: filter === f ? colors.primary : colors.border
             }}
           >
-            <Text style={{ fontWeight: 'bold', fontSize: 11, textTransform: 'uppercase', color: filter === f ? '#000' : colors.textMuted }}>{f}</Text>
+            <Text style={{ fontWeight: '900', fontSize: 10, textTransform: 'uppercase', color: filter === f ? '#000' : colors.textMuted }}>{f}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
       {filteredOrders.length === 0 ? (
-        <EmptyState icon={Lucide.ShoppingBag} title="No Orders" subtitle="No orders found for this filter." />
+        <EmptyState icon={Lucide.ShoppingBag} title="No Orders" subtitle={`No ${filter !== 'all' ? filter : ''} orders in queue.`} />
       ) : (
         filteredOrders.map((order) => (
-          <Card key={order.id} style={{ marginBottom: 16, padding: 20 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <View>
-                <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>GH₵ {order.total}</Text>
-                <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', marginTop: 2 }}>{order.payment_method}</Text>
-              </View>
-              <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: order.status === 'completed' ? colors.primary + '15' : colors.gold + '15' }}>
-                <Text style={{ color: order.status === 'completed' ? colors.primary : colors.gold, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>{order.status}</Text>
-              </View>
+          <Card key={order.id} style={{ marginBottom: 20, padding: 0, overflow: 'hidden' }}>
+            <View style={{ padding: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Lucide.Package size={14} color={colors.primary} />
+                        <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>ORDER #{order.id.slice(0, 8).toUpperCase()}</Text>
+                    </View>
+                    <Text style={{ color: colors.text, fontSize: 22, fontFamily: 'Display-Bold', marginTop: 4 }}>GH₵ {order.total.toLocaleString()}</Text>
+                  </View>
+
+                  <View style={{ backgroundColor: `${getStatusColor(order.status)}15`, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: `${getStatusColor(order.status)}30` }}>
+                    <Text style={{ color: getStatusColor(order.status), fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 }}>{order.status}</Text>
+                  </View>
+                </View>
+
+                <View style={{ marginBottom: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <Lucide.User size={14} color={colors.textDim} />
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>{order.profiles?.display_name}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Lucide.Store size={14} color={colors.textDim} />
+                    <Text style={{ color: colors.textMuted, fontSize: 12 }}>{order.profiles?.business_name || 'Individual Merchant'}</Text>
+                  </View>
+                </View>
+
+                <View style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', letterSpacing: 1, marginBottom: 12 }}>ITEM MANIFEST</Text>
+                  {order.order_items?.map((item: any, idx: number) => (
+                    <View key={item.id} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: idx === order.order_items.length - 1 ? 0 : 8 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 13, flex: 1 }} numberOfLines={1}>• {item.products?.name}</Text>
+                      <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 13, marginLeft: 12 }}>x{item.qty}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {order.status === 'pending' && (
+                    <TouchableOpacity
+                        onPress={() => handleUpdate(order.id, 'paid')}
+                        style={{ flex: 1, backgroundColor: colors.primary, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <Text style={{ color: '#000', fontWeight: '900', fontSize: 11, letterSpacing: 1 }}>CONFIRM PAYMENT</Text>
+                    </TouchableOpacity>
+                  )}
+                  {order.status === 'paid' && (
+                    <TouchableOpacity
+                        onPress={() => handleUpdate(order.id, 'shipped')}
+                        style={{ flex: 1, backgroundColor: '#3b82f6', height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <Text style={{ color: '#fff', fontWeight: '900', fontSize: 11, letterSpacing: 1 }}>DISPATCH ORDER</Text>
+                    </TouchableOpacity>
+                  )}
+                  {order.status === 'shipped' && (
+                    <TouchableOpacity
+                        onPress={() => handleUpdate(order.id, 'completed')}
+                        style={{ flex: 1, backgroundColor: colors.primary, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <Text style={{ color: '#000', fontWeight: '900', fontSize: 11, letterSpacing: 1 }}>MARK DELIVERED</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {order.status !== 'completed' && order.status !== 'cancelled' && (
+                    <TouchableOpacity
+                        onPress={() => handleUpdate(order.id, 'cancelled')}
+                        style={{ width: 48, height: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.destructive + '40', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <Lucide.Trash2 size={20} color={colors.destructive} />
+                    </TouchableOpacity>
+                  )}
+                </View>
             </View>
 
-            <View style={{ marginTop: 12 }}>
-              <Text style={{ color: colors.text, fontSize: 14, fontWeight: 'bold' }}>{order.profiles?.display_name}</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{order.profiles?.business_name}</Text>
-            </View>
-
-            <View style={{ marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: colors.surfaceElevated }}>
-              {order.order_items?.map((item: any) => (
-                <Text key={item.id} style={{ color: colors.textMuted, fontSize: 12 }}>• {item.products?.name} (x{item.qty})</Text>
-              ))}
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-              {order.status === 'pending' && <Button title="Mark Paid" style={{ flex: 1 }} onPress={() => handleUpdate(order.id, 'paid')} />}
-              {order.status === 'paid' && <Button title="Ship Order" style={{ flex: 1 }} onPress={() => handleUpdate(order.id, 'shipped')} />}
-              {order.status === 'shipped' && <Button title="Complete" style={{ flex: 1 }} onPress={() => handleUpdate(order.id, 'completed')} />}
-
-              <TouchableOpacity
-                onPress={() => handleUpdate(order.id, 'cancelled')}
-                style={{ flex: 0.5, borderWeight: 1, borderColor: colors.destructive, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Text style={{ color: colors.destructive, fontWeight: 'bold', fontSize: 11 }}>CANCEL</Text>
-              </TouchableOpacity>
+            <View style={{ backgroundColor: colors.surfaceElevated, paddingHorizontal: 20, paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Lucide.CreditCard size={12} color={colors.textDim} />
+                    <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>{order.payment_method}</Text>
+                </View>
+                <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: 'bold' }}>{new Date(order.created_at).toLocaleDateString('en-GB')}</Text>
             </View>
           </Card>
         ))
@@ -438,6 +506,7 @@ function SusuManagement() {
                 user_id: group.owner_id,
                 amount: group.pot
               });
+              Vibration.vibrate(Platform.OS === 'ios' ? 0 : 20);
               refetch();
               Alert.alert("Success", "Pot has been disbursed successfully.");
             } catch (e: any) {
@@ -503,6 +572,7 @@ function AdminChatSection() {
 
     try {
       await replyMutation.mutateAsync({ user_id: userId, message: text.trim() });
+      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 5);
       setReplyText(prev => ({ ...prev, [userId]: "" }));
       refetch();
     } catch (e: any) { }
@@ -608,141 +678,70 @@ function SettingsSection() {
 
     if (settings.isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
-    const handleUpdateRate = () => {
-        const rate = parseFloat(localRate);
-        if (!isNaN(rate)) {
-            updateSettings.mutate({ interest_rate: rate });
-            Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
-            Alert.alert("Governance Update", `Institutional Interest Rate successfully adjusted to ${rate}%.`);
-        } else {
-            Alert.alert("Invalid Input", "Please enter a numeric percentage.");
-        }
-    };
-
-    const handleBroadcast = async () => {
-      if (!notif.title.trim() || !notif.body.trim()) {
-        return Alert.alert("Required", "Please fill in both the title and the message.");
-      }
-
-      const performBroadcast = async () => {
-        try {
-          await broadcast.mutateAsync({ title: notif.title, body: notif.body });
-          setNotif({ title: "", body: "" });
-          Alert.alert("Success", "Institutional broadcast transmitted to all vault users.");
-        } catch (e: any) {
-          Alert.alert("Error", e.message);
-        }
-      };
-
-      Alert.alert(
-        "Confirm Broadcast",
-        "This message will be transmitted to ALL registered vault users. Proceed?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "TRANSMIT", style: "destructive", onPress: performBroadcast }
-        ]
-      );
-    };
-
     return (
       <Animated.View entering={FadeInDown}>
-        <View style={{ marginBottom: 32 }}>
-          <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, fontSize: 18 }}>System Governance</Text>
-          <Card style={{ padding: 24 }}>
-            <View style={{ backgroundColor: colors.surfaceElevated, marginBottom: 24, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Base Interest Rate</Text>
-                  <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>Global credit growth percentage</Text>
-                </View>
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <View style={{ backgroundColor: colors.cardBg, flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, px: 20, height: 60, borderWidth: 1, borderColor: colors.border }}>
-                        <TextInput
-                            value={localRate}
-                            keyboardType="decimal-pad"
-                            onChangeText={setLocalRate}
-                            placeholder="0.0"
-                            placeholderTextColor={colors.textDim}
-                            style={{ flex: 1, color: colors.primary, fontFamily: 'Display-Bold', fontSize: 24 }}
-                            selectionColor={colors.primary}
-                        />
-                        <Text style={{ fontFamily: 'Display-Bold', color: colors.primary, fontSize: 20 }}>%</Text>
-                    </View>
-
-                    <BouncyTap onPress={handleUpdateRate}>
-                       <LinearGradient
-                        colors={[colors.primary, colors.primary + 'cc']}
-                        style={{ width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
-                       >
-                          <Lucide.Check size={28} color="#000" strokeWidth={3} />
-                       </LinearGradient>
-                    </BouncyTap>
-                </View>
-            </View>
-
-            <View style={{ backgroundColor: colors.surfaceElevated, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
-                <View style={{ flex: 1, marginRight: 16 }}>
-                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Vault Lockdown</Text>
-                  <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>Suspend all global activities</Text>
-                </View>
-
-                <BouncyTap
-                  onPress={async () => {
-                    const newVal = !settings.data?.maintenance_mode;
-                    try {
-                      Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 50, 20, 50]);
-                      await updateSettings.mutateAsync({ maintenance_mode: newVal });
-                      Alert.alert("Vault Protocol", `System Lockdown has been ${newVal ? 'ENGAGED' : 'RELEASED'}.`);
-                    } catch (e: any) {
-                      Alert.alert("Error", e.message);
-                    }
-                  }}
+        <Card style={{ marginBottom: 24, padding: 20 }}>
+            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>Interest Control</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TextInput
+                    value={localRate}
+                    onChangeText={setLocalRate}
+                    keyboardType="numeric"
+                    style={{ flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: 12, paddingHorizontal: 16, color: colors.text, fontSize: 20, fontWeight: 'bold' }}
+                />
+                <TouchableOpacity
+                    onPress={() => {
+                        updateSettings.mutate({ interest_rate: parseFloat(localRate) });
+                        Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
+                    }}
+                    style={{ backgroundColor: colors.primary, paddingHorizontal: 20, borderRadius: 12, justifyContent: 'center' }}
                 >
-                  <LinearGradient
-                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#7f1d1d'] : [colors.primary, colors.primary + 'cc']}
-                    style={{ height: 50, paddingHorizontal: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8 }}
-                  >
-                     {settings.data?.maintenance_mode ? <Lucide.ShieldAlert size={16} color="#000" /> : <Lucide.ShieldCheck size={16} color="#000" />}
-                     <Text style={{ color: '#000', fontWeight: '900', fontSize: 10 }}>{settings.data?.maintenance_mode ? "RELEASE" : "ENGAGE"}</Text>
-                  </LinearGradient>
-                </BouncyTap>
+                    <Text style={{ color: '#000', fontWeight: 'bold' }}>UPDATE</Text>
+                </TouchableOpacity>
             </View>
-          </Card>
-        </View>
+        </Card>
 
-        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, fontSize: 18 }}>Broadcast Protocol</Text>
-        <Card style={{ padding: 24 }}>
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Signal Title</Text>
+        <Card style={{ padding: 20 }}>
+            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>System Lock</Text>
+            <TouchableOpacity
+              onPress={() => {
+                Vibration.vibrate(100);
+                updateSettings.mutate({ maintenance_mode: !settings.data?.maintenance_mode });
+              }}
+              style={{
+                backgroundColor: settings.data?.maintenance_mode ? colors.primary : colors.destructive,
+                height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              <Text style={{ color: '#000', fontWeight: '900', fontSize: 14 }}>
+                {settings.data?.maintenance_mode ? "UNLOCK SYSTEM" : "LOCK SYSTEM"}
+              </Text>
+            </TouchableOpacity>
+        </Card>
+
+        <Card style={{ marginTop: 24, padding: 20 }}>
+            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>Global Broadcast</Text>
             <TextInput
               value={notif.title}
               onChangeText={t => setNotif(prev => ({...prev, title: t}))}
-              placeholder="e.g. SYSTEM UPGRADE"
+              placeholder="Title"
               placeholderTextColor={colors.textDim}
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, borderWeight: 1, borderColor: colors.border }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 12, padding: 12, color: colors.text, marginBottom: 10, borderWidth: 1, borderColor: colors.border }}
             />
-          </View>
-
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Global Transmission</Text>
             <TextInput
               value={notif.body}
               onChangeText={t => setNotif(prev => ({...prev, body: t}))}
-              placeholder="Message details..."
+              placeholder="Message"
               placeholderTextColor={colors.textDim}
               multiline
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, height: 120, textAlignVertical: 'top', borderWeight: 1, borderColor: colors.border }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 12, padding: 12, color: colors.text, height: 100, textAlignVertical: 'top', marginBottom: 16, borderWidth: 1, borderColor: colors.border }}
             />
-          </View>
-
-          <BouncyTap onPress={handleBroadcast}>
-            <LinearGradient
-              colors={[colors.primary, colors.primary + 'cc']}
-              style={{ height: 60, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+            <TouchableOpacity
+              onPress={() => broadcast.mutate(notif)}
+              style={{ backgroundColor: colors.primary, height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
             >
-               <Text style={{ color: '#000', fontWeight: '900', letterSpacing: 1 }}>TRANSMIT SIGNAL</Text>
-            </LinearGradient>
-          </BouncyTap>
+               {broadcast.isPending ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontWeight: '900' }}>SEND SIGNAL</Text>}
+            </TouchableOpacity>
         </Card>
       </Animated.View>
     );
@@ -766,5 +765,8 @@ const styles = StyleSheet.create({
   backButton: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", marginLeft: 24, marginBottom: 12, borderWidth: 1 },
   tabScroll: { marginBottom: 32, paddingLeft: 24 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 16 },
-  gridItem: { width: "48%" }
+  gridItem: { width: "48%" },
+  maintenanceBtn: { height: 52, borderRadius: 16, paddingHorizontal: 20, justifyContent: 'center' },
+  maintenanceBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  maintenanceBtnText: { color: '#000', fontWeight: '900', fontSize: 10, letterSpacing: 1.5 }
 });
