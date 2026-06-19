@@ -429,11 +429,11 @@ export default function Settings() {
               <Text style={[styles.modalTitle, { color: colors.text }]}>Payout Destination</Text>
               <TouchableOpacity onPress={() => setShowPayoutModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
             </View>
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <Input label="Provider / Bank" placeholder="MTN, GCB, etc." value={payoutData.bank_name} onChangeText={(t) => setPayoutData({...payoutData, bank_name: t})} containerClassName="mb-6" />
               <Input label="Account Number" placeholder="024..." value={payoutData.account_number} onChangeText={(t) => setPayoutData({...payoutData, account_number: t})} keyboardType="numeric" containerClassName="mb-6" />
               <Input label="Account Name" placeholder="Exact name on account" value={payoutData.account_name} onChangeText={(t) => setPayoutData({...payoutData, account_name: t})} containerClassName="mb-8" />
-              <Button title="Update Payout Account" onPress={handleSavePayout} loading={updateProfile.isPending} variant="gold" />
+              <Button title="Update Payout Account" onPress={handleSavePayout} loading={updateProfile.isPending} variant="secondary" />
             </ScrollView>
           </View>
         </View>
@@ -448,7 +448,7 @@ export default function Settings() {
               <Text style={[styles.modalTitle, { color: colors.text }]}>Alert Preferences</Text>
               <TouchableOpacity onPress={() => setShowNotifModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
             </View>
-            <ScrollView>
+            <ScrollView showsVerticalScrollIndicator={false}>
               <ToggleRow icon={BellRing} label="Push Notifications" desc="Get real-time updates" value={prefs.notifications_enabled} onToggle={() => handleTogglePref('notifications_enabled')} />
               <ToggleRow icon={Smartphone} label="SMS Backup" desc="Receive SMS for security events" value={prefs.sms_backup_enabled} onToggle={() => handleTogglePref('sms_backup_enabled')} />
             </ScrollView>

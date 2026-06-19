@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, SafeAreaView, Platform, StyleSheet } from "react-native";
 import { useProfile, useClipScore, useRecentActivity, useAddIncome, useMyRoles, useWeeklyPerformance, useUserHealth, useUpdateProfile } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
-import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid } from "lucide-react-native";
+import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid, Zap } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { BouncyTap } from "@/components/native/bouncy-tap";
@@ -101,15 +101,15 @@ export default function Dashboard() {
               </Text>
             </View>
             <View style={styles.headerActions}>
-              <TouchableOpacity onPress={togglePrivacy} style={styles.headerBtn}>
-                {isPrivate ? <EyeOff size={18} color="#10b981" /> : <Eye size={18} color="#7d8a84" />}
+              <TouchableOpacity onPress={togglePrivacy} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                {isPrivate ? <EyeOff size={18} color={colors.primary} /> : <Eye size={18} color={colors.textMuted} />}
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push("/notifications")} style={styles.headerBtn}>
-                <Bell size={18} color="#10b981" />
+              <TouchableOpacity onPress={() => router.push("/notifications")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                <Bell size={18} color={colors.primary} />
                 <View style={styles.notifBadge} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push("/support")} style={styles.headerBtnInstitutional}>
-                <MessageCircle size={18} color="#10b981" />
+              <TouchableOpacity onPress={() => router.push("/support")} style={[styles.headerBtnInstitutional, { backgroundColor: colors.cardBg, borderColor: colors.primary + '20' }]}>
+                <MessageCircle size={18} color={colors.primary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -135,9 +135,9 @@ export default function Dashboard() {
 
           {/* Premium Quick Actions */}
           <View style={styles.quickActionsRow}>
-            <ServiceNode title="Market" icon={ShoppingBag} color="#f59e0b" onPress={() => router.push("/market")} theme={theme} />
+            <ServiceNode title="Market" icon={ShoppingBag} color={theme === 'dark' ? "#f59e0b" : "#e11d48"} onPress={() => router.push("/market")} theme={theme} />
             <ServiceNode title="Credit" icon={TrendingUp} color={colors.primary} onPress={() => router.push("/loans")} theme={theme} />
-            <ServiceNode title="Payout" icon={ArrowDownToLine} color="#3b82f6" onPress={() => router.push("/withdraw")} theme={theme} />
+            <ServiceNode title="Payout" icon={ArrowDownToLine} color={theme === 'dark' ? "#3b82f6" : "#2563eb"} onPress={() => router.push("/withdraw")} theme={theme} />
             {isAdmin ? (
               <ServiceNode title="Command" icon={ShieldCheck} color={colors.destructive} onPress={() => router.push("/admin")} theme={theme} />
             ) : (
@@ -148,27 +148,27 @@ export default function Dashboard() {
           {/* Revenue Card */}
           <View style={{ marginBottom: 48 }}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Business Tracking</Text>
-              <Text style={styles.sectionStat}>
+              <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Business Tracking</Text>
+              <Text style={[styles.sectionStat, { color: colors.primary }]}>
                 Today: {isPrivate ? "••••" : `GH₵ ${todayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </Text>
             </View>
 
-            <View style={styles.revenueCard}>
+            <View style={[styles.revenueCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View style={{ padding: 24, flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardLabel, isLogged && { color: '#10b981' }]}>
+                  <Text style={[styles.cardLabel, isLogged && { color: colors.primary }]}>
                     {isLogged ? "REVENUE RECORDED" : "LOG DAILY SALES"}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', height: 44 }}>
-                    <Text style={styles.currencyPrefix}>GH₵</Text>
+                    <Text style={[styles.currencyPrefix, { color: colors.textDim }]}>GH₵</Text>
                     <TextInput
                       value={incomeAmt}
                       onChangeText={setIncomeAmt}
                       placeholder="0.00"
-                      placeholderTextColor="#405045"
+                      placeholderTextColor={colors.textDim}
                       keyboardType="numeric"
-                      style={styles.revenueInput}
+                      style={[styles.revenueInput, { color: colors.text }]}
                       editable={!addIncome.isPending}
                     />
                   </View>
@@ -176,7 +176,7 @@ export default function Dashboard() {
                 <BouncyTap
                   onPress={handleLogIncome}
                   disabled={addIncome.isPending || !incomeAmt}
-                  style={styles.logBtn}
+                  style={[styles.logBtn, { backgroundColor: colors.primary }]}
                 >
                   {addIncome.isPending ? (
                     <ActivityIndicator color="#080c0a" />
@@ -185,8 +185,8 @@ export default function Dashboard() {
                   )}
                 </BouncyTap>
               </View>
-              <View style={styles.cardFooter}>
-                  <Text style={styles.footerText}>
+              <View style={[styles.cardFooter, { backgroundColor: colors.primary + '08' }]}>
+                  <Text style={[styles.footerText, { color: colors.primary }]}>
                     * Improves your credit worthiness and shop visibility.
                   </Text>
               </View>
@@ -195,29 +195,35 @@ export default function Dashboard() {
 
           {/* Recent Activity */}
           <View style={styles.activityHeader}>
-            <Text style={styles.activityTitle}>Recent Activity</Text>
+            <Text style={[styles.activityTitle, { color: colors.text }]}>Recent Activity</Text>
             <TouchableOpacity onPress={() => router.push("/history")}>
-              <Text style={styles.viewHistoryLink}>LEDGER →</Text>
+              <Text style={[styles.viewHistoryLink, { color: colors.primary }]}>LEDGER →</Text>
             </TouchableOpacity>
           </View>
 
-          <Card style={styles.activityCard}>
-            {activity.data?.slice(0, 5).map((item, idx) => (
-              <View key={item.id} style={[styles.activityItem, idx === 4 && { borderBottomWidth: 0 }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
-                  <View style={[styles.activityIconBox, { borderColor: item.amount > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)' }]}>
-                    {item.amount > 0 ? <ArrowUpRight size={20} color="#10B981" /> : <ArrowDownLeft size={20} color="#EF4444" />}
+          <Card style={[styles.activityCard, { backgroundColor: colors.cardBg }]}>
+            {(activity.data ?? []).length === 0 ? (
+               <View style={{ padding: 40, alignItems: 'center' }}>
+                  <Text style={{ color: colors.textDim, fontStyle: 'italic', fontSize: 13 }}>No activity logged.</Text>
+               </View>
+            ) : (
+              activity.data?.slice(0, 5).map((item, idx) => (
+                <View key={item.id} style={[styles.activityItem, idx === 4 && { borderBottomWidth: 0 }, { borderBottomColor: colors.border }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
+                    <View style={[styles.activityIconBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                      {item.amount > 0 ? <ArrowUpRight size={20} color={colors.primary} /> : <ArrowDownLeft size={20} color={colors.destructive} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={1} style={[styles.activityNote, { color: colors.text }]}>{item.note || item.title}</Text>
+                      <Text style={[styles.activityDateText, { color: colors.textDim }]}>{formatActivityDate(item.date)}</Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text numberOfLines={1} style={styles.activityNote}>{item.note || item.title}</Text>
-                    <Text style={styles.activityDateText}>{formatActivityDate(item.date)}</Text>
-                  </View>
+                  <Text style={[styles.activityAmount, { color: item.amount > 0 ? colors.primary : colors.text }]}>
+                    {item.amount > 0 ? '+' : ''}{isPrivate ? "•••" : item.amount.toLocaleString()}
+                  </Text>
                 </View>
-                <Text style={[styles.activityAmount, { color: item.amount > 0 ? '#10b981' : '#fcfcfc' }]}>
-                  {item.amount > 0 ? '+' : ''}{isPrivate ? "•••" : item.amount.toLocaleString()}
-                </Text>
-              </View>
-            ))}
+              ))
+            )}
           </Card>
         </View>
       </ScrollView>
@@ -226,6 +232,7 @@ export default function Dashboard() {
 }
 
 function ServiceNode({ title, icon: Icon, color, onPress, theme }: any) {
+  const { colors } = useTheme();
   return (
     <BouncyTap onPress={onPress} style={{ alignItems: 'center' }}>
       <LinearGradient
@@ -235,7 +242,7 @@ function ServiceNode({ title, icon: Icon, color, onPress, theme }: any) {
         <Icon size={24} color={color} strokeWidth={2.5} />
         <View style={[styles.serviceGlow, { backgroundColor: color }]} />
       </LinearGradient>
-      <Text style={styles.serviceTitle}>{title}</Text>
+      <Text style={[styles.serviceTitle, { color: colors.textDim }]}>{title}</Text>
     </BouncyTap>
   );
 }
