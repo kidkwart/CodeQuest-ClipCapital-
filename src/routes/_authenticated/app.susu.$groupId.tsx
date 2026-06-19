@@ -38,6 +38,16 @@ function GroupPage() {
     initializePayment({
       email: user.email,
       amount: amt,
+      metadata: {
+        payment_type: "susu_contribution",
+        group_id: groupId,
+        group_name: group.data?.name,
+        user_id: user.id,
+        custom_fields: [
+          { display_name: "Service", variable_name: "service", value: "Susu Contribution" },
+          { display_name: "Group Name", variable_name: "group_name", value: group.data?.name }
+        ]
+      },
       onSuccess: async (reference) => {
         try {
           await record.mutateAsync({
@@ -222,51 +232,74 @@ function GroupPage() {
               </div>
               <ul className="divide-y divide-border">
                 {members.data.map((m, idx) => {
-                  const profile = (m as { profiles?: { display_name?: string } | null }).profiles;
+                  const profile = (m as any).profiles;
                   const isNext = !m.has_received && (idx === 0 || members.data![idx-1].has_received);
 
                   return (
-                    <li key={m.id} className={`p-4 flex justify-between items-center ${isNext ? 'bg-primary/5' : ''}`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                          m.has_received ? 'bg-muted text-muted-foreground' : 'bg-primary/20 text-primary'
-                        }`}>
-                          {m.payout_order}
-                        </div>
-                        <div>
-                          <div className="font-bold text-sm flex items-center gap-2">
-                            {profile?.display_name ?? "Member"}
-                            {isNext && <span className="text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-full animate-pulse">NEXT PAYOUT</span>}
+                    <li key={m.id} className={`p-4 flex flex-col ${isNext ? 'bg-primary/5' : ''}`}>
+                      <div className="flex justify-between items-center w-full">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                            m.has_received ? 'bg-muted text-muted-foreground' : 'bg-primary/20 text-primary'
+                          }`}>
+                            {m.payout_order}
                           </div>
-                          <div className="text-[10px] text-muted-foreground uppercase font-medium">
-                            Joined {new Date(m.joined_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right flex items-center gap-2">
-                        {m.has_received ? (
-                          <div className="flex items-center gap-1 text-emerald-600 font-bold text-[10px] uppercase">
-                            <Check className="w-3 h-3" /> Payout Received
-                          </div>
-                        ) : (
-                          <>
-                            {isOwner && isNext && Number(group.data.pot) > 0 && (
-                              <Button
-                                size="sm"
-                                className="h-7 px-2 text-[10px] font-black uppercase bg-emerald-600 hover:bg-emerald-700 gap-1 rounded-lg shadow-md shadow-emerald-600/20"
-                                onClick={() => handleDisburse(m.user_id, profile?.display_name ?? "Member")}
-                                disabled={disburse.isPending}
-                              >
-                                {disburse.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
-                                Disburse Pot
-                              </Button>
-                            )}
-                            <div className="text-muted-foreground font-bold text-[10px] uppercase italic">
-                              Waiting
+                          <div>
+                            <div className="font-bold text-sm flex items-center gap-2">
+                              {profile?.display_name ?? "Member"}
+                              {isNext && <span className="text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-full animate-pulse">NEXT PAYOUT</span>}
                             </div>
-                          </>
-                        )}
+                            <div className="text-[10px] text-muted-foreground uppercase font-medium">
+                              Joined {new Date(m.joined_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-2">
+                          {m.has_received ? (
+                            <div className="flex items-center gap-1 text-emerald-600 font-bold text-[10px] uppercase">
+                              <Check className="w-3 h-3" /> Payout Received
+                            </div>
+                          ) : (
+                            <>
+                              {isOwner && isNext && Number(group.data.pot) > 0 && (
+                                <Button
+                                  size="sm"
+                                  className="h-7 px-2 text-[10px] font-black uppercase bg-emerald-600 hover:bg-emerald-700 gap-1 rounded-lg shadow-md shadow-emerald-600/20"
+                                  onClick={() => handleDisburse(m.user_id, profile?.display_name ?? "Member")}
+                                  disabled={disburse.isPending}
+                                >
+                                  {disburse.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                                  Disburse Pot
+                                </Button>
+                              )}
+                              <div className="text-muted-foreground font-bold text-[10px] uppercase italic">
+                                Waiting
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
+
+                      {isOwner && isNext && profile?.account_number && (
+                        <div className="mt-3 ml-11 p-2 bg-white/50 border border-primary/10 rounded-lg flex items-center justify-between">
+                          <div className="text-[10px]">
+                            <div className="text-muted-foreground uppercase font-bold text-[8px]">Payout Destination</div>
+                            <div className="font-bold text-primary">{profile.bank_name}: {profile.account_number}</div>
+                            <div className="text-muted-foreground italic truncate max-w-[150px]">{profile.account_name}</div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-[9px] font-bold"
+                            onClick={() => {
+                              navigator.clipboard.writeText(profile.account_number);
+                              toast.success("Account number copied!");
+                            }}
+                          >
+                            Copy #
+                          </Button>
+                        </div>
+                      )}
                     </li>
                   );
                 })}

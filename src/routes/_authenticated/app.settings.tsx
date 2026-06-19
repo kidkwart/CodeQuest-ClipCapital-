@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   UserPlus,
   Mail,
-  Share2
+  Share2,
+  Wallet
 } from "lucide-react";
 import {
   Dialog,
@@ -65,6 +66,9 @@ function SettingsPage() {
     location: "",
     phone_number: "",
     bio: "",
+    bank_name: "MTN",
+    account_number: "",
+    account_name: "",
   });
 
   useEffect(() => {
@@ -76,6 +80,9 @@ function SettingsPage() {
         location: profile.location || "",
         phone_number: profile.phone_number || "",
         bio: profile.bio || "",
+        bank_name: profile.bank_name || "MTN",
+        account_number: profile.account_number || "",
+        account_name: profile.account_name || "",
       });
     }
   }, [profile]);
@@ -258,6 +265,49 @@ function SettingsPage() {
                 placeholder="Tell us about your services..."
                 className="w-full min-h-[100px] p-3 rounded-xl border border-input bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
               />
+            </div>
+
+            {/* Payout Details */}
+            <div className="pt-4 border-t border-border/50 space-y-4">
+              <h3 className="font-display font-bold text-sm flex items-center gap-2 text-primary">
+                <Wallet className="w-4 h-4" />
+                Payout & Withdrawal Details
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Provider / Bank</Label>
+                  <select
+                    value={formData.bank_name}
+                    onChange={(e) => setFormData({...formData, bank_name: e.target.value})}
+                    className="w-full h-11 rounded-xl border border-input bg-background px-3 text-sm font-bold focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    <option value="MTN">MTN MoMo</option>
+                    <option value="Telecel">Telecel Cash</option>
+                    <option value="AirtelTigo">AirtelTigo Money</option>
+                    <option value="GCB">GCB Bank</option>
+                    <option value="Ecobank">Ecobank</option>
+                    <option value="Absa">Absa Bank</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Account Number</Label>
+                  <Input
+                    value={formData.account_number}
+                    onChange={(e) => setFormData({...formData, account_number: e.target.value})}
+                    placeholder="MoMo number or Account #"
+                    className="h-11 rounded-xl font-bold"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Account Holder Name</Label>
+                <Input
+                  value={formData.account_name}
+                  onChange={(e) => setFormData({...formData, account_name: e.target.value})}
+                  placeholder="The name on your MoMo/Bank account"
+                  className="h-11 rounded-xl font-bold"
+                />
+              </div>
             </div>
 
             <Button

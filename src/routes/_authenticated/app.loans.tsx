@@ -118,6 +118,15 @@ function LoanRow({ loan, repay }: { loan: { id: string; amount: number; term_mon
     initializePayment({
       email: user.email,
       amount: amt,
+      metadata: {
+        payment_type: "loan_repayment",
+        loan_id: loan.id,
+        user_id: user.id,
+        custom_fields: [
+          { display_name: "Service", variable_name: "service", value: "Loan Repayment" },
+          { display_name: "Loan Purpose", variable_name: "loan_purpose", value: loan.purpose }
+        ]
+      },
       onSuccess: async (reference) => {
         try {
           await repay.mutateAsync({

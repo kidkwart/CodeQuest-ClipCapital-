@@ -28,6 +28,9 @@ export function useUpdateProfile() {
       phone_number?: string;
       bio?: string;
       avatar_url?: string;
+      bank_name?: string;
+      account_number?: string;
+      account_name?: string;
     }) => {
       const { error } = await supabase.from("profiles").update(v).eq("id", user!.id);
       if (error) throw error;
@@ -372,7 +375,7 @@ export function useGroupMembers(id: string) {
     queryKey: ["susu-members", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("susu_memberships").select("*, profiles!inner(display_name)")
+        .from("susu_memberships").select("*, profiles!inner(*)")
         .eq("group_id", id).order("payout_order");
       if (error) throw error;
       return data;
@@ -539,6 +542,22 @@ export function useConfirmRepayment() {
       qc.invalidateQueries({ queryKey: ["pending-repayments"] });
       qc.invalidateQueries({ queryKey: ["loans"] });
       qc.invalidateQueries({ queryKey: ["admin-stats"] });
+    },
+  });
+}
+
+// ---------- Admin: Susu Payouts ----------
+export function usePendingSusuPayouts() {
+  return useQuery({
+    queryKey: ["pending-susu-payouts"],
+    queryFn: async () => {
+      // Find groups where pot > 0
+      const { data, error } = await supabase.from("susu_groups")
+        .select("*, owner:profiles!inner(display_name)")
+        .gt("pot", 0)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
     },
   });
 }
