@@ -9,9 +9,11 @@ import { BouncyTap } from "@/components/native/bouncy-tap";
 import { ClipScoreBreakdown } from "@/components/native/clipscore-breakdown";
 import { CreditCapacityGauge } from "@/components/native/credit-capacity-gauge";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/theme-context";
 
 export default function Dashboard() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const roles = useMyRoles();
   const { user } = useCurrentUser();
@@ -74,13 +76,13 @@ export default function Dashboard() {
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={{ flex: 0, backgroundColor: '#080c0a' }} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={{ flex: 0, backgroundColor: colors.background }} />
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 180, paddingTop: Platform.OS === 'ios' ? 60 : 60 }}
-        refreshControl={<RefreshControl refreshing={isProfileLoading || performance.isLoading} tintColor="#10B981" />}
+        refreshControl={<RefreshControl refreshing={isProfileLoading || performance.isLoading} tintColor={colors.primary} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
 
@@ -93,7 +95,7 @@ export default function Dashboard() {
               </View>
               <Text
                 numberOfLines={2}
-                style={styles.greetingText}
+                style={[styles.greetingText, { color: colors.text }]}
               >
                 Akwaaba,{"\n"}@{profile?.username || profile?.display_name?.toLowerCase().replace(/\s/g, '_') || "artisan"}
               </Text>
@@ -133,13 +135,13 @@ export default function Dashboard() {
 
           {/* Premium Quick Actions */}
           <View style={styles.quickActionsRow}>
-            <ServiceNode title="Market" icon={ShoppingBag} color="#f59e0b" onPress={() => router.push("/market")} />
-            <ServiceNode title="Credit" icon={TrendingUp} color="#10b981" onPress={() => router.push("/loans")} />
-            <ServiceNode title="Payout" icon={ArrowDownToLine} color="#3b82f6" onPress={() => router.push("/withdraw")} />
+            <ServiceNode title="Market" icon={ShoppingBag} color="#f59e0b" onPress={() => router.push("/market")} theme={theme} />
+            <ServiceNode title="Credit" icon={TrendingUp} color={colors.primary} onPress={() => router.push("/loans")} theme={theme} />
+            <ServiceNode title="Payout" icon={ArrowDownToLine} color="#3b82f6" onPress={() => router.push("/withdraw")} theme={theme} />
             {isAdmin ? (
-              <ServiceNode title="Command" icon={ShieldCheck} color="#ef4444" onPress={() => router.push("/admin")} />
+              <ServiceNode title="Command" icon={ShieldCheck} color={colors.destructive} onPress={() => router.push("/admin")} theme={theme} />
             ) : (
-              <ServiceNode title="Audit" icon={LayoutGrid} color="#10b981" onPress={() => router.push("/history")} />
+              <ServiceNode title="Audit" icon={LayoutGrid} color={colors.primary} onPress={() => router.push("/history")} theme={theme} />
             )}
           </View>
 
@@ -223,11 +225,11 @@ export default function Dashboard() {
   );
 }
 
-function ServiceNode({ title, icon: Icon, color, onPress }: any) {
+function ServiceNode({ title, icon: Icon, color, onPress, theme }: any) {
   return (
     <BouncyTap onPress={onPress} style={{ alignItems: 'center' }}>
       <LinearGradient
-        colors={['#0f1714', '#080c0a']}
+        colors={theme === 'dark' ? ['#0f1714', '#080c0a'] : ['#ffffff', '#f1f5f9']}
         style={[styles.serviceIconContainer, { borderColor: `${color}20` }]}
       >
         <Icon size={24} color={color} strokeWidth={2.5} />

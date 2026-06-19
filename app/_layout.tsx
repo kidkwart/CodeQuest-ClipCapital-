@@ -14,6 +14,7 @@ import { useSystemSettings, useMyRoles } from "@/lib/app-queries";
 import { ShieldAlert, RefreshCw } from "lucide-react-native";
 import { BouncyTap } from '@/components/native/bouncy-tap';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ThemeProvider } from "@/context/theme-context";
 
 const queryClient = new QueryClient();
 
@@ -44,9 +45,11 @@ export default function RootLayout() {
         <StatusBar barStyle="light-content" />
         <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
           <KenteBackground />
-          <MaintenanceGuard>
-            <AuthGuard />
-          </MaintenanceGuard>
+          <ThemeProvider>
+            <MaintenanceGuard>
+              <AuthGuard />
+            </MaintenanceGuard>
+          </ThemeProvider>
         </View>
       </SafeAreaProvider>
     </QueryClientProvider>
