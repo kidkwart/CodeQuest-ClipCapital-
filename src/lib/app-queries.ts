@@ -203,15 +203,18 @@ export function useApplyLoan() {
     mutationFn: async (v: { amount: number; duration_days: number; purpose: string }) => {
       if (!user) throw new Error("You must be logged in to apply for a loan.");
 
-      // Ensure we include all likely required fields
+      // Fetch current interest rate from system settings
+      const { data: settings } = await supabase.from("system_settings").select("interest_rate").single();
+      const rateMultiplier = 1 + (Number(settings?.interest_rate || 15) / 100);
+
       const { data, error } = await supabase.from("loan_applications").insert({
         user_id: user.id,
         amount: v.amount,
-        balance: Math.round(v.amount * 1.15 * 100) / 100, // 15% interest
+        balance: Math.round(v.amount * rateMultiplier * 100) / 100,
         status: 'pending',
         purpose: v.purpose,
         duration_days: v.duration_days,
-        term_months: 1 // fallback if this is used instead
+        term_months: 1
       }).select().single();
 
       if (error) throw error;

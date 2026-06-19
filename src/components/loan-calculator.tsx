@@ -2,11 +2,13 @@ import { Card } from "@/components/app-shell";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
+import { useSystemSettings } from "@/lib/app-queries";
 
 export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
+  const { settings } = useSystemSettings();
   const [amount, setAmount] = useState(defaultAmount);
   const [term, setTerm] = useState(3);
-  const interestRate = 15; // 15% monthly interest
+  const interestRate = settings.data?.interest_rate || 15; // fallback to 15%
 
   const interest = amount * (interestRate / 100) * term;
   const total = amount + interest;
@@ -52,7 +54,7 @@ export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
 
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
           <div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Interest (15%/mo)</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Interest ({interestRate}%/mo)</div>
             <div className="text-sm font-semibold text-foreground">GH₵ {interest.toLocaleString()}</div>
           </div>
           <div>

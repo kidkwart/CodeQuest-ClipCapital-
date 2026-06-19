@@ -306,7 +306,7 @@ export default function LoansScreen() {
                  {parsedAmount > 0 && (
                    <View style={[styles.estimateBox, { backgroundColor: `${colors.primary}08`, borderColor: `${colors.primary}15` }]}>
                      <View style={styles.estimateRow}>
-                       <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Interest (15%)</Text>
+                       <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Interest ({rawRate}%)</Text>
                        <Text style={[styles.estimateValue, { color: colors.text }]}>+ GH₵ {interestAmount.toLocaleString()}</Text>
                      </View>
                      <View style={styles.estimateRow}>
