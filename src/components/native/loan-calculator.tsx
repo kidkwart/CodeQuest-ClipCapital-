@@ -1,107 +1,70 @@
 import React, { useState } from "react";
-import { View, Text, Platform } from "react-native";
+import { View, Text, Platform, StyleSheet } from "react-native";
 import { Card } from "./card";
-import Slider from "@react-native-community/slider";
 
 export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
   const [amount, setAmount] = useState(defaultAmount);
   const [term, setTerm] = useState(3);
-  const interestRate = 15; // 15% monthly interest
+  const interestRate = 15;
 
   const interest = amount * (interestRate / 100) * term;
   const total = amount + interest;
   const monthly = total / term;
 
-  // Custom Web Slider to prevent React 19 findDOMNode crash
   const CustomSlider = ({ value, onValueChange, min, max, step }: any) => {
     if (Platform.OS === 'web') {
       return (
         <input
           type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
+          min={min} max={max} step={step} value={value}
           onChange={(e) => onValueChange(Number(e.target.value))}
-          style={{
-            width: '100%',
-            height: '10px',
-            accentColor: '#10B981',
-            cursor: 'pointer',
-            marginTop: '10px',
-            marginBottom: '10px'
-          }}
+          style={{ width: '100%', height: '8px', accentColor: '#10B981', cursor: 'pointer', marginTop: 12, marginBottom: 12 }}
         />
       );
     }
-    return (
-      <Slider
-        style={{ width: '100%', height: 40 }}
-        minimumValue={min}
-        maximumValue={max}
-        step={step}
-        value={value}
-        onValueChange={onValueChange}
-        minimumTrackTintColor="#10B981"
-        maximumTrackTintColor="#404040"
-        thumbTintColor="#10B981"
-      />
-    );
+    return null; // Add Native Slider if needed
   };
 
   return (
-    <Card className="bg-surface border-white/5 shadow-2xl">
-      <View className="flex-row items-center gap-2 mb-6">
-        <View className="h-6 w-6 rounded-full bg-primary/20 items-center justify-center border border-primary/30">
-          <Text className="text-[10px] text-primary font-black">%</Text>
+    <Card style={{ backgroundColor: '#0f1714', borderWeight: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32 }}>
+        <View style={{ height: 24, width: 24, borderRadius: 8, backgroundColor: 'rgba(16,185,129,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
+          <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 10 }}>%</Text>
         </View>
-        <Text style={{ fontFamily: 'Display-Bold' }} className="text-white text-sm uppercase tracking-widest">Loan Estimator</Text>
+        <Text style={{ fontFamily: 'Display-Bold', color: 'white', fontSize: 13, letterSpacing: 2, textTransform: 'uppercase' }}>Loan Estimator</Text>
       </View>
 
-      <View className="space-y-8">
-        <View>
-          <View className="flex-row justify-between mb-2">
-            <Text className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Requested Amount</Text>
-            <Text style={{ fontFamily: 'Display-Bold' }} className="text-lg text-primary">GH₵ {Math.round(amount).toLocaleString()}</Text>
+      <View>
+        <View style={{ marginBottom: 32 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+            <Text style={{ color: 'rgba(252,252,252,0.4)', fontWeight: '900', fontSize: 9, textTransform: 'uppercase', letterSpacing: 2 }}>Requested Amount</Text>
+            <Text style={{ fontFamily: 'Display-Bold', color: '#10b981', fontSize: 24 }}>GH₵ {Math.round(amount).toLocaleString()}</Text>
           </View>
-          <CustomSlider
-            min={100}
-            max={maxAmount}
-            step={50}
-            value={amount}
-            onValueChange={setAmount}
-          />
+          <CustomSlider min={100} max={maxAmount} step={50} value={amount} onValueChange={setAmount} />
         </View>
 
-        <View className="mt-4">
-          <View className="flex-row justify-between mb-2">
-            <Text className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Repayment Term</Text>
-            <Text style={{ fontFamily: 'Display-Bold' }} className="text-lg text-gold">{Math.round(term)} Months</Text>
+        <View style={{ marginBottom: 40 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+            <Text style={{ color: 'rgba(252,252,252,0.4)', fontWeight: '900', fontSize: 9, textTransform: 'uppercase', letterSpacing: 2 }}>Repayment Term</Text>
+            <Text style={{ fontFamily: 'Display-Bold', color: '#f59e0b', fontSize: 24 }}>{Math.round(term)} Months</Text>
           </View>
-          <CustomSlider
-            min={1}
-            max={12}
-            step={1}
-            value={term}
-            onValueChange={setTerm}
-          />
+          <CustomSlider min={1} max={12} step={1} value={term} onValueChange={setTerm} />
         </View>
 
-        <View className="flex-row justify-between pt-6 border-t border-white/5 mt-4">
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 24, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', marginBottom: 32 }}>
           <View>
-            <Text className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Total Interest</Text>
-            <Text style={{ fontFamily: 'Display-Bold' }} className="text-sm text-white">GH₵ {Math.round(interest).toLocaleString()}</Text>
+            <Text style={{ color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 8, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 4 }}>Total Interest</Text>
+            <Text style={{ fontFamily: 'Display-Bold', color: 'white', fontSize: 14 }}>GH₵ {Math.round(interest).toLocaleString()}</Text>
           </View>
-          <View className="items-end">
-            <Text className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Total Payable</Text>
-            <Text style={{ fontFamily: 'Display-Bold' }} className="text-sm text-gold">GH₵ {Math.round(total).toLocaleString()}</Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 8, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 4 }}>Total Payable</Text>
+            <Text style={{ fontFamily: 'Display-Bold', color: '#f59e0b', fontSize: 14 }}>GH₵ {Math.round(total).toLocaleString()}</Text>
           </View>
         </View>
 
-        <View className="bg-primary/10 border border-primary/20 p-5 rounded-[24px] items-center mt-6 overflow-hidden">
-          <View className="absolute top-[-20] right-[-20] w-20 h-20 bg-primary/10 rounded-full blur-2xl" />
-          <Text className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-2">Estimated Monthly</Text>
-          <Text style={{ fontFamily: 'Display-Bold' }} className="text-3xl text-primary tracking-tighter">GH₵ {Math.round(monthly).toLocaleString()}</Text>
+        <View style={{ backgroundColor: 'rgba(16,185,129,0.05)', borderRadius: 24, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' }}>
+          <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 9, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 8 }}>Estimated Monthly</Text>
+          <Text style={{ fontFamily: 'Display-Bold', color: '#10b981', fontSize: 32, letterSpacing: -1 }}>GH₵ {Math.round(monthly).toLocaleString()}</Text>
         </View>
       </View>
     </Card>

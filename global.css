@@ -2,20 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    /* Exact PWA Luxury Palette */
-    --background: #080c0a;    /* Absolute Midnight Emerald */
-    --foreground: #fcfcfc;    /* Silk White */
-    --primary: #10b981;       /* Neon Emerald */
-    --gold: #f59e0b;          /* Pure Kente Gold */
-    --surface: #0f1714;       /* Deep Charcoal Card */
-    --border: rgba(16, 185, 129, 0.2); /* Glowing Emerald Border */
-  }
-}
-
-/* Force the body background for web preview */
-body {
+/* FORCE THE BROWSER TO BE DARK EMERALD BLACK */
+html, body, #root {
   background-color: #080c0a !important;
   color: #fcfcfc !important;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 }

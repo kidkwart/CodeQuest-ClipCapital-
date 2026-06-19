@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useGroup, useGroupMembers, useGroupContributions, useRecordContribution } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import { Input } from "@/components/native/input";
-import { ArrowLeft, Users, Wallet, Check, Clock, ShieldCheck } from "lucide-react-native";
+import { PremiumHeader } from "@/components/native/premium-header";
+import { ArrowLeft, Users, Check, Clock, ShieldCheck } from "lucide-react-native";
 
 export default function GroupDetails() {
   const { groupId } = useLocalSearchParams();
@@ -13,124 +14,98 @@ export default function GroupDetails() {
   const group = useGroup(groupId as string);
   const members = useGroupMembers(groupId as string);
   const contributions = useGroupContributions(groupId as string);
-  const record = useRecordContribution();
 
   const [amount, setAmount] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await Promise.all([group.refetch(), members.refetch(), contributions.refetch()]);
-    setRefreshing(false);
-  };
-
-  if (!group.data) {
+  if (group.isLoading) {
     return (
-      <View className="flex-1 bg-background items-center justify-center">
-        <Text className="text-muted-foreground">Loading group details...</Text>
+      <View style={{ flex: 1, backgroundColor: '#080c0a', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color="#10b981" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-background">
+    <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
       <Stack.Screen options={{
-        headerShown: true,
-        title: group.data.name,
-        headerStyle: { backgroundColor: "#0A0A0A" },
-        headerTintColor: "#FFFFFF",
+        headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} className="mr-4">
-            <ArrowLeft size={24} color="#FFFFFF" />
+          <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 16, height: 40, width: 40, borderRadius: 12, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+            <ArrowLeft size={20} color="#FFFFFF" />
           </TouchableOpacity>
         )
       }} />
 
       <ScrollView
-        className="flex-1 px-6 pt-6"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#10B981" />}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingTop: 100, paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={group.isLoading} tintColor="#10B981" />}
       >
-        {/* Pot Info */}
-        <Card className="bg-primary mb-6 border-none">
-          <Text className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">Group Pot</Text>
-          <Text className="text-white text-4xl font-black">GH₵ {group.data.pot}</Text>
-          <View className="flex-row justify-between items-center mt-4">
-            <Text className="text-white/80 text-xs font-bold">{group.data.frequency} Rotation</Text>
-            <View className="bg-white/20 px-3 py-1 rounded-full">
-              <Text className="text-white text-[10px] font-black">CYCLE {group.data.cycle_index}</Text>
-            </View>
-          </View>
-        </Card>
+        <View style={{ paddingHorizontal: 24 }}>
+          <PremiumHeader title={group.data?.name || "Susu Circle"} subtitle="Collective Savings" />
 
-        {/* Contribute Section */}
-        <View className="mb-8">
-          <Text className="text-lg font-bold text-foreground mb-4">Pay Contribution</Text>
-          <Card>
-            <Input
-              label="Amount (GH₵)"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder={String(group.data.contribution)}
-              keyboardType="numeric"
-              className="mb-4"
-            />
-            <Button
-              title="Pay via Mobile Money"
-              className="bg-emerald-600"
-              onPress={() => alert("Payment UI (Paystack Native) would open here.")}
-            />
-            <View className="flex-row items-center gap-2 mt-4 opacity-60">
-              <ShieldCheck size={14} color="#10B981" />
-              <Text className="text-[10px] text-primary font-bold">Secured by ClipCapital</Text>
-            </View>
-          </Card>
-        </View>
-
-        {/* Members List */}
-        <View className="mb-8">
-          <View className="flex-row items-center gap-2 mb-4">
-            <Users size={20} color="#10B981" />
-            <Text className="text-lg font-bold text-foreground">Susu Members</Text>
-          </View>
-          <Card className="p-0 overflow-hidden">
-            {members.data?.map((m: any, idx: number) => (
-              <View key={m.id} className="p-4 border-b border-border/20 flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  <View className="w-8 h-8 rounded-full bg-muted/20 items-center justify-center">
-                    <Text className="text-primary font-bold">{idx + 1}</Text>
-                  </View>
-                  <View>
-                    <Text className="text-foreground font-bold">{m.profiles?.display_name || "Member"}</Text>
-                    {m.has_received && (
-                      <Text className="text-emerald-500 text-[9px] font-black">RECEIVED PAYOUT</Text>
-                    )}
+          {/* Pot Information Card */}
+          <Card style={{ backgroundColor: '#10b981', marginBottom: 40, padding: 28, height: 160, overflow: 'hidden' }}>
+            <View style={{ flex: 1, justifyContent: 'space-between', zIndex: 10 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 4 }}>Total Group Pot</Text>
+              <View>
+                <Text style={{ fontFamily: 'Display-Bold', color: 'white', fontSize: 40, letterSpacing: -2 }}>GH₵ {group.data?.pot || 0}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                  <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 1 }}>{group.data?.frequency} Rotation</Text>
+                  <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100 }}>
+                    <Text style={{ color: 'white', fontSize: 9, fontWeight: '900' }}>CYCLE {group.data?.cycle_index}</Text>
                   </View>
                 </View>
-                {m.has_received ? <Check size={16} color="#10B981" /> : <Clock size={16} color="#737373" />}
               </View>
-            ))}
+            </View>
           </Card>
-        </View>
 
-        {/* Recent Contributions */}
-        <View className="pb-20">
-          <View className="flex-row items-center gap-2 mb-4">
-            <Clock size={20} color="#F59E0B" />
-            <Text className="text-lg font-bold text-foreground">Activity History</Text>
-          </View>
-          {contributions.data?.length === 0 ? (
-            <Text className="text-muted-foreground italic text-center">No contributions yet</Text>
-          ) : (
-            contributions.data?.map((c) => (
-              <View key={c.id} className="flex-row justify-between items-center py-3 border-b border-border/20">
-                <View>
-                  <Text className="text-foreground text-xs font-bold">{c.momo_reference}</Text>
-                  <Text className="text-muted-foreground text-[10px]">{new Date(c.created_at).toLocaleDateString()}</Text>
-                </View>
-                <Text className="text-primary font-black">GH₵ {c.amount}</Text>
+          {/* Contribution Action */}
+          <View style={{ marginBottom: 48 }}>
+            <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18, marginBottom: 16 }}>Make Contribution</Text>
+            <Card glass style={{ borderColor: 'rgba(16,185,129,0.2)' }}>
+              <Input
+                label="Amount (GH₵)"
+                value={amount}
+                onChangeText={setAmount}
+                placeholder={String(group.data?.contribution || "0.00")}
+                keyboardType="numeric"
+                containerClassName="mb-6"
+              />
+              <Button
+                title="Pay via MoMo"
+                onPress={() => alert("Payment UI would open here")}
+              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, opacity: 0.6 }}>
+                <ShieldCheck size={14} color="#10b981" />
+                <Text style={{ color: '#10b981', fontSize: 10, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 }}>Secured by ClipCapital</Text>
               </View>
-            ))
-          )}
+            </Card>
+          </View>
+
+          {/* Members List */}
+          <View style={{ marginBottom: 48 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24, marginLeft: 8 }}>
+               <Users size={18} color="#10B981" />
+               <Text style={{ color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 11, letterSpacing: 4, textTransform: 'uppercase' }}>Circle Members</Text>
+            </View>
+            <Card style={{ padding: 0, overflow: 'hidden' }}>
+              {members.data?.map((m: any, idx: number) => (
+                <View key={m.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: idx !== members.data!.length - 1 ? 1 : 0, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                    <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: '#10b981', fontWeight: 'bold' }}>{idx + 1}</Text>
+                    </View>
+                    <View>
+                      <Text style={{ color: 'white', fontWeight: 'bold' }}>{m.profiles?.display_name || "Member"}</Text>
+                      {m.has_received && <Text style={{ color: '#10b981', fontSize: 9, fontWeight: '900', textTransform: 'uppercase', marginTop: 2 }}>Received Payout</Text>}
+                    </View>
+                  </View>
+                  {m.has_received ? <Check size={16} color="#10b981" /> : <Clock size={16} color="#405045" />}
+                </View>
+              ))}
+            </Card>
+          </View>
         </View>
       </ScrollView>
     </View>

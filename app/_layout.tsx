@@ -5,11 +5,17 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { useRouter, useSegments } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { View, ActivityIndicator, StatusBar, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StatusBar, StyleSheet, Platform } from "react-native";
 import { useFonts, SpaceGrotesk_700Bold, SpaceGrotesk_500Medium, SpaceGrotesk_400Regular } from '@expo-google-fonts/space-grotesk';
 import { KenteBackground } from "@/components/native/effects/kente-pattern";
 
 const queryClient = new QueryClient();
+
+// Polyfill for web environments
+if (Platform.OS === 'web') {
+  // @ts-ignore
+  window.process = window.process || { env: {} };
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -27,10 +33,8 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" />
         <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
-          {/* THE COOL PART: Signature Kente Background Layer */}
-          <KenteBackground />
-
-          <AuthGuard />
+           <KenteBackground />
+           <AuthGuard />
         </View>
       </SafeAreaProvider>
     </QueryClientProvider>
@@ -45,12 +49,15 @@ function AuthGuard() {
 
   useEffect(() => {
     if (loading) return;
+
     const inAuthGroup = segments[0] === "(auth)";
+
     if (!user && !inAuthGroup) {
       router.replace("/(auth)/login");
     } else if (user && inAuthGroup) {
       router.replace("/(tabs)");
     }
+
     setIsReady(true);
   }, [user, loading, segments]);
 
@@ -65,7 +72,7 @@ function AuthGuard() {
   return (
     <Stack screenOptions={{
       headerShown: false,
-      contentStyle: { backgroundColor: 'transparent' }, // Allows Kente pattern to show
+      contentStyle: { backgroundColor: 'transparent' },
       animation: 'fade'
     }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />

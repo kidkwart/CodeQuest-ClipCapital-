@@ -373,9 +373,28 @@ export function useJoinGroup() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (inviteCode: string) => {
-      const { joinSusuByInvite } = await import("@/lib/susu.functions");
-      const result = await joinSusuByInvite({ data: { invite: inviteCode.trim() } });
-      return result.groupId;
+      // Find the group by invite code
+      const { data: group, error: groupError } = await supabase
+        .from("susu_groups")
+        .select("id, members_count")
+        .eq("invite_code", inviteCode.trim())
+        .single();
+
+      if (groupError || !group) throw new Error("Invalid invite code");
+
+      // Join the group
+      const { error: joinError } = await supabase.from("susu_memberships").insert({
+        group_id: group.id,
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        payout_order: group.members_count + 1
+      });
+
+      if (joinError) {
+        if (joinError.code === '23505') throw new Error("You are already a member of this group");
+        throw joinError;
+      }
+
+      return group.id;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["susu-groups"] }),
   });
