@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Alert, Platform, TextInput } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Alert, Platform, TextInput, KeyboardAvoidingView, Vibration } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import * as Lucide from "lucide-react-native";
 import {
@@ -32,7 +32,10 @@ export default function AdminDashboard() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1, backgroundColor: "#080C0A" }}
+    >
       <Stack.Screen options={{
         headerShown: true,
         title: "",
@@ -50,6 +53,7 @@ export default function AdminDashboard() {
 
       <ScrollView
         className="flex-1"
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingTop: 100, paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={onRefresh} tintColor="#10B981" />}
       >
@@ -78,7 +82,7 @@ export default function AdminDashboard() {
           {activeTab === "settings" && <SettingsSection />}
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -616,28 +620,31 @@ function AdminChatSection() {
           </View>
 
           <View className="flex-row items-center gap-2">
-            <View className="flex-1">
-              <Input
-                placeholder="Type a response..."
+            <View style={{ flex: 1, height: 56, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, justifyContent: 'center' }}>
+              <TextInput
+                placeholder="Type transmission..."
+                placeholderTextColor="#405045"
                 value={replyText[userId] || ""}
                 onChangeText={(t) => setReplyText(prev => ({ ...prev, [userId]: t }))}
-                containerClassName="mb-0"
+                style={{ color: 'white', fontWeight: 'bold', fontSize: 13 }}
+                multiline
               />
             </View>
-            <TouchableOpacity
+            <BouncyTap
               onPress={() => handleReply(userId)}
               disabled={!replyText[userId]?.trim() || replyMutation.isPending}
-              className={cn(
-                "h-12 w-12 rounded-xl items-center justify-center",
-                replyText[userId]?.trim() ? "bg-primary" : "bg-white/10"
-              )}
             >
-              {replyMutation.isPending ? (
-                <ActivityIndicator size="small" color="#000" />
-              ) : (
-                <Lucide.Send size={20} color={replyText[userId]?.trim() ? "#000" : "#555"} />
-              )}
-            </TouchableOpacity>
+              <LinearGradient
+                colors={replyText[userId]?.trim() ? ['#10b981', '#059669'] : ['#1a211e', '#0d1310']}
+                style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: replyText[userId]?.trim() ? 0.3 : 0, shadowRadius: 10 }}
+              >
+                {replyMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <Lucide.Send size={20} color={replyText[userId]?.trim() ? "#000" : "#405045"} strokeWidth={2.5} />
+                )}
+              </LinearGradient>
+            </BouncyTap>
           </View>
         </Card>
       ))}
@@ -690,8 +697,23 @@ function SettingsSection() {
     const { settings, updateSettings } = useSystemSettings();
     const broadcast = useSendBroadcast();
     const [notif, setNotif] = useState({ title: "", body: "" });
+    const [localRate, setLocalRate] = useState<string>("");
+
+    useEffect(() => {
+        if (settings.data) {
+            setLocalRate(String(settings.data.interest_rate));
+        }
+    }, [settings.data]);
 
     if (settings.isLoading) return <ActivityIndicator color="#10b981" style={{ marginTop: 40 }} />;
+
+    const handleUpdateRate = () => {
+        const rate = parseFloat(localRate);
+        if (!isNaN(rate)) {
+            updateSettings.mutate({ interest_rate: rate });
+            Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
+        }
+    };
 
     const handleBroadcast = async () => {
       if (!notif.title.trim() || !notif.body.trim()) {
@@ -730,10 +752,12 @@ function SettingsSection() {
                 </View>
                 <View className="flex-row items-center bg-white/5 rounded-xl px-4 h-12 border border-white/5">
                     <TextInput
-                        value={String(settings.data?.interest_rate)}
+                        value={localRate}
                         keyboardType="numeric"
-                        onChangeText={(val) => updateSettings.mutate({ interest_rate: parseFloat(val) })}
-                        style={{ color: '#10b981', fontWeight: 'bold', fontSize: 16, textAlign: 'right', width: 40 }}
+                        onChangeText={setLocalRate}
+                        onEndEditing={handleUpdateRate}
+                        style={{ color: '#10b981', fontWeight: 'bold', fontSize: 16, textAlign: 'right', width: 45 }}
+                        selectionColor="#10b981"
                     />
                     <Text className="text-[#10b981] font-bold ml-1">%</Text>
                 </View>
@@ -745,14 +769,18 @@ function SettingsSection() {
                   <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Suspend all vault activities</Text>
                 </View>
                 <BouncyTap
-                  onPress={() => updateSettings.mutate({ maintenance_mode: !settings.data?.maintenance_mode })}
+                  onPress={() => {
+                    const newVal = !settings.data?.maintenance_mode;
+                    updateSettings.mutate({ maintenance_mode: newVal });
+                    Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 10, 5, 10]);
+                  }}
                 >
                   <LinearGradient
                     colors={settings.data?.maintenance_mode ? ['#ef4444', '#991b1b'] : ['#10b981', '#065f46']}
-                    className="px-6 py-2.5 rounded-xl"
+                    style={{ paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 }}
                   >
                     <Text className="font-black text-[10px] text-black tracking-widest">
-                      {settings.data?.maintenance_mode ? "DISABLE" : "ENABLE"}
+                      {settings.data?.maintenance_mode ? "DISABLE MAINTENANCE" : "ENGAGE MAINTENANCE"}
                     </Text>
                   </LinearGradient>
                 </BouncyTap>
@@ -761,43 +789,58 @@ function SettingsSection() {
         </View>
 
         <Text className="text-white font-bold mb-4 text-lg">Broadcast Protocol</Text>
-        <Card className="p-7 border-white/5 bg-[#0f1714]">
-          <View className="mb-6">
-            <Text className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 ml-1 opacity-50">Signal Title</Text>
+        <Card className="p-8 border-white/5 bg-[#0f1714]" style={{ borderRadius: 40 }}>
+          <View className="mb-8">
+            <View className="flex-row items-center gap-2 mb-3 ml-1">
+              <Lucide.Tag size={12} color="#10b981" />
+              <Text className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-60">Signal Title</Text>
+            </View>
             <TextInput
               value={notif.title}
               onChangeText={t => setNotif(prev => ({...prev, title: t}))}
               placeholder="e.g. SYSTEM UPGRADE COMPLETE"
               placeholderTextColor="#334140"
-              className="bg-white/5 h-14 rounded-2xl px-5 text-white font-bold border border-white/5"
+              className="bg-white/5 h-16 rounded-2xl px-6 text-white font-bold border border-white/5"
+              selectionColor="#10b981"
             />
           </View>
 
-          <View className="mb-8">
-            <Text className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 ml-1 opacity-50">Global Message</Text>
-            <TextInput
-              value={notif.body}
-              onChangeText={t => setNotif(prev => ({...prev, body: t}))}
-              placeholder="Type transmission details..."
-              placeholderTextColor="#334140"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              className="bg-white/5 min-h-[120px] rounded-2xl p-5 text-white font-medium border border-white/5"
-            />
+          <View className="mb-10">
+            <View className="flex-row items-center gap-2 mb-3 ml-1">
+              <Lucide.MessageSquare size={12} color="#10b981" />
+              <Text className="text-[10px] font-black text-primary uppercase tracking-[0.2em] opacity-60">Global Transmission</Text>
+            </View>
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+              <TextInput
+                value={notif.body}
+                onChangeText={t => setNotif(prev => ({...prev, body: t}))}
+                placeholder="Type institutional transmission details..."
+                placeholderTextColor="#334140"
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+                style={{ minHeight: 160, padding: 20, color: 'white', fontSize: 15, fontWeight: '500', lineHeight: 22 }}
+                selectionColor="#10b981"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(16,185,129,0.02)']}
+                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 40 }}
+                pointerEvents="none"
+              />
+            </View>
           </View>
 
           <BouncyTap onPress={handleBroadcast} disabled={broadcast.isPending}>
             <LinearGradient
               colors={['#10b981', '#059669']}
-              className="h-16 rounded-2xl items-center justify-center shadow-lg"
+              style={{ height: 72, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 }}
             >
                {broadcast.isPending ? (
                  <ActivityIndicator color="#000" />
                ) : (
-                 <View className="flex-row items-center gap-3">
-                   <Text className="text-black font-black text-xs tracking-widest uppercase">Initiate Broadcast</Text>
-                   <Lucide.Zap size={16} color="#000" fill="#000" />
+                 <View className="flex-row items-center gap-4">
+                   <Text style={{ fontFamily: 'Display-Bold' }} className="text-black text-sm tracking-[0.1em] uppercase">Initiate Broadcast</Text>
+                   <Lucide.Zap size={20} color="#000" fill="#000" />
                  </View>
                )}
             </LinearGradient>
