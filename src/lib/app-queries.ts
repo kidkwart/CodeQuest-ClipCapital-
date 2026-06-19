@@ -1095,7 +1095,6 @@ export function usePlaceOrder() {
     },
   });
 }
-}
 
 // ---------- ClipScore (synced from DB) ----------
 export function useClipScore() {

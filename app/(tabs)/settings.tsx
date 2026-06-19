@@ -317,7 +317,7 @@ export default function Settings() {
                 />
 
                 <Button
-                  title="Synchronize Profile"
+                  title="Save Profile"
                   onPress={handleSave}
                   loading={updateProfile.isPending}
                 />
