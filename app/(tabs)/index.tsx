@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, SafeAreaView, Platform, StyleSheet, Vibration } from "react-native";
 import { useProfile, useClipScore, useRecentActivity, useAddIncome, useMyRoles, useWeeklyPerformance, useUserHealth, useUpdateProfile } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
-import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid, Zap } from "lucide-react-native";
+import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid, Zap, MapPin } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { BouncyTap } from "@/components/native/bouncy-tap";
@@ -99,9 +99,9 @@ export default function Dashboard() {
               >
                 Akwaaba,{"\n"}@{profile?.username || profile?.display_name?.toLowerCase().replace(/\s/g, '_') || "artisan"}
               </Text>
-              {profile?.location && (
+                  {profile?.location && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                   <Lucide.MapPin size={10} color={colors.textDim} />
+                   <MapPin size={10} color={colors.textDim} />
                    <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: 'bold' }}>{profile.location}</Text>
                 </View>
               )}
