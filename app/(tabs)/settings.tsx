@@ -186,7 +186,7 @@ export default function Settings() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={onRefresh} progressViewOffset={Platform.OS === 'ios' ? 60 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="Settings" subtitle="Merchant Portal" />

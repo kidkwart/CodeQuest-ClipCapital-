@@ -276,6 +276,7 @@ export function useAddIncome() {
         qc.invalidateQueries({ queryKey: ["recent-activity"] }),
         qc.invalidateQueries({ queryKey: ["admin-stats"] }),
         qc.invalidateQueries({ queryKey: ["user-health"] }),
+        qc.invalidateQueries({ queryKey: ["weekly-performance"] }),
       ]);
     },
   });
@@ -364,6 +365,7 @@ export function useAddExpense() {
         qc.invalidateQueries({ queryKey: ["recent-activity"] }),
         qc.invalidateQueries({ queryKey: ["transaction-history"] }),
         qc.invalidateQueries({ queryKey: ["admin-stats"] }),
+        qc.invalidateQueries({ queryKey: ["weekly-performance"] }),
       ]);
     },
   });

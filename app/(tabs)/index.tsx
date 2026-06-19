@@ -75,8 +75,8 @@ export default function Dashboard() {
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 180, paddingTop: Platform.OS === 'ios' ? 20 : 60 }}
-        refreshControl={<RefreshControl refreshing={isProfileLoading} tintColor="#10B981" />}
+        contentContainerStyle={{ paddingBottom: 180, paddingTop: Platform.OS === 'ios' ? 60 : 60 }}
+        refreshControl={<RefreshControl refreshing={isProfileLoading || performance.isLoading} tintColor="#10B981" />}
       >
         <View style={{ paddingHorizontal: 24 }}>
 
@@ -165,7 +165,7 @@ export default function Dashboard() {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Business Tracking</Text>
               <Text style={styles.sectionStat}>
-                Today: {isPrivate ? "••••" : `GH₵ ${todayTotal.toLocaleString()}`}
+                Today: {isPrivate ? "••••" : `GH₵ ${todayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </Text>
             </View>
 
