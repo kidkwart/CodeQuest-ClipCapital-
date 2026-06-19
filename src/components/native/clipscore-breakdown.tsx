@@ -52,7 +52,7 @@ export function ClipScoreBreakdown({ score, health, loading }: { score: number, 
           </View>
           <View style={styles.progressContainer}>
             <View style={[styles.progressBase, { backgroundColor: colors.border }]} />
-            <View style={[styles.progressBar, { width: `${percentage}%`, backgroundColor: rank.color }]} />
+            <View style={[styles.progressBar, { width: `${percentage}%`, backgroundColor: rank.color, shadowColor: rank.color }]} />
           </View>
         </View>
 
@@ -115,7 +115,6 @@ const styles = StyleSheet.create({
     padding: 24,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
   },
   header: {
     flexDirection: 'row',
@@ -125,12 +124,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Display-Bold',
-    color: 'white',
     fontSize: 20,
     letterSpacing: -0.5,
   },
   subtitle: {
-    color: '#7d8a84',
     fontSize: 10,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -142,7 +139,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.02)',
   },
   rankText: {
     fontSize: 9,
@@ -159,11 +155,9 @@ const styles = StyleSheet.create({
   },
   scoreValue: {
     fontFamily: 'Display-Bold',
-    color: 'white',
     fontSize: 36,
   },
   scoreMax: {
-    color: '#405045',
     fontSize: 16,
     marginLeft: 4,
     fontWeight: 'bold',
@@ -177,24 +171,20 @@ const styles = StyleSheet.create({
   progressBase: {
     height: 4,
     width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 2,
   },
   progressBar: {
     position: 'absolute',
     height: 8,
     borderRadius: 4,
-    shadowColor: '#10b981',
     shadowOpacity: 0.5,
     shadowRadius: 10,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     marginBottom: 24,
   },
   sectionLabel: {
-    color: '#405045',
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 3,
@@ -212,15 +202,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.03)',
   },
   metricLabel: {
-    color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
   },
   metricDesc: {
-    color: '#7d8a84',
     fontSize: 11,
     marginTop: 2,
   },
@@ -237,10 +224,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.03)',
   },
   footerText: {
-    color: '#7d8a84',
     fontSize: 12,
     fontWeight: 'bold',
   }
