@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard, Switch, RefreshControl, Modal, TouchableWithoutFeedback } from "react-native";
-import { useProfile, useLoans, useApplyLoan, useClipScore, useRecordRepayment } from "@/lib/app-queries";
+import { useProfile, useLoans, useApplyLoan, useClipScore, useRecordRepayment, useSystemSettings } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { Landmark, Zap, AlertCircle, CheckCircle2, Calendar, Info, ArrowLeft, Clock, CreditCard, Wallet, X, ArrowRight, Smartphone, ChevronRight } from "lucide-react-native";
@@ -15,6 +15,7 @@ export default function LoansScreen() {
   const { colors, theme } = useTheme();
   const { data: profile } = useProfile();
   const { data: loans, isLoading: isLoansLoading, refetch } = useLoans();
+  const { settings } = useSystemSettings();
   const { score } = useClipScore();
   const applyLoan = useApplyLoan();
   const recordRepayment = useRecordRepayment();
