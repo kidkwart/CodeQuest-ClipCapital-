@@ -7,9 +7,11 @@ import { ArrowUpRight, ArrowDownLeft, Plus, Landmark, History, Wallet as WalletI
 import { useRouter, Stack } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 export default function WalletScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile, isLoading, refetch } = useProfile();
   const { data: history } = useTransactionHistory();
   const updateProfile = useUpdateProfile();
@@ -28,24 +30,24 @@ export default function WalletScreen() {
   const walletTransactions = history?.slice(0, 8) || [];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={refetch} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
 
           <View style={styles.header}>
             <View>
-              <Text style={styles.headerSubtitle}>ACCOUNT CENTER</Text>
-              <Text style={styles.headerTitle}>Oxygen Wallet</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.primary }]}>ACCOUNT CENTER</Text>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Oxygen Wallet</Text>
             </View>
-            <TouchableOpacity onPress={togglePrivacy} style={styles.privacyBtn}>
-              {isPrivate ? <EyeOff size={20} color="#10b981" /> : <Eye size={20} color="#7d8a84" />}
+            <TouchableOpacity onPress={togglePrivacy} style={[styles.privacyBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              {isPrivate ? <EyeOff size={20} color={colors.primary} /> : <Eye size={20} color={colors.textMuted} />}
             </TouchableOpacity>
           </View>
 
@@ -93,59 +95,59 @@ export default function WalletScreen() {
             </BouncyTap>
 
             <BouncyTap onPress={() => router.push("/withdraw")} style={{ flex: 1 }}>
-              <View style={styles.actionBtnInstitutional}>
-                <View style={[styles.actionIconBg, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
-                   <Landmark size={18} color="#7d8a84" />
+              <View style={[styles.actionBtnInstitutional, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                <View style={[styles.actionIconBg, { backgroundColor: colors.surfaceElevated }]}>
+                   <Landmark size={18} color={colors.textMuted} />
                 </View>
-                <Text style={styles.actionBtnTextInstitutional}>WITHDRAW</Text>
+                <Text style={[styles.actionBtnTextInstitutional, { color: colors.textMuted }]}>WITHDRAW</Text>
               </View>
             </BouncyTap>
           </View>
 
           {/* Quick Stats / Info */}
-          <View style={styles.statsGrid}>
+          <View style={[styles.statsGrid, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.statBox}>
-              <Text style={styles.statLabel}>Monthly Flow</Text>
-              <Text style={styles.statValue}>+ GH₵ 1,240</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Monthly Flow</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>+ GH₵ 1,240</Text>
             </View>
-            <View style={[styles.statBox, { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.05)' }]}>
-              <Text style={styles.statLabel}>Trust Score</Text>
-              <Text style={[styles.statValue, { color: '#10b981' }]}>Elite</Text>
+            <View style={[styles.statBox, { borderLeftWidth: 1, borderLeftColor: colors.border }]}>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Trust Score</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>Elite</Text>
             </View>
           </View>
 
           {/* Transaction Section */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Recent Activity</Text>
             <TouchableOpacity onPress={() => router.push("/history")} style={styles.seeAllBtn}>
-              <Text style={styles.seeAll}>See All</Text>
-              <ChevronRight size={14} color="#10b981" />
+              <Text style={[styles.seeAll, { color: colors.primary }]}>See All</Text>
+              <ChevronRight size={14} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
-          <Card style={styles.transactionCard}>
+          <Card style={[styles.transactionCard, { backgroundColor: colors.cardBg }]}>
             {walletTransactions.length === 0 ? (
               <View style={styles.emptyState}>
-                <History size={40} color="#405045" />
-                <Text style={styles.emptyText}>No transactions found</Text>
+                <History size={40} color={colors.textDim} />
+                <Text style={[styles.emptyText, { color: colors.textMuted }]}>No transactions found</Text>
               </View>
             ) : (
               walletTransactions.map((item, idx) => (
                 <TouchableOpacity
                   key={item.id}
                   activeOpacity={0.7}
-                  style={[styles.transactionItem, idx === walletTransactions.length - 1 && { borderBottomWidth: 0 }]}
+                  style={[styles.transactionItem, idx === walletTransactions.length - 1 && { borderBottomWidth: 0 }, { borderBottomColor: colors.border }]}
                 >
                   <View style={styles.transactionLeft}>
-                    <View style={[styles.iconBox, { backgroundColor: item.amount > 0 ? 'rgba(16,185,129,0.05)' : 'rgba(255,255,255,0.02)' }]}>
-                      {item.amount > 0 ? <ArrowUpRight size={18} color="#10B981" /> : <ArrowDownLeft size={18} color="#7d8a84" />}
+                    <View style={[styles.iconBox, { backgroundColor: item.amount > 0 ? `${colors.primary}10` : colors.surfaceElevated, borderColor: colors.border }]}>
+                      {item.amount > 0 ? <ArrowUpRight size={18} color={colors.primary} /> : <ArrowDownLeft size={18} color={colors.textMuted} />}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={styles.transactionTitle}>{item.note || item.title}</Text>
-                      <Text style={styles.transactionDate}>{new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</Text>
+                      <Text numberOfLines={1} style={[styles.transactionTitle, { color: colors.text }]}>{item.note || item.title}</Text>
+                      <Text style={[styles.transactionDate, { color: colors.textDim }]}>{new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</Text>
                     </View>
                   </View>
-                  <Text style={[styles.transactionAmount, { color: item.amount > 0 ? '#10b981' : '#fcfcfc' }]}>
+                  <Text style={[styles.transactionAmount, { color: item.amount > 0 ? colors.primary : colors.text }]}>
                     {item.amount > 0 ? '+' : ''}{isPrivate ? "•••" : item.amount.toLocaleString()}
                   </Text>
                 </TouchableOpacity>
@@ -154,8 +156,8 @@ export default function WalletScreen() {
           </Card>
 
           <View style={styles.securityNote}>
-             <ShieldCheck size={14} color="#405045" />
-             <Text style={styles.securityText}>Secured by ClipCapital Institutional Grade Encryption</Text>
+             <ShieldCheck size={14} color={colors.textDim} />
+             <Text style={[styles.securityText, { color: colors.textDim }]}>Secured by ClipCapital Institutional Grade Encryption</Text>
           </View>
 
         </View>

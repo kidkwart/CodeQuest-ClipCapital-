@@ -8,9 +8,11 @@ import { useRouter, Stack } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { Paystack } from 'react-native-paystack-webview';
+import { useTheme } from "@/context/theme-context";
 
 export default function LoansScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile } = useProfile();
   const { data: loans, isLoading: isLoansLoading, refetch } = useLoans();
   const { score } = useClipScore();
@@ -204,7 +206,7 @@ export default function LoansScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Paystack Layer */}
@@ -230,33 +232,33 @@ export default function LoansScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={isLoansLoading} onRefresh={refetch} tintColor="#10b981" progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
+          refreshControl={<RefreshControl refreshing={isLoansLoading} onRefresh={refetch} tintColor={colors.primary} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
         >
           <View style={{ paddingHorizontal: 24 }}>
             <PremiumHeader title="Credit" subtitle="Institutional Capital" />
 
             {/* ACTIVE LOAN CARD */}
             {currentActiveLoan ? (
-               <Card style={styles.activeLoanCard}>
+               <Card style={[styles.activeLoanCard, { backgroundColor: colors.cardBg, borderColor: `${colors.primary}40` }]}>
                   <View style={styles.activeHeader}>
                      <View style={styles.activeLabelRow}>
-                        <View style={styles.pulseDot} />
-                        <Text style={styles.activeTag}>ACTIVE LOAN FACILITY</Text>
+                        <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
+                        <Text style={[styles.activeTag, { color: colors.primary }]}>ACTIVE LOAN FACILITY</Text>
                      </View>
                      <Text style={styles.remainingDays}>
                         {getRemainingDays(currentActiveLoan.disbursed_at, currentActiveLoan.duration_days || 30)} Days Left
                      </Text>
                   </View>
 
-                  <Text style={styles.activeAmount}>
+                  <Text style={[styles.activeAmount, { color: colors.text }]}>
                      {isPrivate ? "••••••" : `GH₵ ${(currentActiveLoan.balance || 0).toLocaleString()}`}
                   </Text>
-                  <Text style={styles.activeSub}>Total Remaining Balance</Text>
+                  <Text style={[styles.activeSub, { color: colors.textMuted }]}>Total Remaining Balance</Text>
 
-                  <View style={styles.activeDetails}>
+                  <View style={[styles.activeDetails, { borderTopColor: colors.border }]}>
                      <View style={styles.detailItem}>
-                        <Clock size={12} color="#7d8a84" />
-                        <Text style={styles.detailText}>Due: {new Date(new Date(currentActiveLoan.disbursed_at || Date.now()).getTime() + (currentActiveLoan.duration_days || 30) * 86400000).toLocaleDateString('en-GB')}</Text>
+                        <Clock size={12} color={colors.textMuted} />
+                        <Text style={[styles.detailText, { color: colors.textMuted }]}>Due: {new Date(new Date(currentActiveLoan.disbursed_at || Date.now()).getTime() + (currentActiveLoan.duration_days || 30) * 86400000).toLocaleDateString('en-GB')}</Text>
                      </View>
                      <BouncyTap onPress={() => setShowRepayModal(true)}>
                         <LinearGradient
@@ -271,52 +273,52 @@ export default function LoansScreen() {
                   </View>
                </Card>
             ) : (
-              <LinearGradient colors={['#1e2923', '#0f1714']} style={styles.limitCard}>
+              <LinearGradient colors={theme === 'dark' ? ['#1e2923', '#0f1714'] : ['#ffffff', '#f1f5f9']} style={[styles.limitCard, { borderColor: colors.border }]}>
                 <View style={styles.limitHeader}>
                   <View>
-                    <Text style={styles.limitLabel}>AVAILABLE CREDIT</Text>
-                    <Text style={styles.limitAmount}>{isPrivate ? "••••••" : `GH₵ ${maxLoan.toLocaleString()}`}</Text>
+                    <Text style={[styles.limitLabel, { color: colors.textMuted }]}>AVAILABLE CREDIT</Text>
+                    <Text style={[styles.limitAmount, { color: colors.text }]}>{isPrivate ? "••••••" : `GH₵ ${maxLoan.toLocaleString()}`}</Text>
                   </View>
-                  <View style={styles.scoreBadge}>
-                    <Zap size={12} color="#f59e0b" fill="#f59e0b" />
-                    <Text style={styles.scoreText}>{currentScore} Score</Text>
+                  <View style={[styles.scoreBadge, { backgroundColor: `${colors.gold}15` }]}>
+                    <Zap size={12} color={colors.gold} fill={colors.gold} />
+                    <Text style={[styles.scoreText, { color: colors.gold }]}>{currentScore} Score</Text>
                   </View>
                 </View>
-                <View style={styles.progressContainer}><View style={[styles.progressBar, { width: '100%' }]} /></View>
-                <Text style={styles.limitHint}>Boost your ClipScore by logging sales and paying on time.</Text>
+                <View style={[styles.progressContainer, { backgroundColor: colors.border }]}><View style={[styles.progressBar, { backgroundColor: colors.primary, width: '100%' }]} /></View>
+                <Text style={[styles.limitHint, { color: colors.textMuted }]}>Boost your ClipScore by logging sales and paying on time.</Text>
               </LinearGradient>
             )}
 
             {/* Application Section */}
             {!currentActiveLoan && (
                <View style={styles.section}>
-               <Text style={styles.sectionTitle}>Request New Credit</Text>
-               <Card style={styles.formCard}>
+               <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Request New Credit</Text>
+               <Card style={[styles.formCard, { backgroundColor: colors.cardBg }]}>
                  <View style={styles.inputGroup}>
-                   <Text style={styles.inputLabel}>Amount (GH₵)</Text>
-                   <TextInput style={styles.input} placeholder="0.00" placeholderTextColor="#5a6b69" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+                   <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Amount (GH₵)</Text>
+                   <TextInput style={[styles.input, { backgroundColor: colors.surfaceElevated, color: colors.text, borderColor: colors.border }]} placeholder="0.00" placeholderTextColor={colors.textDim} keyboardType="numeric" value={amount} onChangeText={setAmount} />
                  </View>
                  <View style={styles.inputGroup}>
-                   <Text style={styles.inputLabel}>Business Purpose</Text>
-                   <TextInput style={styles.input} placeholder="e.g. New Equipment" placeholderTextColor="#5a6b69" value={purpose} onChangeText={setPurpose} />
+                   <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Business Purpose</Text>
+                   <TextInput style={[styles.input, { backgroundColor: colors.surfaceElevated, color: colors.text, borderColor: colors.border }]} placeholder="e.g. New Equipment" placeholderTextColor={colors.textDim} value={purpose} onChangeText={setPurpose} />
                  </View>
 
                  {parsedAmount > 0 && (
-                   <View style={styles.estimateBox}>
+                   <View style={[styles.estimateBox, { backgroundColor: `${colors.primary}08`, borderColor: `${colors.primary}15` }]}>
                      <View style={styles.estimateRow}>
-                       <Text style={styles.estimateLabel}>Interest (15%)</Text>
-                       <Text style={styles.estimateValue}>+ GH₵ {interestAmount.toLocaleString()}</Text>
+                       <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Interest (15%)</Text>
+                       <Text style={[styles.estimateValue, { color: colors.text }]}>+ GH₵ {interestAmount.toLocaleString()}</Text>
                      </View>
                      <View style={styles.estimateRow}>
-                       <Text style={styles.estimateLabel}>Total to Repay</Text>
-                       <Text style={styles.totalValue}>GH₵ {totalRepayable.toLocaleString()}</Text>
+                       <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Total to Repay</Text>
+                       <Text style={[styles.totalValue, { color: colors.primary }]}>GH₵ {totalRepayable.toLocaleString()}</Text>
                      </View>
                    </View>
                  )}
 
                  <View style={styles.termsRow}>
-                    <Switch value={agreed} onValueChange={setAgreed} trackColor={{ false: "#1a211e", true: "#10b981" }} thumbColor="#fff" />
-                    <Text style={styles.termsText}>I agree to the credit terms.</Text>
+                    <Switch value={agreed} onValueChange={setAgreed} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
+                    <Text style={[styles.termsText, { color: colors.textMuted }]}>I agree to the credit terms.</Text>
                  </View>
 
                  {statusMessage.text !== "" && (
@@ -353,22 +355,22 @@ export default function LoansScreen() {
             {/* History */}
             <View style={[styles.section, { marginBottom: 60 }]}>
               <View style={styles.sectionHeader}>
-                <Calendar size={14} color="#10b981" />
-                <Text style={styles.sectionTitle}>Credit History</Text>
+                <Calendar size={14} color={colors.primary} />
+                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Credit History</Text>
               </View>
               {(!loans || loans.length === 0) ? (
                 <View style={styles.emptyState}>
-                   <Info size={32} color="#405045" /><Text style={styles.emptyText}>No history found.</Text>
+                   <Info size={32} color={colors.textDim} /><Text style={[styles.emptyText, { color: colors.textMuted }]}>No history found.</Text>
                 </View>
               ) : (
                 loans.map((loan) => (
-                  <Card key={loan.id} style={styles.historyCard}>
+                  <Card key={loan.id} style={[styles.historyCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                     <View style={{ flex: 1 }}>
-                       <Text style={styles.historyPurpose}>{loan.purpose || "Credit Line"}</Text>
-                       <Text style={styles.historyDate}>{new Date(loan.created_at).toLocaleDateString()}</Text>
+                       <Text style={[styles.historyPurpose, { color: colors.text }]}>{loan.purpose || "Credit Line"}</Text>
+                       <Text style={[styles.historyDate, { color: colors.textDim }]}>{new Date(loan.created_at).toLocaleDateString()}</Text>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                       <Text style={styles.historyAmount}>GH₵ {loan.amount?.toLocaleString()}</Text>
+                       <Text style={[styles.historyAmount, { color: colors.text }]}>GH₵ {loan.amount?.toLocaleString()}</Text>
                        <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(loan.status)}20` }]}>
                           <Text style={[styles.statusBadgeText, { color: getStatusColor(loan.status) }]}>{loan.status?.toUpperCase()}</Text>
                        </View>
@@ -398,11 +400,11 @@ export default function LoansScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Amount to Repay (GH₵)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Amount to Repay (GH₵)</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.surfaceElevated, color: colors.text, borderColor: colors.border }]}
                     placeholder="0.00"
-                    placeholderTextColor="#405045"
+                    placeholderTextColor={colors.textDim}
                     keyboardType="numeric"
                     value={repayAmount}
                     onChangeText={setRepayAmount}
@@ -416,35 +418,35 @@ export default function LoansScreen() {
                       Keyboard.dismiss();
                     }}
                   >
-                    <Text style={{ color: '#10b981', fontSize: 11, fontWeight: 'bold' }}>PAY FULL BALANCE: GH₵ {currentActiveLoan?.balance?.toLocaleString()}</Text>
+                    <Text style={{ color: colors.primary, fontSize: 11, fontWeight: 'bold' }}>PAY FULL BALANCE: GH₵ {currentActiveLoan?.balance?.toLocaleString()}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Payment Method</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Payment Method</Text>
                   <View style={{ gap: 10 }}>
                     <TouchableOpacity
                       onPress={() => { setRepayMethod('wallet'); Keyboard.dismiss(); }}
-                      style={[styles.methodBtn, repayMethod === 'wallet' && styles.methodBtnActive]}
+                      style={[styles.methodBtn, { backgroundColor: colors.surfaceElevated }, repayMethod === 'wallet' && { borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}05` }]}
                     >
-                      <Wallet size={18} color={repayMethod === 'wallet' ? "#10b981" : "#7d8a84"} />
+                      <Wallet size={18} color={repayMethod === 'wallet' ? colors.primary : colors.textMuted} />
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.methodTitle, repayMethod === 'wallet' && { color: '#10b981' }]}>Wallet Balance</Text>
-                        <Text style={styles.methodSub}>Available: GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
+                        <Text style={[styles.methodTitle, { color: colors.text }, repayMethod === 'wallet' && { color: colors.primary }]}>Wallet Balance</Text>
+                        <Text style={[styles.methodSub, { color: colors.textDim }]}>Available: GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
                       </View>
-                      {repayMethod === 'wallet' && <CheckCircle2 size={16} color="#10b981" />}
+                      {repayMethod === 'wallet' && <CheckCircle2 size={16} color={colors.primary} />}
                     </TouchableOpacity>
 
                     <TouchableOpacity
                       onPress={() => { setRepayMethod('momo'); Keyboard.dismiss(); }}
-                      style={[styles.methodBtn, repayMethod === 'momo' && styles.methodBtnActive]}
+                      style={[styles.methodBtn, { backgroundColor: colors.surfaceElevated }, repayMethod === 'momo' && { borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}05` }]}
                     >
-                      <Smartphone size={18} color={repayMethod === 'momo' ? "#10b981" : "#7d8a84"} />
+                      <Smartphone size={18} color={repayMethod === 'momo' ? colors.primary : colors.textMuted} />
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.methodTitle, repayMethod === 'momo' && { color: '#10b981' }]}>Mobile Money</Text>
-                        <Text style={styles.methodSub}>Instant Payout</Text>
+                        <Text style={[styles.methodTitle, { color: colors.text }, repayMethod === 'momo' && { color: colors.primary }]}>Mobile Money</Text>
+                        <Text style={[styles.methodSub, { color: colors.textDim }]}>Instant Payout</Text>
                       </View>
-                      {repayMethod === 'momo' && <CheckCircle2 size={16} color="#10b981" />}
+                      {repayMethod === 'momo' && <CheckCircle2 size={16} color={colors.primary} />}
                     </TouchableOpacity>
                   </View>
                 </View>
