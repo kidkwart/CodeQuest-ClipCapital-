@@ -1,0 +1,169 @@
+# ClipCapital Backend — CI Pipeline
+# Runs on every push/PR to main and feature/lead-dev-architecture
+
+name: CI
+
+on:
+  push:
+    branches: [main, feature/lead-dev-architecture]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─────────────────────────────────────────────────────
+  # Lint & Type Check
+  # ─────────────────────────────────────────────────────
+  lint:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npx eslint src/ --max-warnings 0
+
+      - name: Prettier check
+        run: npx prettier --check "src/**/*.ts"
+
+  # ─────────────────────────────────────────────────────
+  # Unit Tests
+  # ─────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npx vitest run --coverage
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          JWT_SECRET: test-secret-key-for-ci-only-min-32-chars!!
+          PAYSTACK_SECRET_KEY: sk_test_placeholder
+          PAYSTACK_PUBLIC_KEY: pk_test_placeholder
+          PAYSTACK_WEBHOOK_SECRET: whsec_test_placeholder
+
+  # ─────────────────────────────────────────────────────
+  # Build
+  # ─────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npx tsc
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist/
+          retention-days: 7
+
+  # ─────────────────────────────────────────────────────
+  # Docker Build (verify Dockerfile)
+  # ─────────────────────────────────────────────────────
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -f backend/Dockerfile -t clipcapital-backend:ci backend/
+
+      - name: Verify image runs
+        run: |
+          docker run -d --name test-backend \
+            -e NODE_ENV=test \
+            -e JWT_SECRET=ci-test-secret-key-min-32-chars!! \
+            -e DATABASE_URL=postgresql://test:test@localhost:5432/test \
+            -e PAYSTACK_SECRET_KEY=sk_test_placeholder \
+            -e PAYSTACK_PUBLIC_KEY=pk_test_placeholder \
+            -e PAYSTACK_WEBHOOK_SECRET=whsec_test_placeholder \
+            -p 3001:3000 \
+            clipcapital-backend:ci
+
+          sleep 3
+          curl -f http://localhost:3001/health || exit 1
+          docker stop test-backend
+
+  # ─────────────────────────────────────────────────────
+  # Migration Validation
+  # ─────────────────────────────────────────────────────
+  migrations:
+    name: Validate Migrations
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check migration files
+        run: |
+          echo "Checking Flyway migration naming conventions..."
+          for f in database/migrations/V*.sql; do
+            if [[ ! "$f" =~ ^database/migrations/V[0-9]+__.*\.sql$ ]]; then
+              echo "ERROR: Invalid migration name: $f"
+              exit 1
+            fi
+          done
+          echo "All migration files follow Flyway naming convention ✓"
+
+      - name: Check for empty migrations
+        run: |
+          for f in database/migrations/V*.sql; do
+            if [ ! -s "$f" ]; then
+              echo "ERROR: Empty migration file: $f"
+              exit 1
+            fi
+          done
+          echo "No empty migration files ✓"

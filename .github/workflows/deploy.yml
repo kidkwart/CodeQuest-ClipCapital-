@@ -1,0 +1,123 @@
+# ClipCapital Backend — Deploy Pipeline
+# Deploys to production on merge to main
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/clipcapital-backend
+
+jobs:
+  # ─────────────────────────────────────────────────────
+  # Build & Push Docker Image
+  # ─────────────────────────────────────────────────────
+  build-push:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: backend/
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────
+  # Run Database Migrations
+  # ─────────────────────────────────────────────────────
+  migrate:
+    name: Run Migrations
+    runs-on: ubuntu-latest
+    needs: build-push
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Flyway migrations
+        uses: flyctl/flyctl-actions/setup-flyctl@master
+
+      - name: Execute migrations
+        run: |
+          flyctl ssh console -C "flyway migrate" \
+            --app clipcapital-api \
+            --env DATABASE_URL="${{ secrets.DATABASE_URL }}"
+
+  # ─────────────────────────────────────────────────────
+  # Deploy to Fly.io
+  # ─────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Fly.io
+    runs-on: ubuntu-latest
+    needs: migrate
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Fly.io CLI
+        uses: flyctl/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: |
+          flyctl deploy \
+            --app clipcapital-api \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build-push.outputs.image_tag }}
+
+      - name: Health check
+        run: |
+          sleep 30
+          curl -f https://clipcapital-api.fly.dev/health || exit 1
+          echo "Deployment healthy ✓"
+
+  # ─────────────────────────────────────────────────────
+  # Notify
+  # ─────────────────────────────────────────────────────
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    steps:
+      - name: Deployment status
+        run: |
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "✅ ClipCapital Backend deployed successfully to production"
+          else
+            echo "❌ Deployment failed — check logs"
+            exit 1
+          fi
