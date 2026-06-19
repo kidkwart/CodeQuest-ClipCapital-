@@ -37,7 +37,7 @@ export default function Dashboard() {
     }
   };
 
-  const todayTotal = performance.data?.data?.[performance.data?.todayIndex] || 0;
+  const todayTotal = performance.data?.revenueData?.[performance.data?.todayIndex] || 0;
 
   const handleLogIncome = async () => {
     if (addIncome.isPending) return;

@@ -1373,13 +1373,12 @@ export function useWeeklyPerformance() {
 
       const labels: string[] = [];
       const data: number[] = [];
+      const revenueData: number[] = []; // New array for gross revenue
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
       for (let i = 0; i < daysToFetch; i++) {
         const d = new Date(startOfWeek);
         d.setDate(startOfWeek.getDate() + i);
-
-        // Generate local date string (YYYY-MM-DD) for accurate comparison
         const localDateStr = d.toLocaleDateString('en-CA');
 
         labels.push(dayNames[i]);
@@ -1393,9 +1392,9 @@ export function useWeeklyPerformance() {
           .reduce((sum, e) => sum + Number(e.amount), 0) || 0;
 
         data.push(dailyIncome - dailyExpense);
+        revenueData.push(dailyIncome); // Only track sales/income
       }
 
-      // Calculate growth: Compare Sunday (Start) to Sunday (End) or latest logged day
       const first = data[0] || 0;
       const currentVal = data[dayOfWeek];
 
@@ -1408,8 +1407,9 @@ export function useWeeklyPerformance() {
 
       return {
         data,
+        revenueData, // Pass the sales-only data
         labels,
-        todayIndex: dayOfWeek, // Pass the index of today
+        todayIndex: dayOfWeek,
         growth: growth.toFixed(1),
         isPositive: growth >= 0
       };
