@@ -1,13 +1,17 @@
-import React, { useState } from "react";
-import { View, Text, Platform, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Platform, StyleSheet, ActivityIndicator } from "react-native";
 import { Card } from "./card";
 import { useTheme } from "@/context/theme-context";
+import { useSystemSettings } from "@/lib/app-queries";
 
 export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
   const { colors } = useTheme();
+  const { settings } = useSystemSettings();
   const [amount, setAmount] = useState(defaultAmount);
   const [term, setTerm] = useState(3);
-  const interestRate = 15;
+
+  // Dynamic interest rate from DB
+  const interestRate = settings.data?.interest_rate ?? 15;
 
   const interest = amount * (interestRate / 100) * term;
   const total = amount + interest;
@@ -31,9 +35,13 @@ export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
     <Card style={{ backgroundColor: colors.cardBg, borderWidth: 1, borderColor: colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32 }}>
         <View style={{ height: 24, width: 24, borderRadius: 8, backgroundColor: colors.primary + '10', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary + '20' }}>
-          <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 10 }}>%</Text>
+          {settings.isLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 10 }}>%</Text>
+          )}
         </View>
-        <Text style={{ fontFamily: 'Display-Bold', color: colors.text, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase' }}>Loan Estimator</Text>
+        <Text style={{ fontFamily: 'Display-Bold', color: colors.text, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase' }}>Loan Estimator ({interestRate}% APR)</Text>
       </View>
 
       <View>

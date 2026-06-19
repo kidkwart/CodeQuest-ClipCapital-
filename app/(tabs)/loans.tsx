@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard, Switch, RefreshControl, Modal, TouchableWithoutFeedback } from "react-native";
-import { useProfile, useLoans, useApplyLoan, useClipScore, useRecordRepayment } from "@/lib/app-queries";
+import { useProfile, useLoans, useApplyLoan, useClipScore, useRecordRepayment, useSystemSettings } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { Landmark, Zap, AlertCircle, CheckCircle2, Calendar, Info, ArrowLeft, Clock, CreditCard, Wallet, X, ArrowRight, Smartphone, ChevronRight } from "lucide-react-native";
@@ -15,6 +15,7 @@ export default function LoansScreen() {
   const { colors, theme } = useTheme();
   const { data: profile } = useProfile();
   const { data: loans, isLoading: isLoansLoading, refetch } = useLoans();
+  const { settings } = useSystemSettings();
   const { score } = useClipScore();
   const applyLoan = useApplyLoan();
   const recordRepayment = useRecordRepayment();
@@ -34,15 +35,15 @@ export default function LoansScreen() {
   const isPrivate = profile?.privacy_mode_enabled ?? false;
   const PAYSTACK_KEY = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || "pk_test_824b3afe0f0c6cdd1bc0e053adb97f56499796a3";
 
-  // 1. Fixed Multiplier (5x Score)
+  // Dynamic Interest Rate from DB
   const currentScore = score || 100;
   const maxLoan = currentScore * 5;
-  const interestRate = 0.15;
+  const rawRate = settings.data?.interest_rate ?? 15;
+  const interestRate = rawRate / 100;
 
   const activeLoan = loans?.find(l => l.status === 'approved' || l.status === 'repaying');
   const hasPendingLoan = loans?.some(l => l.status === 'pending');
 
-  // If loan is approved/repaying but balance is 0, it's effectively gone
   const isActuallyActive = activeLoan && (activeLoan.balance || 0) > 0;
   const currentActiveLoan = isActuallyActive ? activeLoan : null;
 
@@ -125,7 +126,7 @@ export default function LoansScreen() {
         amount: amt,
         momo_provider: isWallet ? "Wallet" : "Mobile Money",
         momo_reference: reference,
-        status: 'confirmed' // Always confirmed if we get here
+        status: 'confirmed'
       });
 
       Alert.alert("Success! 🎉", "Your loan balance has been updated.");
@@ -154,7 +155,6 @@ export default function LoansScreen() {
       }
       await processRepaymentRecord("WAL-REF-" + Date.now(), true);
     } else {
-      // Mobile Money via Paystack
       if (Platform.OS === 'web') {
         setIsSubmitting(true);
         setTimeout(() => {
@@ -165,13 +165,8 @@ export default function LoansScreen() {
             "Institutional Gateway",
             "Select your preferred funding protocol:",
             [
-                {
-                  text: "REAL PAYSTACK",
-                  onPress: () => setShowPaystack(true)
-                },
-                {
-                  text: "SIMULATION (TEST)",
-                  onPress: () => {
+                { text: "REAL PAYSTACK", onPress: () => setShowPaystack(true) },
+                { text: "SIMULATION (TEST)", onPress: () => {
                     setIsSubmitting(true);
                     setTimeout(() => {
                       processRepaymentRecord("IOS-SIM-REF-" + Date.now(), false);
@@ -209,14 +204,13 @@ export default function LoansScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Paystack Layer */}
       {showPaystack && Platform.OS !== 'web' && (
-        <View style={[StyleSheet.absoluteFill, { zIndex: 9999, backgroundColor: '#080c0a' }]}>
+        <View style={[StyleSheet.absoluteFill, { zIndex: 9999, backgroundColor: colors.background }]}>
           <Paystack
             paystackKey={PAYSTACK_KEY}
             amount={(parseFloat(repayAmount.replace(/[^0-9.]/g, '')) || 0) * 100}
             billingEmail={profile?.email || "customer@clipcapital.com"}
-            activityIndicatorColor="#10b981"
+            activityIndicatorColor={colors.primary}
             onCancel={() => setShowPaystack(false)}
             onSuccess={(res: any) => {
                setShowPaystack(false);
@@ -237,7 +231,6 @@ export default function LoansScreen() {
           <View style={{ paddingHorizontal: 24 }}>
             <PremiumHeader title="Credit" subtitle="Institutional Capital" />
 
-            {/* ACTIVE LOAN CARD */}
             {currentActiveLoan ? (
                <Card style={[styles.activeLoanCard, { backgroundColor: colors.cardBg, borderColor: `${colors.primary}40` }]}>
                   <View style={styles.activeHeader}>
@@ -289,7 +282,6 @@ export default function LoansScreen() {
               </LinearGradient>
             )}
 
-            {/* Application Section */}
             {!currentActiveLoan && (
                <View style={styles.section}>
                <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Request New Credit</Text>
@@ -306,7 +298,7 @@ export default function LoansScreen() {
                  {parsedAmount > 0 && (
                    <View style={[styles.estimateBox, { backgroundColor: `${colors.primary}08`, borderColor: `${colors.primary}15` }]}>
                      <View style={styles.estimateRow}>
-                       <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Interest (15%)</Text>
+                       <Text style={[styles.estimateLabel, { color: colors.textMuted }]}>Interest ({rawRate}%)</Text>
                        <Text style={[styles.estimateValue, { color: colors.text }]}>+ GH₵ {interestAmount.toLocaleString()}</Text>
                      </View>
                      <View style={styles.estimateRow}>
@@ -352,7 +344,6 @@ export default function LoansScreen() {
              </View>
             )}
 
-            {/* History */}
             <View style={[styles.section, { marginBottom: 60 }]}>
               <View style={styles.sectionHeader}>
                 <Calendar size={14} color={colors.primary} />
@@ -383,7 +374,6 @@ export default function LoansScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* REPAYMENT MODAL */}
       <Modal visible={showRepayModal} animationType="slide" transparent>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalOverlay}>
@@ -391,11 +381,11 @@ export default function LoansScreen() {
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               style={{ width: '100%' }}
             >
-              <Card style={styles.modalContent}>
+              <Card style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Repay Loan</Text>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>Repay Loan</Text>
                   <TouchableOpacity onPress={() => setShowRepayModal(false)}>
-                    <X color="#7d8a84" />
+                    <X color={colors.textDim} />
                   </TouchableOpacity>
                 </View>
 
@@ -409,14 +399,10 @@ export default function LoansScreen() {
                     value={repayAmount}
                     onChangeText={setRepayAmount}
                     returnKeyType="done"
-                    onSubmitEditing={Keyboard.dismiss}
                   />
                   <TouchableOpacity
                     style={{ marginTop: 8 }}
-                    onPress={() => {
-                      setRepayAmount(currentActiveLoan?.balance?.toString() || "0");
-                      Keyboard.dismiss();
-                    }}
+                    onPress={() => setRepayAmount(currentActiveLoan?.balance?.toString() || "0")}
                   >
                     <Text style={{ color: colors.primary, fontSize: 11, fontWeight: 'bold' }}>PAY FULL BALANCE: GH₵ {currentActiveLoan?.balance?.toLocaleString()}</Text>
                   </TouchableOpacity>
@@ -426,8 +412,8 @@ export default function LoansScreen() {
                   <Text style={[styles.inputLabel, { color: colors.textMuted }]}>Payment Method</Text>
                   <View style={{ gap: 10 }}>
                     <TouchableOpacity
-                      onPress={() => { setRepayMethod('wallet'); Keyboard.dismiss(); }}
-                      style={[styles.methodBtn, { backgroundColor: colors.surfaceElevated }, repayMethod === 'wallet' && { borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}05` }]}
+                      onPress={() => setRepayMethod('wallet')}
+                      style={[styles.methodBtn, { backgroundColor: colors.surfaceElevated }, repayMethod === 'wallet' && { borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}05`, borderWidth: 1 }]}
                     >
                       <Wallet size={18} color={repayMethod === 'wallet' ? colors.primary : colors.textMuted} />
                       <View style={{ flex: 1 }}>
@@ -438,8 +424,8 @@ export default function LoansScreen() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      onPress={() => { setRepayMethod('momo'); Keyboard.dismiss(); }}
-                      style={[styles.methodBtn, { backgroundColor: colors.surfaceElevated }, repayMethod === 'momo' && { borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}05` }]}
+                      onPress={() => setRepayMethod('momo')}
+                      style={[styles.methodBtn, { backgroundColor: colors.surfaceElevated }, repayMethod === 'momo' && { borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}05`, borderWidth: 1 }]}
                     >
                       <Smartphone size={18} color={repayMethod === 'momo' ? colors.primary : colors.textMuted} />
                       <View style={{ flex: 1 }}>
@@ -470,85 +456,64 @@ export default function LoansScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#080c0a" },
+  container: { flex: 1 },
   scrollContent: { paddingTop: 60, paddingBottom: 120 },
-  headerBtn: { marginLeft: 16, height: 44, width: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  limitCard: { padding: 32, borderRadius: 32, marginBottom: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  activeLoanCard: { padding: 24, borderRadius: 28, marginBottom: 32, backgroundColor: '#0f1714', borderWidth: 1, borderColor: '#10b98140' },
+  limitCard: { padding: 32, borderRadius: 32, marginBottom: 32, borderWidth: 1 },
+  activeLoanCard: { padding: 24, borderRadius: 28, marginBottom: 32, borderWidth: 1 },
   activeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   activeLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  pulseDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' },
-  activeTag: { color: '#10b981', fontWeight: '900', fontSize: 10, letterSpacing: 2 },
+  pulseDot: { width: 6, height: 6, borderRadius: 3 },
+  activeTag: { fontWeight: '900', fontSize: 10, letterSpacing: 2 },
   remainingDays: { color: '#f59e0b', fontSize: 12, fontWeight: 'bold' },
-  activeAmount: { color: 'white', fontFamily: 'Display-Bold', fontSize: 36 },
-  activeSub: { color: '#7d8a84', fontSize: 12, marginTop: 4 },
-  activeDetails: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
+  activeAmount: { fontFamily: 'Display-Bold', fontSize: 36 },
+  activeSub: { fontSize: 12, marginTop: 4 },
+  activeDetails: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 20, borderTopWidth: 1 },
   detailItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  detailText: { color: '#7d8a84', fontSize: 11, fontWeight: 'bold' },
-  premiumRepayBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 14,
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5
-  },
+  detailText: { fontSize: 11, fontWeight: 'bold' },
+  premiumRepayBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 14 },
   repayBtnText: { color: '#000', fontWeight: '900', fontSize: 10, letterSpacing: 1 },
   limitHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  limitLabel: { color: 'rgba(255,255,255,0.5)', fontWeight: '900', fontSize: 10, letterSpacing: 2 },
-  limitAmount: { color: 'white', fontFamily: 'Display-Bold', fontSize: 32, marginTop: 4 },
-  scoreBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(245, 158, 11, 0.1)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 100 },
-  scoreText: { color: '#f59e0b', fontSize: 10, fontWeight: 'bold' },
-  progressContainer: { height: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 2, marginBottom: 16 },
-  progressBar: { height: '100%', backgroundColor: '#10b981', borderRadius: 2 },
-  limitHint: { color: '#7d8a84', fontSize: 11, lineHeight: 18 },
+  limitLabel: { fontWeight: '900', fontSize: 10, letterSpacing: 2 },
+  limitAmount: { fontFamily: 'Display-Bold', fontSize: 32, marginTop: 4 },
+  scoreBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 100 },
+  scoreText: { fontSize: 10, fontWeight: 'bold' },
+  progressContainer: { height: 4, borderRadius: 2, marginBottom: 16 },
+  progressBar: { height: '100%', borderRadius: 2 },
+  limitHint: { fontSize: 11, lineHeight: 18 },
   section: { marginBottom: 32 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, marginLeft: 8 },
-  sectionTitle: { color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
-  formCard: { padding: 24, backgroundColor: '#0f1714', borderRadius: 28 },
+  sectionTitle: { fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
+  formCard: { padding: 24, borderRadius: 28 },
   inputGroup: { marginBottom: 20 },
-  inputLabel: { color: '#7d8a84', fontSize: 10, fontWeight: '900', marginBottom: 12, letterSpacing: 2 },
-  input: { backgroundColor: 'rgba(255,255,255,0.03)', padding: 18, borderRadius: 16, color: '#fff', fontSize: 24, fontWeight: 'bold', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', fontFamily: 'Display-Bold' },
-  estimateBox: { backgroundColor: 'rgba(16,185,129,0.05)', padding: 20, borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
+  inputLabel: { fontSize: 10, fontWeight: '900', marginBottom: 12, letterSpacing: 2 },
+  input: { padding: 18, borderRadius: 16, fontSize: 24, fontWeight: 'bold', borderWidth: 1, fontFamily: 'Display-Bold' },
+  estimateBox: { padding: 20, borderRadius: 20, marginBottom: 24, borderWidth: 1 },
   estimateRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  estimateLabel: { color: '#7d8a84', fontSize: 12, fontWeight: '600' },
-  estimateValue: { color: '#fcfcfc', fontSize: 13, fontWeight: 'bold' },
-  totalValue: { color: '#10b981', fontSize: 18, fontFamily: 'Display-Bold' },
+  estimateLabel: { fontSize: 12, fontWeight: '600' },
+  estimateValue: { fontSize: 13, fontWeight: 'bold' },
+  totalValue: { fontSize: 18, fontFamily: 'Display-Bold' },
   termsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24, paddingHorizontal: 4 },
-  termsText: { color: '#7d8a84', fontSize: 11, flex: 1 },
-  mainBtnPremium: {
-    height: 64,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 10
-  },
+  termsText: { fontSize: 11, flex: 1 },
+  mainBtnPremium: { height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   btnContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   mainBtnText: { color: '#000', fontFamily: 'Display-Bold', fontSize: 14, letterSpacing: 1 },
   statusBox: { padding: 12, borderRadius: 12, marginBottom: 16, borderWidth: 1 },
   statusError: { backgroundColor: '#ef444410', borderColor: '#ef444430' },
   statusSuccess: { backgroundColor: '#10b98110', borderColor: '#10b98130' },
   statusText: { fontSize: 13, fontWeight: 'bold', textAlign: 'center' },
-  historyCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, marginBottom: 12, backgroundColor: '#0f1714', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
-  historyPurpose: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  historyDate: { color: '#7d8a84', fontSize: 11, marginTop: 4 },
-  historyAmount: { color: 'white', fontFamily: 'Display-Bold', fontSize: 16, marginBottom: 6 },
+  historyCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, marginBottom: 12, borderRadius: 20, borderWidth: 1 },
+  historyPurpose: { fontWeight: 'bold', fontSize: 14 },
+  historyDate: { fontSize: 11, marginTop: 4 },
+  historyAmount: { fontFamily: 'Display-Bold', fontSize: 16, marginBottom: 6 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   statusBadgeText: { fontSize: 9, fontWeight: '900' },
   emptyState: { alignItems: 'center', paddingVertical: 40, opacity: 0.5 },
-  emptyText: { color: '#7d8a84', fontSize: 13, marginTop: 12, fontStyle: 'italic' },
+  emptyText: { fontSize: 13, marginTop: 12, fontStyle: 'italic' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end', padding: 16 },
   modalContent: { padding: 32, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderTopLeftRadius: 40, borderTopRightRadius: 40 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 },
-  modalTitle: { color: 'white', fontFamily: 'Display-Bold', fontSize: 24 },
-  methodBtn: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'transparent' },
-  methodBtnActive: { borderColor: '#10b98130', backgroundColor: 'rgba(16,185,129,0.05)' },
-  methodTitle: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  methodSub: { color: '#7d8a84', fontSize: 11, marginTop: 2 }
+  modalTitle: { fontFamily: 'Display-Bold', fontSize: 24 },
+  methodBtn: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 20, borderWidth: 1 },
+  methodTitle: { fontWeight: 'bold', fontSize: 14 },
+  methodSub: { fontSize: 11, marginTop: 2 }
 });

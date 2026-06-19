@@ -239,7 +239,7 @@ export default function CartScreen() {
                     <Text style={[styles.itemPricePer, { color: colors.textDim }]}>GH₵ {item.price.toLocaleString()} each</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                     <Text style={[styles.itemTotal, { color: colors.primary }]}>GH₵ {(item.price * item.qty).toLocaleString()}</Text>
+                     <Text style={[styles.itemTotal, { color: colors.gold }]}>GH₵ {(item.price * item.qty).toLocaleString()}</Text>
                   </View>
                 </View>
 
@@ -265,7 +265,7 @@ export default function CartScreen() {
           <Card style={[styles.summaryCard, { backgroundColor: colors.cardBg }]}>
             <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
                <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>GRAND TOTAL</Text>
-               <Text style={[styles.summaryValue, { color: colors.text }]}>GH₵ {total.toLocaleString()}</Text>
+               <Text style={[styles.summaryValue, { color: colors.gold }]}>GH₵ {total.toLocaleString()}</Text>
             </View>
 
             {statusMessage.text !== "" && (
@@ -301,6 +301,7 @@ export default function CartScreen() {
                 <Button
                     title="Pay with Mobile Money"
                     onPress={handlePaystackLaunch}
+                    variant="secondary"
                     size="lg"
                 />
             </View>

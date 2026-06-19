@@ -226,7 +226,7 @@ export default function Marketplace() {
 
                         <View style={styles.productInfo}>
                           <Text style={[styles.productName, { color: colors.text }]} numberOfLines={2}>{p.name}</Text>
-                          <Text style={[styles.productPrice, { color: colors.primary }]}>
+                          <Text style={[styles.productPrice, { color: colors.gold }]}>
                             {isPrivate ? "••••••" : `GH₵ ${p.price.toLocaleString()}`}
                           </Text>
 
@@ -236,12 +236,12 @@ export default function Marketplace() {
                               handleAdd(p);
                             }}
                             activeOpacity={0.8}
-                            style={[styles.buyBtn, { backgroundColor: colors.primary }, (isJustAdded || qty > 0) && { backgroundColor: colors.primary + '10', borderWidth: 1, borderColor: colors.primary }]}
+                            style={[styles.buyBtn, { backgroundColor: colors.gold }, (isJustAdded || qty > 0) && { backgroundColor: colors.gold + '10', borderWidth: 1, borderColor: colors.gold }]}
                           >
                             {isJustAdded ? (
-                              <Check size={18} color={colors.primary} />
+                              <Check size={18} color={colors.gold} />
                             ) : qty > 0 ? (
-                              <Text style={[styles.buyBtnTextActive, { color: colors.primary }]}>IN CART ({qty})</Text>
+                              <Text style={[styles.buyBtnTextActive, { color: colors.gold }]}>IN CART ({qty})</Text>
                             ) : (
                               <View style={styles.btnRow}>
                                 <ShoppingBag size={14} color="#000" strokeWidth={2.5} />

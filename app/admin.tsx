@@ -126,7 +126,7 @@ function SystemHealth({ stats, loading }: any) {
         <StatCard
           label="Total Revenue"
           value={`GH₵${stats?.totalCash || 0}`}
-          variant="emerald"
+          variant="gold"
         />
       </View>
 
@@ -149,6 +149,7 @@ function SystemHealth({ stats, loading }: any) {
         <StatCard
           label="Users"
           value={`${stats?.totalUsers || 0}`}
+          variant="emerald"
         />
       </View>
 
@@ -156,6 +157,7 @@ function SystemHealth({ stats, loading }: any) {
         <StatCard
           label="Approval"
           value={`${stats?.approvalRate || 0}%`}
+          variant="emerald"
         />
       </View>
     </Animated.View>
@@ -210,7 +212,7 @@ function LoanQueue() {
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>GH₵ {loan.amount}</Text>
                   {loan.status !== 'pending' && (
-                    <View style={{ marginLeft: 8, paddingHorizontal: 8, py: 2, borderRadius: 6, backgroundColor: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary + '20' : colors.destructive + '20' }}>
+                    <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary + '20' : colors.destructive + '20' }}>
                       <Text style={{ color: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary : colors.destructive, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>
                         {loan.status}
                       </Text>
@@ -294,7 +296,7 @@ function WithdrawalQueue() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>GH₵ {req.amount}</Text>
-                  <View style={{ marginLeft: 8, paddingHorizontal: 8, py: 2, borderRadius: 6, backgroundColor: req.status === 'pending' ? colors.gold + '15' : req.status === 'completed' ? colors.primary + '15' : colors.destructive + '15' }}>
+                  <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: req.status === 'pending' ? colors.gold + '15' : req.status === 'completed' ? colors.primary + '15' : colors.destructive + '15' }}>
                     <Text style={{ color: req.status === 'pending' ? colors.gold : req.status === 'completed' ? colors.primary : colors.destructive, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>
                       {req.status}
                     </Text>
@@ -335,7 +337,7 @@ function WithdrawalQueue() {
 }
 
 function OrderManagement() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   const { data: orders, isLoading, refetch } = useAllOrders();
   const updateStatus = useUpdateOrderStatus();
   const [filter, setFilter] = useState<'all' | 'pending' | 'paid' | 'shipped' | 'completed'>('all');
@@ -542,12 +544,12 @@ function SusuManagement() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
                <View>
                   <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: 'bold' }}>CURRENT POT</Text>
-                  <Text style={{ color: colors.primary, fontSize: 20, fontWeight: 'bold' }}>GH₵ {group.pot?.toLocaleString()}</Text>
+                  <Text style={{ color: colors.gold, fontSize: 20, fontWeight: 'bold' }}>GH₵ {group.pot?.toLocaleString()}</Text>
                </View>
                {group.pot > 0 && (
                   <TouchableOpacity
                     onPress={() => handleDisburse(group)}
-                    style={{ backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}
+                    style={{ backgroundColor: colors.gold, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}
                   >
                     <Text style={{ color: '#000', fontSize: 10, fontWeight: 'bold' }}>DISBURSE</Text>
                   </TouchableOpacity>
@@ -641,32 +643,54 @@ function UserDirectory() {
   if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
   return (
-    <View>
+    <Animated.View entering={FadeInDown}>
+      <Text style={{ color: colors.textDim, marginBottom: 16, fontSize: 10, fontWeight: '900', letterSpacing: 2, marginLeft: 8 }}>
+        REGISTERED MERCHANT DATABASE
+      </Text>
       {users?.map((u) => (
-        <Card key={u.id} style={{ marginBottom: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primary + '10', alignItems: 'center', justifyContent: 'center' }}>
-              <Lucide.User size={20} color={colors.primary} />
+        <Card key={u.id} style={{ marginBottom: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.cardBg, borderColor: colors.border }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: colors.primary + '10', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary + '20' }}>
+               <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 18 }}>{u.display_name?.charAt(0) || 'A'}</Text>
             </View>
-            <View>
-              <Text style={{ color: colors.text, fontWeight: 'bold' }}>{u.display_name}</Text>
-              <Text style={{ color: u.status === 'banned' ? colors.destructive : colors.primary, fontSize: 10, fontWeight: 'bold' }}>{u.status?.toUpperCase() || 'ACTIVE'}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 15 }}>{u.display_name}</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>@{u.username || 'no_handle'}</Text>
+              <Text style={{ color: colors.textDim, fontSize: 10, marginTop: 2 }}>Joined: {new Date(u.created_at).toLocaleDateString()}</Text>
             </View>
           </View>
-          <View style={{ alignItems: 'flex-end' }}>
-             <Text style={{ color: colors.gold, fontWeight: 'bold' }}>{u.clip_score} pts</Text>
-             <TouchableOpacity style={{ marginTop: 4 }} onPress={() => updateStatus.mutate({ id: u.id, status: u.status === 'banned' ? 'active' : 'banned' })}>
-                {u.status === 'banned' ? <Lucide.Unlock size={20} color={colors.primary} /> : <Lucide.Lock size={20} color={colors.destructive} />}
+
+          <View style={{ alignItems: 'flex-end', gap: 8 }}>
+             <View style={{ backgroundColor: colors.surfaceElevated, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ color: colors.gold, fontWeight: 'bold', fontSize: 11 }}>{u.clip_score} pts</Text>
+             </View>
+             <TouchableOpacity
+                onPress={() => {
+                    const newStatus = u.status === 'banned' ? 'active' : 'banned';
+                    updateStatus.mutate({ id: u.id, status: newStatus });
+                }}
+                style={{
+                    backgroundColor: u.status === 'banned' ? colors.primary : colors.destructive + '15',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: u.status === 'banned' ? colors.primary : colors.destructive + '30'
+                }}
+             >
+                <Text style={{ color: u.status === 'banned' ? '#000' : colors.destructive, fontWeight: '900', fontSize: 9 }}>
+                    {u.status === 'banned' ? 'UNBAN' : 'BAN USER'}
+                </Text>
              </TouchableOpacity>
           </View>
         </Card>
       ))}
-    </View>
+    </Animated.View>
   );
 }
 
 function SettingsSection() {
-    const { colors } = useTheme();
+    const { colors, theme } = useTheme();
     const { settings, updateSettings } = useSystemSettings();
     const broadcast = useSendBroadcast();
     const [notif, setNotif] = useState({ title: "", body: "" });
@@ -678,70 +702,144 @@ function SettingsSection() {
 
     if (settings.isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
 
+    const handleUpdateRate = () => {
+        const rate = parseFloat(localRate);
+        if (!isNaN(rate)) {
+            updateSettings.mutate({ interest_rate: rate });
+            Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
+            Alert.alert("Governance Update", `Institutional Interest Rate successfully adjusted to ${rate}%.`);
+        } else {
+            Alert.alert("Invalid Input", "Please enter a numeric percentage.");
+        }
+    };
+
+    const handleBroadcast = async () => {
+      if (!notif.title.trim() || !notif.body.trim()) {
+        return Alert.alert("Required", "Please fill in both the title and the message.");
+      }
+
+      const performBroadcast = async () => {
+        try {
+          await broadcast.mutateAsync({ title: notif.title, body: notif.body });
+          setNotif({ title: "", body: "" });
+          Alert.alert("Success", "Institutional broadcast transmitted to all vault users.");
+        } catch (e: any) {
+          Alert.alert("Error", e.message);
+        }
+      };
+
+      Alert.alert(
+        "Confirm Broadcast",
+        "This message will be transmitted to ALL registered vault users. Proceed?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "TRANSMIT", style: "destructive", onPress: performBroadcast }
+        ]
+      );
+    };
+
     return (
       <Animated.View entering={FadeInDown}>
-        <Card style={{ marginBottom: 24, padding: 20 }}>
-            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>Interest Control</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TextInput
-                    value={localRate}
-                    onChangeText={setLocalRate}
-                    keyboardType="numeric"
-                    style={{ flex: 1, backgroundColor: colors.surfaceElevated, borderRadius: 12, paddingHorizontal: 16, color: colors.text, fontSize: 20, fontWeight: 'bold' }}
-                />
+        <View style={{ marginBottom: 32 }}>
+          <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, fontSize: 18 }}>System Governance</Text>
+          <Card style={{ padding: 24, backgroundColor: colors.cardBg, borderColor: colors.border }}>
+            {/* Interest Rate Module */}
+            <View style={{ backgroundColor: colors.surfaceElevated, marginBottom: 24, padding: 16, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Base Interest Rate</Text>
+                  <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>Global credit growth percentage</Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ backgroundColor: colors.cardBg, flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 20, height: 60, borderWidth: 1, borderColor: colors.border }}>
+                        <TextInput
+                            value={localRate}
+                            keyboardType="decimal-pad"
+                            onChangeText={setLocalRate}
+                            placeholder="0.0"
+                            placeholderTextColor={colors.textDim}
+                            style={{ flex: 1, color: colors.primary, fontFamily: 'Display-Bold', fontSize: 24 }}
+                            selectionColor={colors.primary}
+                        />
+                        <Text style={{ fontFamily: 'Display-Bold', color: colors.primary, fontSize: 20 }}>%</Text>
+                    </View>
+
+                    <TouchableOpacity onPress={handleUpdateRate}>
+                       <LinearGradient
+                        colors={[colors.primary, colors.primary + 'cc']}
+                        style={{ width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}
+                       >
+                          <Lucide.Check size={28} color="#000" strokeWidth={3} />
+                       </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+            </View>
+
+            {/* Lockdown Module */}
+            <View style={{ backgroundColor: colors.surfaceElevated, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}>
+                <View style={{ flex: 1, marginRight: 16 }}>
+                  <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>Vault Lockdown</Text>
+                  <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>Suspend all global activities</Text>
+                </View>
+
                 <TouchableOpacity
-                    onPress={() => {
-                        updateSettings.mutate({ interest_rate: parseFloat(localRate) });
-                        Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
-                    }}
-                    style={{ backgroundColor: colors.primary, paddingHorizontal: 20, borderRadius: 12, justifyContent: 'center' }}
+                  onPress={async () => {
+                    const newVal = !settings.data?.maintenance_mode;
+                    try {
+                      Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 50, 20, 50]);
+                      await updateSettings.mutateAsync({ maintenance_mode: newVal });
+                      Alert.alert("Vault Protocol", `System Lockdown has been ${newVal ? 'ENGAGED' : 'RELEASED'}.`);
+                    } catch (e: any) {
+                      Alert.alert("Error", e.message);
+                    }
+                  }}
                 >
-                    <Text style={{ color: '#000', fontWeight: 'bold' }}>UPDATE</Text>
+                  <LinearGradient
+                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#7f1d1d'] : [colors.primary, colors.primary + 'cc']}
+                    style={{ height: 50, paddingHorizontal: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8 }}
+                  >
+                     {settings.data?.maintenance_mode ? <Lucide.ShieldAlert size={16} color="#000" /> : <Lucide.ShieldCheck size={16} color="#000" />}
+                     <Text style={{ color: '#000', fontWeight: '900', fontSize: 10 }}>{settings.data?.maintenance_mode ? "RELEASE" : "ENGAGE"}</Text>
+                  </LinearGradient>
                 </TouchableOpacity>
             </View>
-        </Card>
+          </Card>
+        </View>
 
-        <Card style={{ padding: 20 }}>
-            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>System Lock</Text>
-            <TouchableOpacity
-              onPress={() => {
-                Vibration.vibrate(100);
-                updateSettings.mutate({ maintenance_mode: !settings.data?.maintenance_mode });
-              }}
-              style={{
-                backgroundColor: settings.data?.maintenance_mode ? colors.primary : colors.destructive,
-                height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center'
-              }}
-            >
-              <Text style={{ color: '#000', fontWeight: '900', fontSize: 14 }}>
-                {settings.data?.maintenance_mode ? "UNLOCK SYSTEM" : "LOCK SYSTEM"}
-              </Text>
-            </TouchableOpacity>
-        </Card>
-
-        <Card style={{ marginTop: 24, padding: 20 }}>
-            <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, marginBottom: 16 }}>Global Broadcast</Text>
+        {/* Broadcast Module */}
+        <Text style={{ color: colors.text, fontWeight: 'bold', marginBottom: 16, fontSize: 18 }}>Broadcast Protocol</Text>
+        <Card style={{ padding: 24, backgroundColor: colors.cardBg, borderColor: colors.border }}>
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Signal Title</Text>
             <TextInput
               value={notif.title}
               onChangeText={t => setNotif(prev => ({...prev, title: t}))}
-              placeholder="Title"
+              placeholder="e.g. SYSTEM UPGRADE"
               placeholderTextColor={colors.textDim}
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 12, padding: 12, color: colors.text, marginBottom: 10, borderWidth: 1, borderColor: colors.border }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, borderWidth: 1, borderColor: colors.border }}
             />
+          </View>
+
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ color: colors.textDim, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>Global Transmission</Text>
             <TextInput
               value={notif.body}
               onChangeText={t => setNotif(prev => ({...prev, body: t}))}
-              placeholder="Message"
+              placeholder="Message details..."
               placeholderTextColor={colors.textDim}
               multiline
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 12, padding: 12, color: colors.text, height: 100, textAlignVertical: 'top', marginBottom: 16, borderWidth: 1, borderColor: colors.border }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, height: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: colors.border }}
             />
-            <TouchableOpacity
-              onPress={() => broadcast.mutate(notif)}
-              style={{ backgroundColor: colors.primary, height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+          </View>
+
+          <TouchableOpacity onPress={handleBroadcast}>
+            <LinearGradient
+              colors={[colors.gold, colors.gold + 'cc']}
+              style={{ height: 60, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
             >
-               {broadcast.isPending ? <ActivityIndicator color="#000" /> : <Text style={{ color: '#000', fontWeight: '900' }}>SEND SIGNAL</Text>}
-            </TouchableOpacity>
+               <Text style={{ color: '#000', fontWeight: '900', letterSpacing: 1 }}>TRANSMIT SIGNAL</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </Card>
       </Animated.View>
     );
@@ -759,7 +857,7 @@ function EmptyState({ icon: Icon, title, subtitle }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#080c0a' },
   scrollContent: { paddingTop: 60, paddingBottom: 150 },
   topNav: { paddingTop: 20 },
   backButton: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", marginLeft: 24, marginBottom: 12, borderWidth: 1 },

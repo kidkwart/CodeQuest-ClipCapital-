@@ -122,13 +122,13 @@ export default function WithdrawScreen() {
             <View style={styles.balanceRow}>
               <View style={styles.balanceInfo}>
                 <Text style={[styles.balanceLabel, { color: colors.textDim }]}>AVAILABLE LIQUIDITY</Text>
-                <Text style={[styles.balanceValue, { color: colors.text }]}>
+                <Text style={[styles.balanceValue, { color: colors.gold }]}>
                   {isPrivate ? "••••••" : `GH₵ ${balance.toLocaleString()}`}
                 </Text>
               </View>
               <BouncyTap onPress={() => router.push("/topup")}>
                 <LinearGradient
-                  colors={['#10b981', '#059669']}
+                  colors={[colors.gold, colors.gold + 'cc']}
                   style={styles.premiumAddBtn}
                 >
                   <Plus size={14} color="#000" strokeWidth={3} />
@@ -179,7 +179,7 @@ export default function WithdrawScreen() {
 
                 <BouncyTap onPress={handleRequest} disabled={request.isPending || !amount}>
                    <LinearGradient
-                     colors={['#10b981', '#059669']}
+                     colors={[colors.gold, colors.gold + 'cc']}
                      style={styles.mainConfirmBtn}
                    >
                      {request.isPending ? (

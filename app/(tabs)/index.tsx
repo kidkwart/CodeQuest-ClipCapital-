@@ -149,19 +149,19 @@ export default function Dashboard() {
           <View style={{ marginBottom: 48 }}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Business Tracking</Text>
-              <Text style={[styles.sectionStat, { color: colors.primary }]}>
+              <Text style={[styles.sectionStat, { color: colors.gold }]}>
                 Today: {isPrivate ? "••••" : `GH₵ ${todayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </Text>
             </View>
 
-            <View style={[styles.revenueCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <View style={[styles.revenueCard, { backgroundColor: colors.cardBg, borderColor: colors.gold + '30' }]}>
               <View style={{ padding: 24, flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardLabel, { color: isLogged ? colors.primary : colors.textMuted }]}>
+                  <Text style={[styles.cardLabel, { color: isLogged ? colors.gold : colors.textMuted }]}>
                     {isLogged ? "REVENUE RECORDED" : "LOG DAILY SALES"}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', height: 44 }}>
-                    <Text style={[styles.currencyPrefix, { color: colors.textDim }]}>GH₵</Text>
+                    <Text style={[styles.currencyPrefix, { color: colors.gold }]}>GH₵</Text>
                     <TextInput
                       value={incomeAmt}
                       onChangeText={setIncomeAmt}
@@ -176,7 +176,7 @@ export default function Dashboard() {
                 <BouncyTap
                   onPress={handleLogIncome}
                   disabled={addIncome.isPending || !incomeAmt}
-                  style={[styles.logBtn, { backgroundColor: colors.primary }]}
+                  style={[styles.logBtn, { backgroundColor: colors.gold }]}
                 >
                   {addIncome.isPending ? (
                     <ActivityIndicator color="#080c0a" />
@@ -185,8 +185,8 @@ export default function Dashboard() {
                   )}
                 </BouncyTap>
               </View>
-              <View style={[styles.cardFooter, { backgroundColor: colors.primary + '08' }]}>
-                  <Text style={[styles.footerText, { color: colors.primary }]}>
+              <View style={[styles.cardFooter, { backgroundColor: colors.gold + '08' }]}>
+                  <Text style={[styles.footerText, { color: colors.gold }]}>
                     * Improves your credit worthiness and shop visibility.
                   </Text>
               </View>

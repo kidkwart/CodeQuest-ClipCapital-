@@ -105,7 +105,7 @@ export default function ProductDetails() {
               </View>
               <Text style={[styles.title, { color: colors.text }]}>{product.name}</Text>
             </View>
-            <Text style={[styles.price, { color: colors.primary }]}>GH₵ {product.price.toLocaleString()}</Text>
+            <Text style={[styles.price, { color: colors.gold }]}>GH₵ {product.price.toLocaleString()}</Text>
           </View>
 
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
@@ -167,7 +167,7 @@ export default function ProductDetails() {
           <View style={{ flex: 1.5 }}>
             <Button
               title="Buy Now"
-              variant="default"
+              variant="secondary"
               size="lg"
               onPress={() => {
                 handleAddToCart();
