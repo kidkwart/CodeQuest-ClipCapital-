@@ -37,7 +37,8 @@ export default function LoansScreen() {
   // 1. Fixed Multiplier (5x Score)
   const currentScore = score || 100;
   const maxLoan = currentScore * 5;
-  const interestRate = 0.15;
+  const rawRate = settings.data?.interest_rate ?? 15;
+  const interestRate = rawRate / 100;
 
   const activeLoan = loans?.find(l => l.status === 'approved' || l.status === 'repaying');
   const hasPendingLoan = loans?.some(l => l.status === 'pending');

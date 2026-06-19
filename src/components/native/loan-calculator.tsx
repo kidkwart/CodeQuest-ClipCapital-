@@ -26,7 +26,7 @@ export function LoanCalculator({ defaultAmount = 500, maxAmount = 5000 }) {
   };
 
   return (
-    <Card style={{ backgroundColor: '#0f1714', borderWeight: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+    <Card style={{ backgroundColor: '#0f1714', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32 }}>
         <View style={{ height: 24, width: 24, borderRadius: 8, backgroundColor: 'rgba(16,185,129,0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(16,185,129,0.2)' }}>
           <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 10 }}>%</Text>

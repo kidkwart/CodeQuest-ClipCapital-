@@ -406,7 +406,7 @@ function OrderManagement() {
 
               <TouchableOpacity
                 onPress={() => handleUpdate(order.id, 'cancelled')}
-                style={{ flex: 0.5, borderWeight: 1, borderColor: colors.destructive, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+                style={{ flex: 0.5, borderWidth: 1, borderColor: colors.destructive, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
               >
                 <Text style={{ color: colors.destructive, fontWeight: 'bold', fontSize: 11 }}>CANCEL</Text>
               </TouchableOpacity>
@@ -720,7 +720,7 @@ function SettingsSection() {
               onChangeText={t => setNotif(prev => ({...prev, title: t}))}
               placeholder="e.g. SYSTEM UPGRADE"
               placeholderTextColor={colors.textDim}
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, borderWeight: 1, borderColor: colors.border }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, borderWidth: 1, borderColor: colors.border }}
             />
           </View>
 
@@ -732,7 +732,7 @@ function SettingsSection() {
               placeholder="Message details..."
               placeholderTextColor={colors.textDim}
               multiline
-              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, height: 120, textAlignVertical: 'top', borderWeight: 1, borderColor: colors.border }}
+              style={{ backgroundColor: colors.surfaceElevated, borderRadius: 16, padding: 16, color: colors.text, height: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: colors.border }}
             />
           </View>
 
