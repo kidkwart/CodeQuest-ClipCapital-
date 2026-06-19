@@ -1,19 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, StatCard, Card, EmptyState } from "@/components/app-shell";
 import { ClipScoreGauge } from "@/components/clip-score-gauge";
-import { useClipScore, useIncome, useExpenses, useMyLoans, useAddIncome, useRecentActivity } from "@/lib/app-queries";
+import { useClipScore, useIncome, useExpenses, useMyLoans, useAddIncome, useRecentActivity, useProfile } from "@/lib/app-queries";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, Zap, Loader2, ArrowUpRight, ArrowDownLeft, Wallet, ShoppingBag, PieChart } from "lucide-react";
+import { Plus, TrendingUp, Zap, Loader2, ArrowUpRight, ArrowDownLeft, Wallet, ShoppingBag, PieChart, CheckCircle2, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/")({
   component: Dashboard,
 });
 
 function Dashboard() {
+  const profile = useProfile();
   const { score } = useClipScore();
   const income = useIncome();
   const expenses = useExpenses();
@@ -24,6 +26,25 @@ function Dashboard() {
   const [incomeNote, setIncomeNote] = useState("");
   const [customAmount, setCustomAmount] = useState("");
   const [activeQuickLog, setActiveQuickLog] = useState<number | null>(null);
+
+  // Profile completion calculation
+  const getCompletion = () => {
+    if (!profile.data) return 0;
+    const fields = [
+      profile.data.display_name,
+      profile.data.business_name,
+      profile.data.phone_number,
+      profile.data.avatar_url,
+      profile.data.bio,
+      profile.data.bank_name,
+      profile.data.account_number
+    ];
+    const filled = fields.filter(f => !!f).length;
+    return Math.round((filled / fields.length) * 100);
+  };
+
+  const completion = getCompletion();
+  const walletBalance = Number(profile.data?.wallet_balance || 0);
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -85,9 +106,29 @@ function Dashboard() {
         </Card>
 
         <div className="lg:col-span-2 space-y-6">
+          {/* Profile Completion Bar */}
+          {completion < 100 && (
+            <Card className="p-4 bg-primary/5 border-dashed border-primary/30 relative overflow-hidden">
+              <div className="flex justify-between items-center mb-2">
+                <div className="flex items-center gap-2">
+                  <UserCircle className="w-4 h-4 text-primary" />
+                  <span className="text-[10px] font-black uppercase text-primary tracking-widest">Profile {completion}% Complete</span>
+                </div>
+                <Link to="/app/settings" className="text-[10px] font-bold text-primary hover:underline">Finish Setup →</Link>
+              </div>
+              <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${completion}%` }}
+                  className="h-full bg-primary"
+                />
+              </div>
+            </Card>
+          )}
+
           <div className="grid sm:grid-cols-2 gap-4">
+            <StatCard label="Wallet Balance" value={`GH₵ ${walletBalance.toLocaleString()}`} hint="Available for use" />
             <StatCard label="Income this month" value={`GH₵ ${monthIncome.toLocaleString()}`} hint={`${(income.data ?? []).length} entries total`} />
-            <StatCard label="Expenses this month" value={`GH₵ ${monthExpense.toLocaleString()}`} />
             <StatCard label="Profit this month" value={`GH₵ ${profit.toLocaleString()}`} hint={profit >= 0 ? "In the green" : "Spend > earn"} />
             <StatCard label="Loan outstanding" value={`GH₵ ${outstanding.toLocaleString()}`} hint={`${(loans.data ?? []).length} application(s)`} />
           </div>

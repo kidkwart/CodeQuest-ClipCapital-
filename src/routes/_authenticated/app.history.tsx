@@ -47,6 +47,32 @@ function HistoryPage() {
   const moneyIn = history?.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0) ?? 0;
   const moneyOut = Math.abs(history?.filter(t => t.amount < 0).reduce((s, t) => s + t.amount, 0) ?? 0);
 
+  const handleExportCSV = () => {
+    if (!history || history.length === 0) return;
+
+    const headers = ["Date", "Type", "Title", "Amount (GHS)", "Status", "Reference"];
+    const rows = history.map(t => [
+      format(new Date(t.date), "yyyy-MM-dd HH:mm"),
+      t.type,
+      t.title,
+      t.amount,
+      t.status || "COMPLETED",
+      t.momo_reference || ""
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `ClipCapital_Report_${format(new Date(), "yyyy_MM_dd")}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Financial report exported!");
+  };
+
   const getIcon = (type: string, amount: number) => {
     if (type === "order") return <ShoppingBag className="w-4 h-4" />;
     if (type.startsWith("susu")) return <Wallet className="w-4 h-4" />;
@@ -75,18 +101,30 @@ function HistoryPage() {
           Recent Activity
         </h2>
 
-        <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
-          {(["all", "in", "out"] as const).map((f) => (
-            <Button
-              key={f}
-              variant={filter === f ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8 text-[10px] uppercase font-bold px-3 rounded-md"
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </Button>
-          ))}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-[10px] uppercase font-bold px-3 rounded-md gap-2"
+            onClick={handleExportCSV}
+            disabled={!history?.length}
+          >
+            <Download className="w-3 h-3" /> Export
+          </Button>
+
+          <div className="flex bg-muted/50 p-1 rounded-lg border border-border">
+            {(["all", "in", "out"] as const).map((f) => (
+              <Button
+                key={f}
+                variant={filter === f ? "secondary" : "ghost"}
+                size="sm"
+                className="h-8 text-[10px] uppercase font-bold px-3 rounded-md"
+                onClick={() => setFilter(f)}
+              >
+                {f}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
