@@ -1,56 +1,69 @@
 import { useEffect, useState } from "react";
 import type { CartItem } from "./app-queries";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 const KEY = "clipcapital_cart_v1";
+let listeners: (() => void)[] = [];
 
-function read(): CartItem[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); } catch { return []; }
+async function read(): Promise<CartItem[]> {
+  try {
+    const raw = Platform.OS === 'web'
+      ? localStorage.getItem(KEY)
+      : await AsyncStorage.getItem(KEY);
+    return JSON.parse(raw ?? "[]");
+  } catch {
+    return [];
+  }
 }
 
-function write(items: CartItem[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(items));
-  window.dispatchEvent(new CustomEvent("cart-changed"));
+async function write(items: CartItem[]) {
+  const data = JSON.stringify(items);
+  if (Platform.OS === 'web') {
+    localStorage.setItem(KEY, data);
+  } else {
+    await AsyncStorage.setItem(KEY, data);
+  }
+  listeners.forEach(l => l());
 }
 
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
-    setItems(read());
-    const handler = () => setItems(read());
-    window.addEventListener("cart-changed", handler);
-    return () => window.removeEventListener("cart-changed", handler);
+    const load = async () => setItems(await read());
+    load();
+    listeners.push(load);
+    return () => {
+      listeners = listeners.filter(l => l !== load);
+    };
   }, []);
 
   return {
     items,
-    add(item: CartItem) {
-      const next = [...read()];
+    async add(item: CartItem) {
+      const current = await read();
+      const next = [...current];
       const idx = next.findIndex((i) => i.product_id === item.product_id);
       if (idx >= 0) {
         next[idx] = { ...next[idx], qty: next[idx].qty + item.qty };
       } else {
         next.push(item);
       }
-      write(next);
-      setItems(next); // Force immediate local update
+      await write(next);
     },
-    remove(productId: string) {
-      const next = read().filter((i) => i.product_id !== productId);
-      write(next);
-      setItems(next);
+    async remove(productId: string) {
+      const current = await read();
+      const next = current.filter((i) => i.product_id !== productId);
+      await write(next);
     },
-    setQty(productId: string, qty: number) {
-      const next = read().map((i) => i.product_id === productId ? { ...i, qty } : i).filter((i) => i.qty > 0);
-      write(next);
-      setItems(next);
+    async setQty(productId: string, qty: number) {
+      const current = await read();
+      const next = current.map((i) => i.product_id === productId ? { ...i, qty } : i).filter((i) => i.qty > 0);
+      await write(next);
     },
-    clear() {
-      write([]);
-      setItems([]);
+    async clear() {
+      await write([]);
     },
-    total() { return read().reduce((s, i) => s + i.price * i.qty, 0); },
   };
 }

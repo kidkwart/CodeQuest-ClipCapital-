@@ -1,48 +1,46 @@
-import { toast } from "sonner";
+import { Platform, Linking } from "react-native";
 
 interface PaystackOptions {
   email: string;
-  amount: number; // in GHS
+  amount: number;
   onSuccess: (reference: string) => void;
   onClose?: () => void;
   metadata?: any;
 }
 
 export const usePaystack = () => {
-  const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+  const publicKey = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || process.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_placeholder";
 
-  const initializePayment = ({ email, amount, onSuccess, onClose, metadata }: PaystackOptions) => {
-    if (!publicKey || !publicKey.startsWith("pk_")) {
-      toast.error("Paystack is not configured. Please add your Public Key to the .env file.");
-      return;
+  const initializePayment = ({ email, amount, metadata }: PaystackOptions) => {
+    if (Platform.OS === 'web') {
+      // Web Implementation
+      const handler = (window as any).PaystackPop.setup({
+        key: publicKey,
+        email,
+        amount: Math.round(amount * 100),
+        currency: "GHS",
+        metadata: {
+          ...metadata,
+          custom_fields: [
+            {
+              display_name: "Platform",
+              variable_name: "platform",
+              value: "ClipCapital Native Web"
+            },
+            ...(metadata?.custom_fields || [])
+          ]
+        },
+        callback: (response: any) => onSuccess(response.reference),
+        onClose,
+      });
+      handler.openIframe();
+    } else {
+      // Native Implementation: Redirect to a secure Paystack payment link
+      // In a production app, you would generate this URL from your backend
+      const checkoutUrl = `https://checkout.paystack.com/check?key=${publicKey}&email=${email}&amount=${amount * 100}`;
+      Linking.openURL(checkoutUrl);
+      alert("Opening secure payment browser...");
     }
-
-    const handler = (window as any).PaystackPop.setup({
-      key: publicKey,
-      email: email,
-      amount: Math.round(amount * 100), // Paystack takes amount in pesewas
-      currency: "GHS",
-      ref: 'CC-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-      metadata: {
-        ...metadata,
-        custom_fields: [
-          {
-            display_name: "Platform",
-            variable_name: "platform",
-            value: "ClipCapital App"
-          },
-          ...(metadata?.custom_fields || [])
-        ]
-      },
-      callback: (response: any) => {
-        onSuccess(response.reference);
-      },
-      onClose: () => {
-        if (onClose) onClose();
-      }
-    });
-
-    handler.openIframe();
   };
 
   return { initializePayment };
