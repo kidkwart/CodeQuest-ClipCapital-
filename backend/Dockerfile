@@ -3,6 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Ensure both package.json and package-lock.json are copied
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
