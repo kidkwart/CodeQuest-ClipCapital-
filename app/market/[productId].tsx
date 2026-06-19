@@ -8,12 +8,14 @@ import { Card } from '@/components/native/card';
 import { ArrowLeft, ShoppingCart, ShieldCheck, Sparkles, Plus, Minus, ClipboardList } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { useTheme } from '@/context/theme-context';
 
 const { width } = Dimensions.get('window');
 
 export default function ProductDetails() {
   const { productId } = useLocalSearchParams();
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: dbProducts } = useProducts();
   const cart = useCart();
 
@@ -98,24 +100,24 @@ export default function ProductDetails() {
   const totalItems = cart.items.reduce((s, i) => s + i.qty, 0);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
-            <ArrowLeft size={20} color="#FFF" />
+          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <ArrowLeft size={20} color={colors.text} />
           </TouchableOpacity>
         ),
         headerRight: () => (
           <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
-            <TouchableOpacity onPress={() => router.push("/market/orders")} style={styles.headerBtn}>
-              <ClipboardList size={20} color="#10b981" />
+            <TouchableOpacity onPress={() => router.push("/market/orders")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              <ClipboardList size={20} color={colors.primary} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push("/market/cart")} style={styles.headerBtn}>
+            <TouchableOpacity onPress={() => router.push("/market/cart")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View>
-                 <ShoppingCart size={20} color="#FFF" />
+                 <ShoppingCart size={20} color={colors.text} />
                  {totalItems > 0 && (
-                   <View style={styles.badge}>
+                   <View style={[styles.badge, { backgroundColor: colors.primary, borderColor: colors.background }]}>
                      <Text style={styles.badgeTextCount}>{totalItems}</Text>
                    </View>
                  )}
@@ -133,7 +135,7 @@ export default function ProductDetails() {
             resizeMode="cover"
           />
           <LinearGradient
-            colors={['transparent', '#080c0a']}
+            colors={theme === 'dark' ? ['transparent', '#080c0a'] : ['transparent', '#f8fafc']}
             style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100 }}
           />
         </View>
@@ -142,64 +144,64 @@ export default function ProductDetails() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <View style={styles.choiceBadge}>
-                  <Sparkles size={10} color="#f59e0b" />
-                  <Text style={styles.choiceBadgeText}>Premium Choice</Text>
+                <View style={[styles.choiceBadge, { backgroundColor: colors.gold + '15', borderColor: colors.gold + '30' }]}>
+                  <Sparkles size={10} color={colors.gold} />
+                  <Text style={[styles.choiceBadgeText, { color: colors.gold }]}>Premium Choice</Text>
                 </View>
               </View>
-              <Text style={styles.title}>{product.name}</Text>
+              <Text style={[styles.title, { color: colors.text }]}>{product.name}</Text>
             </View>
-            <Text style={styles.price}>GH₵ {product.price.toLocaleString()}</Text>
+            <Text style={[styles.price, { color: colors.primary }]}>GH₵ {product.price.toLocaleString()}</Text>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* Quantity Input */}
           <View style={{ marginBottom: 32 }}>
-            <Text style={styles.sectionLabel}>Purchase Quantity</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textDim }]}>Purchase Quantity</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
-               <View style={styles.qtyContainer}>
-                  <TouchableOpacity onPress={decrement} style={styles.qtyBtn}>
-                     <Minus size={20} color={parseInt(qty) > 1 ? "#10b981" : "#405045"} />
+               <View style={[styles.qtyContainer, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                  <TouchableOpacity onPress={decrement} style={[styles.qtyBtn, { backgroundColor: colors.cardBg }]}>
+                     <Minus size={20} color={parseInt(qty) > 1 ? colors.primary : colors.textDim} />
                   </TouchableOpacity>
                   <TextInput
                     value={qty}
                     onChangeText={(val) => setQty(val.replace(/[^0-9]/g, ''))}
                     keyboardType="numeric"
-                    style={styles.qtyInput}
+                    style={[styles.qtyInput, { color: colors.text }]}
                     selectTextOnFocus
                   />
-                  <TouchableOpacity onPress={increment} style={styles.qtyBtn}>
-                     <Plus size={20} color="#10b981" />
+                  <TouchableOpacity onPress={increment} style={[styles.qtyBtn, { backgroundColor: colors.cardBg }]}>
+                     <Plus size={20} color={colors.primary} />
                   </TouchableOpacity>
                </View>
-               <Text style={{ color: '#7d8a84', fontSize: 12, fontWeight: 'bold' }}>Total: GH₵ {(product.price * (parseInt(qty) || 0)).toLocaleString()}</Text>
+               <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: 'bold' }}>Total: GH₵ {(product.price * (parseInt(qty) || 0)).toLocaleString()}</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionLabel}>Authenticity Check</Text>
-          <Card style={{ marginBottom: 32, padding: 24, backgroundColor: '#0f1714' }}>
+          <Text style={[styles.sectionLabel, { color: colors.textDim }]}>Authenticity Check</Text>
+          <Card style={{ marginBottom: 32, padding: 24, backgroundColor: colors.cardBg, borderColor: colors.border }}>
             <View style={{ flexDirection: 'row', gap: 16 }}>
-              <ShieldCheck size={24} color="#10b981" />
+              <ShieldCheck size={24} color={colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: 'white', fontFamily: 'Display-Bold', fontSize: 15, marginBottom: 4 }}>Verified Genuine</Text>
-                <Text style={{ color: '#b2baac', fontSize: 12, lineHeight: 20 }}>
+                <Text style={{ color: colors.text, fontFamily: 'Display-Bold', fontSize: 15, marginBottom: 4 }}>Verified Genuine</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 20 }}>
                   Sourced from certified manufacturers. Full 12-month warranty included with every purchase.
                 </Text>
               </View>
             </View>
           </Card>
 
-          <Text style={styles.sectionLabel}>Overview</Text>
-          <Text style={styles.description}>
+          <Text style={[styles.sectionLabel, { color: colors.textDim }]}>Overview</Text>
+          <Text style={[styles.description, { color: colors.textMuted }]}>
             {product.description || "This professional-grade tool is the standard for high-performance grooming. Engineered for precision and built to last in a high-traffic shop environment."}
           </Text>
         </View>
       </ScrollView>
 
-      <View style={styles.bottomBar}>
-        {Platform.OS !== 'web' && <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />}
-        <View style={styles.bottomBarInner}>
+      <View style={[styles.bottomBar, { borderTopColor: colors.border }]}>
+        {Platform.OS !== 'web' && <BlurView intensity={80} tint={theme} style={StyleSheet.absoluteFill} />}
+        <View style={[styles.bottomBarInner, { backgroundColor: Platform.OS === 'web' ? colors.background + 'e6' : 'transparent' }]}>
           <View style={{ flex: 1 }}>
             <Button
               title={isAdded ? "Added ✓" : "Add to Cart"}

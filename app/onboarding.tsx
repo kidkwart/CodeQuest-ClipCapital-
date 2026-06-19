@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ArrowRight, TrendingUp, Users, Wallet } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useTheme } from '@/context/theme-context';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +35,7 @@ const SLIDES = [
 
 export default function Onboarding() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const [currentSlide, setCurrentSlide] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
@@ -60,8 +62,8 @@ export default function Onboarding() {
       <View style={{ width, padding: 40, justifyContent: 'center' }}>
         {/* Branding Logo at Top */}
         <View style={{ position: 'absolute', top: 60, left: 40, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-           <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#10b981' }} />
-           <Text style={{ fontFamily: 'Display-Bold', color: 'white', fontSize: 16, letterSpacing: -0.5 }}>ClipCapital</Text>
+           <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary }} />
+           <Text style={{ fontFamily: 'Display-Bold', color: colors.text, fontSize: 16, letterSpacing: -0.5 }}>ClipCapital</Text>
         </View>
 
         <Animated.View key={`icon-${item.id}`} entering={FadeIn.delay(200)} style={styles.iconContainer}>
@@ -72,17 +74,17 @@ export default function Onboarding() {
         </Animated.View>
 
         <Animated.View key={`text-${item.id}`} entering={FadeInDown.delay(400)}>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.subtitle}>{item.subtitle}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{item.title}</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>{item.subtitle}</Text>
         </Animated.View>
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={['#111814', '#080c0a']}
+        colors={theme === 'dark' ? ['#111814', '#080c0a'] : ['#ffffff', '#f8fafc']}
         style={StyleSheet.absoluteFill}
       />
 
@@ -112,7 +114,7 @@ export default function Onboarding() {
                 styles.indicator,
                 {
                   width: i === currentSlide ? 24 : 8,
-                  backgroundColor: i === currentSlide ? '#10b981' : 'rgba(255,255,255,0.1)'
+                  backgroundColor: i === currentSlide ? colors.primary : colors.border
                 }
               ]}
             />
@@ -121,13 +123,13 @@ export default function Onboarding() {
 
         <TouchableOpacity onPress={handleNext} activeOpacity={0.8}>
           <LinearGradient
-            colors={['#10b981', '#064e3b']}
+            colors={[colors.primary, theme === 'dark' ? '#064e3b' : colors.primary + 'cc']}
             style={styles.nextBtn}
           >
-            <Text style={styles.nextBtnText}>
+            <Text style={[styles.nextBtnText, { color: '#000' }]}>
               {currentSlide === SLIDES.length - 1 ? 'Start Business' : 'Continue'}
             </Text>
-            <ArrowRight size={20} color="#0d1310" />
+            <ArrowRight size={20} color="#000" />
           </LinearGradient>
         </TouchableOpacity>
       </View>

@@ -7,9 +7,11 @@ import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, ArrowUpRight, ArrowDownLeft, ShoppingBag, Wallet, Banknote, Clock, Filter, Calendar } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile } = useProfile();
   const { data: history, isLoading, refetch } = useTransactionHistory();
   const [activeFilter, setActiveFilter] = useState<"all" | "in" | "out">("all");
@@ -33,15 +35,15 @@ export default function HistoryScreen() {
   const totalOut = (history ?? []).filter(t => t.amount < 0).reduce((acc, t) => acc + Math.abs(t.amount), 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
           <BouncyTap
             onPress={() => router.back()}
-            style={styles.headerBtn}
+            style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
           >
-            <ArrowLeft size={20} color="#FFF" />
+            <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
         )
       }} />
@@ -49,22 +51,22 @@ export default function HistoryScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="History" subtitle="Institutional Ledger" />
 
           {/* Summary Cards */}
           <View style={styles.summaryRow}>
-            <LinearGradient colors={['#0f1714', '#080c0a']} style={styles.summaryCard}>
-               <Text style={styles.summaryLabel}>TOTAL INFLOW</Text>
-               <Text style={[styles.summaryValue, { color: '#10b981' }]}>
+            <LinearGradient colors={theme === 'dark' ? ['#0f1714', '#080c0a'] : ['#ffffff', '#f1f5f9']} style={[styles.summaryCard, { borderColor: colors.border }]}>
+               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>TOTAL INFLOW</Text>
+               <Text style={[styles.summaryValue, { color: colors.primary }]}>
                   {isPrivate ? "••••••" : `GH₵ ${totalIn.toLocaleString()}`}
                </Text>
             </LinearGradient>
-            <LinearGradient colors={['#0f1714', '#080c0a']} style={styles.summaryCard}>
-               <Text style={styles.summaryLabel}>TOTAL OUTFLOW</Text>
-               <Text style={[styles.summaryValue, { color: '#ef4444' }]}>
+            <LinearGradient colors={theme === 'dark' ? ['#0f1714', '#080c0a'] : ['#ffffff', '#f1f5f9']} style={[styles.summaryCard, { borderColor: colors.border }]}>
+               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>TOTAL OUTFLOW</Text>
+               <Text style={[styles.summaryValue, { color: colors.destructive }]}>
                   {isPrivate ? "••••••" : `GH₵ ${totalOut.toLocaleString()}`}
                </Text>
             </LinearGradient>
@@ -76,9 +78,9 @@ export default function HistoryScreen() {
               <TouchableOpacity
                 key={f}
                 onPress={() => setActiveFilter(f)}
-                style={[styles.filterBtn, activeFilter === f && styles.filterBtnActive]}
+                style={[styles.filterBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }, activeFilter === f && { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}
               >
-                <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>
+                <Text style={[styles.filterText, { color: colors.textMuted }, activeFilter === f && { color: colors.primary }]}>
                   {f.toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -87,40 +89,40 @@ export default function HistoryScreen() {
 
           {isLoading ? (
             <View style={styles.loaderContainer}>
-               <ActivityIndicator color="#10b981" />
-               <Text style={styles.loaderText}>RECOVERING RECORDS...</Text>
+               <ActivityIndicator color={colors.primary} />
+               <Text style={[styles.loaderText, { color: colors.primary }]}>RECOVERING RECORDS...</Text>
             </View>
           ) : filteredHistory.length === 0 ? (
             <View style={styles.emptyState}>
-               <Clock size={48} color="#405045" />
-               <Text style={styles.emptyText}>No records found in this category.</Text>
+               <Clock size={48} color={colors.textDim} />
+               <Text style={[styles.emptyText, { color: colors.text }]}>No records found in this category.</Text>
             </View>
           ) : (
             <View style={{ paddingBottom: 60 }}>
               {filteredHistory.map((t, idx) => (
-                <Card key={`${t.type}-${t.id}`} style={styles.transactionCard}>
+                <Card key={`${t.type}-${t.id}`} style={[styles.transactionCard, { backgroundColor: colors.cardBg }]}>
                   <View style={styles.transactionMain}>
-                    <View style={styles.iconBox}>
+                    <View style={[styles.iconBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
                       {getIcon(t.type, t.amount)}
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.transactionTitle} numberOfLines={1}>{t.title}</Text>
+                      <Text style={[styles.transactionTitle, { color: colors.text }]} numberOfLines={1}>{t.title}</Text>
                       <View style={styles.transactionSubRow}>
-                         <Calendar size={10} color="#405045" />
-                         <Text style={styles.transactionDate}>
+                         <Calendar size={10} color={colors.textDim} />
+                         <Text style={[styles.transactionDate, { color: colors.textDim }]}>
                            {new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
                          </Text>
-                         <View style={styles.dot} />
-                         <Text style={[styles.statusText, t.status === 'pending' && { color: '#f59e0b' }]}>
+                         <View style={[styles.dot, { backgroundColor: colors.textDim }]} />
+                         <Text style={[styles.statusText, { color: colors.textMuted }, t.status === 'pending' && { color: colors.gold }]}>
                             {t.status?.toUpperCase() || 'CONFIRMED'}
                          </Text>
                       </View>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[styles.amountText, { color: t.amount > 0 ? '#10b981' : '#fcfcfc' }]}>
+                      <Text style={[styles.amountText, { color: t.amount > 0 ? colors.primary : colors.text }]}>
                         {t.amount > 0 ? '+' : '-'} {isPrivate ? "•••" : Math.abs(t.amount).toLocaleString()}
                       </Text>
-                      <Text style={styles.currencyText}>GHS</Text>
+                      <Text style={[styles.currencyText, { color: colors.textDim }]}>GHS</Text>
                     </View>
                   </View>
                 </Card>

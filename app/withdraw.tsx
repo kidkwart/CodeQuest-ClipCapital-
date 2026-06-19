@@ -8,9 +8,11 @@ import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, Wallet, History, Clock, CheckCircle2, AlertCircle, Landmark, ArrowRight, Plus, ChevronRight, Zap } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 export default function WithdrawScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: profile, isLoading: loadingProfile } = useProfile();
   const { data: withdrawals, isLoading: loadingHistory, refetch } = useMyWithdrawals();
   const request = useRequestWithdrawal();
@@ -69,7 +71,7 @@ export default function WithdrawScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
 
       <KeyboardAvoidingView
@@ -81,46 +83,46 @@ export default function WithdrawScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={loadingHistory || loadingProfile} tintColor="#10B981" onRefresh={refetch} />}
+          refreshControl={<RefreshControl refreshing={loadingHistory || loadingProfile} tintColor={colors.primary} onRefresh={refetch} />}
         >
           <View style={{ paddingHorizontal: 24 }}>
-            <BouncyTap onPress={() => router.back()} style={styles.headerBtn}>
-                <ArrowLeft size={20} color="#FFFFFF" />
+            <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                <ArrowLeft size={20} color={colors.text} />
             </BouncyTap>
 
             <PremiumHeader title="Withdraw" subtitle="Liquidate Capital" />
 
             {/* Account Card */}
             <LinearGradient
-              colors={['#1e2923', '#0f1714']}
-              style={styles.accountCard}
+              colors={theme === 'dark' ? ['#1e2923', '#0f1714'] : ['#ffffff', '#f1f5f9']}
+              style={[styles.accountCard, { borderColor: colors.border }]}
             >
               <View style={{ zIndex: 2 }}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardLabel}>PAYOUT DESTINATION</Text>
-                  <ShieldCheck size={14} color="#10b981" />
+                  <Text style={[styles.cardLabel, { color: colors.textMuted }]}>PAYOUT DESTINATION</Text>
+                  <ShieldCheck size={14} color={colors.primary} />
                 </View>
                 {profile?.account_number ? (
                   <View style={{ marginTop: 12 }}>
-                    <Text style={styles.bankName}>{profile.bank_name?.toUpperCase()}</Text>
-                    <Text style={styles.accNumber}>{profile.account_number}</Text>
-                    <Text style={styles.accName}>{profile.account_name || profile.display_name}</Text>
+                    <Text style={[styles.bankName, { color: colors.text }]}>{profile.bank_name?.toUpperCase()}</Text>
+                    <Text style={[styles.accNumber, { color: colors.text }]}>{profile.account_number}</Text>
+                    <Text style={[styles.accName, { color: colors.primary }]}>{profile.account_name || profile.display_name}</Text>
                   </View>
                 ) : (
-                  <TouchableOpacity onPress={() => router.push("/settings")} style={styles.setupBtn}>
-                    <Text style={styles.setupText}>Setup Payout Account</Text>
-                    <ChevronRight size={14} color="white" />
+                  <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.setupBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                    <Text style={[styles.setupText, { color: colors.text }]}>Setup Payout Account</Text>
+                    <ChevronRight size={14} color={colors.text} />
                   </TouchableOpacity>
                 )}
               </View>
-              <Landmark size={140} color="white" style={styles.cardIcon} />
+              <Landmark size={140} color={colors.text} style={[styles.cardIcon, { opacity: theme === 'dark' ? 0.05 : 0.02 }]} />
             </LinearGradient>
 
             {/* Balance Preview */}
             <View style={styles.balanceRow}>
               <View style={styles.balanceInfo}>
-                <Text style={styles.balanceLabel}>AVAILABLE LIQUIDITY</Text>
-                <Text style={styles.balanceValue}>
+                <Text style={[styles.balanceLabel, { color: colors.textDim }]}>AVAILABLE LIQUIDITY</Text>
+                <Text style={[styles.balanceValue, { color: colors.text }]}>
                   {isPrivate ? "••••••" : `GH₵ ${balance.toLocaleString()}`}
                 </Text>
               </View>
@@ -137,29 +139,29 @@ export default function WithdrawScreen() {
 
             {/* Withdrawal Form */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Withdrawal Protocol</Text>
-              <Card style={styles.formCard}>
+              <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Withdrawal Protocol</Text>
+              <Card style={[styles.formCard, { backgroundColor: colors.cardBg }]}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>AMOUNT TO LIQUIDATE (GHS)</Text>
-                  <View style={styles.inputWrapper}>
+                  <Text style={[styles.inputLabel, { color: colors.textMuted }]}>AMOUNT TO LIQUIDATE (GHS)</Text>
+                  <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
                      <TextInput
-                        style={styles.input}
+                        style={[styles.input, { color: colors.text }]}
                         placeholder="0.00"
-                        placeholderTextColor="#405045"
+                        placeholderTextColor={colors.textDim}
                         keyboardType="numeric"
                         value={amount}
                         onChangeText={setAmount}
-                        selectionColor="#10b981"
+                        selectionColor={colors.primary}
                      />
-                     <Zap size={18} color="#f59e0b" fill="#f59e0b" style={{ opacity: 0.5 }} />
+                     <Zap size={18} color={colors.gold} fill={colors.gold} style={{ opacity: 0.5 }} />
                   </View>
                 </View>
 
                 {parsedAmount > 0 && (
-                  <View style={styles.calcBox}>
+                  <View style={[styles.calcBox, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '15' }]}>
                     <View style={styles.calcRow}>
-                      <Text style={styles.calcLabel}>Vault Balance After Protocol</Text>
-                      <Text style={[styles.calcValue, remainingBalance < 0 && { color: '#ef4444' }]}>
+                      <Text style={[styles.calcLabel, { color: colors.textMuted }]}>Vault Balance After Protocol</Text>
+                      <Text style={[styles.calcValue, { color: colors.primary }, remainingBalance < 0 && { color: colors.destructive }]}>
                         GH₵ {remainingBalance.toLocaleString()}
                       </Text>
                     </View>
@@ -168,8 +170,8 @@ export default function WithdrawScreen() {
 
                 {statusMessage.text !== "" && (
                   <View style={[styles.statusBox, statusMessage.type === 'success' ? styles.statusSuccess : styles.statusError]}>
-                    {statusMessage.type === 'success' ? <CheckCircle2 size={16} color="#10b981" /> : <AlertCircle size={16} color="#ef4444" />}
-                    <Text style={[styles.statusText, statusMessage.type === 'success' ? { color: '#10b981' } : { color: '#ef4444' }]}>
+                    {statusMessage.type === 'success' ? <CheckCircle2 size={16} color={colors.primary} /> : <AlertCircle size={16} color={colors.destructive} />}
+                    <Text style={[styles.statusText, statusMessage.type === 'success' ? { color: colors.primary } : { color: colors.destructive }]}>
                       {statusMessage.text}
                     </Text>
                   </View>
@@ -193,24 +195,24 @@ export default function WithdrawScreen() {
             {/* History */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <History size={12} color="#10B981" />
-                <Text style={styles.sectionTitle}>Liquidation History</Text>
+                <History size={12} color={colors.primary} />
+                <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Liquidation History</Text>
               </View>
 
               {(withdrawals ?? []).length === 0 ? (
                 <View style={styles.emptyState}>
-                   <Clock size={40} color="#405045" />
-                   <Text style={styles.emptyText}>No liquidation records found.</Text>
+                   <Clock size={40} color={colors.textDim} />
+                   <Text style={[styles.emptyText, { color: colors.text }]}>No liquidation records found.</Text>
                 </View>
               ) : (
                 withdrawals?.map((w) => (
-                  <Card key={w.id} style={styles.historyCard}>
+                  <Card key={w.id} style={[styles.historyCard, { backgroundColor: colors.cardBg }]}>
                     <View style={styles.historyInfo}>
-                      <Text style={styles.historyAmount}>GH₵ {w.amount.toLocaleString()}</Text>
-                      <Text style={styles.historyDate}>{new Date(w.created_at).toLocaleDateString('en-GB')}</Text>
+                      <Text style={[styles.historyAmount, { color: colors.text }]}>GH₵ {w.amount.toLocaleString()}</Text>
+                      <Text style={[styles.historyDate, { color: colors.textDim }]}>{new Date(w.created_at).toLocaleDateString('en-GB')}</Text>
                     </View>
-                    <View style={[styles.statusBadge, { backgroundColor: w.status === 'completed' ? '#10b98115' : '#f59e0b15' }]}>
-                      <Text style={[styles.statusBadgeText, { color: w.status === 'completed' ? '#10b981' : '#f59e0b' }]}>
+                    <View style={[styles.statusBadge, { backgroundColor: w.status === 'completed' ? colors.primary + '15' : colors.gold + '15' }]}>
+                      <Text style={[styles.statusBadgeText, { color: w.status === 'completed' ? colors.primary : colors.gold }]}>
                         {w.status.toUpperCase()}
                       </Text>
                     </View>

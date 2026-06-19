@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import { theme as ThemeColors, ThemeType } from '@/lib/theme';
 import { useProfile } from '@/lib/app-queries';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ThemeContextType {
   theme: ThemeType;
@@ -15,15 +15,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeMode] = useState<ThemeType>('dark');
 
   useEffect(() => {
+    // Initial load from storage
+    const loadTheme = async () => {
+      const saved = await AsyncStorage.getItem('theme_preference');
+      if (saved === 'light' || saved === 'dark') {
+        setThemeMode(saved as ThemeType);
+      }
+    };
+    loadTheme();
+  }, []);
+
+  useEffect(() => {
     if (profile?.theme_preference) {
-      setThemeMode(profile.theme_preference as ThemeType);
+      const pTheme = profile.theme_preference as ThemeType;
+      setThemeMode(pTheme);
+      AsyncStorage.setItem('theme_preference', pTheme);
     }
   }, [profile]);
 
   const colors = ThemeColors[themeMode];
 
   const toggleTheme = () => {
-    setThemeMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeMode((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      AsyncStorage.setItem('theme_preference', next);
+      return next;
+    });
   };
 
   return (

@@ -8,10 +8,12 @@ import { Bell, ArrowLeft, CheckCircle2, Info, AlertTriangle, Clock, Inbox } from
 import { formatDistanceToNow } from "date-fns";
 import Animated, { FadeInDown, FadeOut } from "react-native-reanimated";
 import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 import { LinearGradient } from "expo-linear-gradient";
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: notifications, isLoading, refetch } = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
@@ -19,23 +21,23 @@ export default function NotificationsScreen() {
   const unreadCount = notifications?.filter(n => !n.read).length ?? 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
           <BouncyTap
             onPress={() => router.back()}
-            style={styles.headerBtn}
+            style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
           >
-            <ArrowLeft size={20} color="#FFF" />
+            <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
         ),
         headerRight: () => unreadCount > 0 ? (
           <BouncyTap
             onPress={() => markAllRead.mutate()}
-            style={styles.sweepBtn}
+            style={[styles.sweepBtn, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '20' }]}
           >
-            <Text style={styles.sweepBtnText}>SWEEP ALL</Text>
+            <Text style={[styles.sweepBtnText, { color: colors.primary }]}>SWEEP ALL</Text>
           </BouncyTap>
         ) : null
       }} />
@@ -44,23 +46,23 @@ export default function NotificationsScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
+        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="Alert Center" subtitle="Real-time Updates" />
 
           {isLoading ? (
             <View style={styles.loader}>
-              <ActivityIndicator color="#10b981" />
-              <Text style={styles.loaderText}>SYNCING PROTOCOL...</Text>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={[styles.loaderText, { color: colors.primary }]}>SYNCING PROTOCOL...</Text>
             </View>
           ) : (notifications ?? []).length === 0 ? (
             <Animated.View entering={FadeInDown} style={styles.emptyState}>
-              <View style={styles.emptyIconCircle}>
-                <Inbox size={40} color="#405045" />
+              <View style={[styles.emptyIconCircle, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
+                <Inbox size={40} color={colors.textDim} />
               </View>
-              <Text style={styles.emptyTitle}>Secure & Clear</Text>
-              <Text style={styles.emptySubtitle}>ALL SYSTEM LOGS ARE CURRENTLY UP TO DATE.</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>Secure & Clear</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>ALL SYSTEM LOGS ARE CURRENTLY UP TO DATE.</Text>
             </Animated.View>
           ) : (
             <View style={{ paddingBottom: 60 }}>
@@ -75,21 +77,21 @@ export default function NotificationsScreen() {
                     onPress={() => !n.read && markRead.mutate(n.id)}
                     style={styles.cardWrapper}
                   >
-                    <Card style={[styles.notifCard, n.read && styles.notifCardRead]}>
-                      <View style={[styles.typeIconBox, { backgroundColor: n.type === 'alert' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)' }]}>
-                        {n.type === 'alert' ? <AlertTriangle size={20} color="#ef4444" /> : <Info size={20} color="#10b981" />}
+                    <Card style={[styles.notifCard, { backgroundColor: colors.cardBg }, n.read && { opacity: 0.5, backgroundColor: 'transparent', borderColor: colors.border }]}>
+                      <View style={[styles.typeIconBox, { backgroundColor: n.type === 'alert' ? colors.destructive + '15' : colors.primary + '15' }]}>
+                        {n.type === 'alert' ? <AlertTriangle size={20} color={colors.destructive} /> : <Info size={20} color={colors.primary} />}
                       </View>
 
                       <View style={{ flex: 1 }}>
                         <View style={styles.notifHeader}>
-                          <Text style={[styles.notifTitle, n.read && styles.notifTitleRead]} numberOfLines={1}>{n.title}</Text>
-                          {!n.read && <View style={styles.unreadDot} />}
+                          <Text style={[styles.notifTitle, { color: colors.text }, n.read && { color: colors.textMuted }]} numberOfLines={1}>{n.title}</Text>
+                          {!n.read && <View style={[styles.unreadDot, { backgroundColor: colors.primary, shadowColor: colors.primary }]} />}
                         </View>
-                        <Text style={[styles.notifBody, n.read && styles.notifBodyRead]} numberOfLines={2}>{n.body}</Text>
+                        <Text style={[styles.notifBody, { color: colors.textMuted }, n.read && { color: colors.textDim }]} numberOfLines={2}>{n.body}</Text>
 
                         <View style={styles.notifFooter}>
-                          <Clock size={10} color="#405045" />
-                          <Text style={styles.timeText}>
+                          <Clock size={10} color={colors.textDim} />
+                          <Text style={[styles.timeText, { color: colors.textDim }]}>
                             {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                           </Text>
                         </View>
