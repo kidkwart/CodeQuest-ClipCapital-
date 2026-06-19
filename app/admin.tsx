@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Alert, Platform } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator, Alert, Platform, TextInput } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import * as Lucide from "lucide-react-native";
 import {
@@ -19,6 +19,8 @@ import { Input } from "@/components/native/input";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { cn } from "@/lib/utils";
 import { PremiumHeader } from "@/components/native/premium-header";
+import { LinearGradient } from "expo-linear-gradient";
+import { BouncyTap } from "@/components/native/bouncy-tap";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -696,90 +698,110 @@ function SettingsSection() {
         return Alert.alert("Required", "Please fill in both the title and the message.");
       }
 
-      if (Platform.OS === 'web') {
-        if (confirm("This message will be sent to ALL registered users. Continue?")) {
-          try {
-            await broadcast.mutateAsync({ title: notif.title, body: notif.body });
-            setNotif({ title: "", body: "" });
-            alert("Success: Broadcast sent successfully to all users.");
-          } catch (e: any) { alert(e.message); }
+      const performBroadcast = async () => {
+        try {
+          await broadcast.mutateAsync({ title: notif.title, body: notif.body });
+          setNotif({ title: "", body: "" });
+          Alert.alert("Success", "Institutional broadcast transmitted to all vault users.");
+        } catch (e: any) {
+          Alert.alert("Error", e.message);
         }
-      } else {
-        Alert.alert(
-          "Confirm Broadcast",
-          "This message will be sent to ALL registered users. Continue?",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Send",
-              onPress: async () => {
-                try {
-                  await broadcast.mutateAsync({ title: notif.title, body: notif.body });
-                  setNotif({ title: "", body: "" });
-                  Alert.alert("Success", "Broadcast sent successfully to all users.");
-                } catch (error: any) {
-                  Alert.alert("Error", error.message || "Failed to send broadcast");
-                }
-              }
-            }
-          ]
-        );
-      }
+      };
+
+      Alert.alert(
+        "Confirm Broadcast",
+        "This message will be transmitted to ALL registered vault users. Proceed?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "TRANSMIT", style: "destructive", onPress: performBroadcast }
+        ]
+      );
     };
 
     return (
       <Animated.View entering={FadeInDown}>
-        <Text className="text-white font-bold mb-4 text-lg">System Preferences</Text>
-        <Card className="mb-8 p-6">
-          <View className="flex-row justify-between items-center mb-6">
-              <View>
-                <Text className="text-white font-bold">Interest Rate</Text>
-                <Text className="text-white/40 text-xs">Global % for loans</Text>
-              </View>
-              <View className="w-20">
-                  <Input
-                      value={String(settings.data?.interest_rate)}
-                      keyboardType="numeric"
-                      onChangeText={(val) => updateSettings.mutate({ interest_rate: parseFloat(val) })}
-                      containerClassName="space-y-0"
-                  />
-              </View>
-          </View>
-          <View className="flex-row justify-between items-center">
-              <View>
-                <Text className="text-white font-bold">Maintenance Mode</Text>
-                <Text className="text-white/40 text-xs">Lock app transactions</Text>
-              </View>
-              <TouchableOpacity
-                  onPress={() => updateSettings.mutate({ maintenance_mode: !settings.data?.maintenance_mode })}
-                  className={cn("px-6 py-3 rounded-2xl", settings.data?.maintenance_mode ? "bg-red-500" : "bg-primary")}
-              >
-                  <Text className="font-black text-xs text-black">{settings.data?.maintenance_mode ? "DISABLE" : "ENABLE"}</Text>
-              </TouchableOpacity>
-          </View>
-        </Card>
+        <View className="mb-8">
+          <Text className="text-white font-bold mb-4 text-lg">System Governance</Text>
+          <Card className="p-6 border-white/5 bg-[#0f1714]">
+            <View className="flex-row justify-between items-center mb-8">
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-sm">Base Interest Rate</Text>
+                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Global credit growth %</Text>
+                </View>
+                <View className="flex-row items-center bg-white/5 rounded-xl px-4 h-12 border border-white/5">
+                    <TextInput
+                        value={String(settings.data?.interest_rate)}
+                        keyboardType="numeric"
+                        onChangeText={(val) => updateSettings.mutate({ interest_rate: parseFloat(val) })}
+                        style={{ color: '#10b981', fontWeight: 'bold', fontSize: 16, textAlign: 'right', width: 40 }}
+                    />
+                    <Text className="text-[#10b981] font-bold ml-1">%</Text>
+                </View>
+            </View>
 
-        <Text className="text-white font-bold mb-4 text-lg">Broadcast Message</Text>
-        <Card className="p-6">
-          <Input
-            label="Title"
-            value={notif.title}
-            onChangeText={t => setNotif(prev => ({...prev, title: t}))}
-            className="mb-4"
-          />
-          <Input
-            label="Message"
-            value={notif.body}
-            onChangeText={t => setNotif(prev => ({...prev, body: t}))}
-            multiline
-          />
-          <Button
-            title="Send Alert"
-            className="mt-6"
-            onPress={handleBroadcast}
-            loading={broadcast.isPending}
-            disabled={broadcast.isPending}
-          />
+            <View className="flex-row justify-between items-center">
+                <View className="flex-1">
+                  <Text className="text-white font-bold text-sm">Institutional Maintenance</Text>
+                  <Text className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Suspend all vault activities</Text>
+                </View>
+                <BouncyTap
+                  onPress={() => updateSettings.mutate({ maintenance_mode: !settings.data?.maintenance_mode })}
+                >
+                  <LinearGradient
+                    colors={settings.data?.maintenance_mode ? ['#ef4444', '#991b1b'] : ['#10b981', '#065f46']}
+                    className="px-6 py-2.5 rounded-xl"
+                  >
+                    <Text className="font-black text-[10px] text-black tracking-widest">
+                      {settings.data?.maintenance_mode ? "DISABLE" : "ENABLE"}
+                    </Text>
+                  </LinearGradient>
+                </BouncyTap>
+            </View>
+          </Card>
+        </View>
+
+        <Text className="text-white font-bold mb-4 text-lg">Broadcast Protocol</Text>
+        <Card className="p-7 border-white/5 bg-[#0f1714]">
+          <View className="mb-6">
+            <Text className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 ml-1 opacity-50">Signal Title</Text>
+            <TextInput
+              value={notif.title}
+              onChangeText={t => setNotif(prev => ({...prev, title: t}))}
+              placeholder="e.g. SYSTEM UPGRADE COMPLETE"
+              placeholderTextColor="#334140"
+              className="bg-white/5 h-14 rounded-2xl px-5 text-white font-bold border border-white/5"
+            />
+          </View>
+
+          <View className="mb-8">
+            <Text className="text-[10px] font-black text-primary uppercase tracking-widest mb-3 ml-1 opacity-50">Global Message</Text>
+            <TextInput
+              value={notif.body}
+              onChangeText={t => setNotif(prev => ({...prev, body: t}))}
+              placeholder="Type transmission details..."
+              placeholderTextColor="#334140"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              className="bg-white/5 min-h-[120px] rounded-2xl p-5 text-white font-medium border border-white/5"
+            />
+          </View>
+
+          <BouncyTap onPress={handleBroadcast} disabled={broadcast.isPending}>
+            <LinearGradient
+              colors={['#10b981', '#059669']}
+              className="h-16 rounded-2xl items-center justify-center shadow-lg"
+            >
+               {broadcast.isPending ? (
+                 <ActivityIndicator color="#000" />
+               ) : (
+                 <View className="flex-row items-center gap-3">
+                   <Text className="text-black font-black text-xs tracking-widest uppercase">Initiate Broadcast</Text>
+                   <Lucide.Zap size={16} color="#000" fill="#000" />
+                 </View>
+               )}
+            </LinearGradient>
+          </BouncyTap>
         </Card>
       </Animated.View>
     );
