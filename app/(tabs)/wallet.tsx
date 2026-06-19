@@ -1,10 +1,9 @@
 import React from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from "react-native";
-import { useProfile, useTransactionHistory } from "@/lib/app-queries";
+import { useProfile, useTransactionHistory, useUpdateProfile } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
-import { Button } from "@/components/native/button";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowUpRight, ArrowDownLeft, Plus, Landmark, History, Wallet as WalletIcon, ChevronRight } from "lucide-react-native";
+import { ArrowUpRight, ArrowDownLeft, Plus, Landmark, History, Wallet as WalletIcon, Eye, EyeOff } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
@@ -13,9 +12,20 @@ export default function WalletScreen() {
   const router = useRouter();
   const { data: profile, isLoading, refetch } = useProfile();
   const { data: history } = useTransactionHistory();
+  const updateProfile = useUpdateProfile();
+
+  const isPrivate = profile?.privacy_mode_enabled ?? false;
+
+  const togglePrivacy = async () => {
+    try {
+      await updateProfile.mutateAsync({ privacy_mode_enabled: !isPrivate });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Filter only wallet-affecting transactions (deposits, withdrawals, payments)
-  const walletTransactions = history?.slice(0, 8) || [];
+  const walletTransactions = history?.slice(0, 15) || [];
 
   return (
     <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
@@ -25,7 +35,19 @@ export default function WalletScreen() {
         refreshControl={<RefreshControl refreshing={isLoading} tintColor="#10B981" onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
-          <PremiumHeader title="My Wallet" subtitle="Financial Command Center" />
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+            <View style={{ flex: 1 }}>
+                <Text style={{ color: '#10b981', fontWeight: '900', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 4 }}>Financial Center</Text>
+                <Text style={{ fontFamily: 'Display-Bold', color: '#fcfcfc', fontSize: 32, letterSpacing: -1 }}>My Wallet</Text>
+            </View>
+            <TouchableOpacity
+              onPress={togglePrivacy}
+              style={styles.privacyBtn}
+            >
+              {isPrivate ? <EyeOff size={20} color="#10b981" /> : <Eye size={20} color="#7d8a84" />}
+            </TouchableOpacity>
+          </View>
 
           {/* Main Balance Card */}
           <LinearGradient
@@ -36,7 +58,9 @@ export default function WalletScreen() {
           >
             <View>
               <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
-              <Text style={styles.balanceAmount}>GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
+              <Text style={[styles.balanceAmount, isPrivate && { letterSpacing: 5 }]}>
+                {isPrivate ? "••••••" : `GH₵ ${profile?.wallet_balance?.toLocaleString() || '0.00'}`}
+              </Text>
             </View>
             <View style={styles.cardFooter}>
               <View style={styles.verifiedBadge}>
@@ -79,13 +103,13 @@ export default function WalletScreen() {
                     <View style={[styles.iconBox, { borderColor: item.amount > 0 ? '#10b98130' : '#ef444430' }]}>
                       {item.amount > 0 ? <ArrowUpRight size={20} color="#10B981" /> : <ArrowDownLeft size={20} color="#EF4444" />}
                     </View>
-                    <View>
-                      <Text style={styles.transactionTitle}>{item.title}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={1} style={styles.transactionTitle}>{item.note || item.title}</Text>
                       <Text style={styles.transactionDate}>{new Date(item.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</Text>
                     </View>
                   </View>
                   <Text style={[styles.transactionAmount, { color: item.amount > 0 ? '#10b981' : '#ef4444' }]}>
-                    {item.amount > 0 ? '+' : ''} {item.amount.toLocaleString()}
+                    {item.amount > 0 ? '+' : ''} {isPrivate ? "••••" : item.amount.toLocaleString()}
                   </Text>
                 </View>
               ))
@@ -106,7 +130,7 @@ export default function WalletScreen() {
 
 const styles = StyleSheet.create({
   mainBalanceCard: {
-    height: 200,
+    height: 180,
     borderRadius: 32,
     padding: 32,
     justifyContent: 'space-between',
@@ -126,7 +150,7 @@ const styles = StyleSheet.create({
   balanceAmount: {
     color: '#FFF',
     fontFamily: 'Display-Bold',
-    fontSize: 42,
+    fontSize: 38,
     marginTop: 8,
   },
   cardFooter: {
@@ -147,6 +171,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+  privacyBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#0f1714',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
   actionRow: {
     flexDirection: 'row',
     gap: 16,
@@ -154,7 +188,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    height: 120,
+    height: 110,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
@@ -181,8 +215,9 @@ const styles = StyleSheet.create({
   seeAll: {
     color: '#10b981',
     fontWeight: '900',
-    fontSize: 12,
+    fontSize: 10,
     textTransform: 'uppercase',
+    letterSpacing: 1
   },
   transactionItem: {
     flexDirection: 'row',
@@ -196,6 +231,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+    flex: 1
   },
   iconBox: {
     width: 44,
@@ -219,6 +255,7 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontFamily: 'Display-Bold',
     fontSize: 16,
+    marginLeft: 12
   },
   emptyState: {
     alignItems: 'center',

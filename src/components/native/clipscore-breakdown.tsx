@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { Card } from './card';
 import { Target, TrendingUp, ShieldCheck, Zap, Info, ArrowUpRight } from 'lucide-react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
 
-export function ClipScoreBreakdown({ score }: { score: number }) {
+export function ClipScoreBreakdown({ score, health, loading }: { score: number, health?: any, loading?: boolean }) {
   const percentage = Math.min(100, ((score - 600) / 250) * 100);
 
   const getRank = (s: number) => {
@@ -16,6 +16,19 @@ export function ClipScoreBreakdown({ score }: { score: number }) {
   };
 
   const rank = getRank(score);
+
+  if (loading) {
+    return (
+      <Card glass style={styles.container}>
+        <ActivityIndicator color="#10b981" />
+      </Card>
+    );
+  }
+
+  // Calculate some derived values from health
+  const activityConsistency = health ? (health.entryCount > 5 ? "Excellent" : health.entryCount > 2 ? "Good" : "Needs Work") : "Analyzing...";
+  const susuStatus = health ? (health.susuReliability >= 90 ? "Optimal" : "Building") : "Checking...";
+  const creditHealth = health ? (health.activeDebt > 0 ? "Active" : "Pristine") : "Calculating...";
 
   return (
     <Animated.View entering={FadeInUp.duration(400)}>
@@ -50,29 +63,28 @@ export function ClipScoreBreakdown({ score }: { score: number }) {
             icon={TrendingUp}
             label="Activity Consistency"
             desc="Daily revenue logs"
-            value="+12 pts"
+            value={activityConsistency}
             color="#10b981"
           />
           <MetricRow
             icon={ShieldCheck}
             label="Susu Contribution"
             desc="Timely payments"
-            value="Optimal"
+            value={susuStatus}
             color="#f59e0b"
           />
           <MetricRow
             icon={Target}
-            label="Credit Utilization"
-            desc="Loan health ratio"
-            value="Excellent"
+            label="Credit Health"
+            desc="Loan repayment status"
+            value={creditHealth}
             color="#3b82f6"
           />
         </View>
 
-        <TouchableOpacity style={styles.footer} activeOpacity={0.7}>
-          <Text style={styles.footerText}>Learn how to increase your score</Text>
-          <ArrowUpRight size={14} color="#7d8a84" />
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Maintain daily logs to increase your score</Text>
+        </View>
       </Card>
     </Animated.View>
   );
@@ -94,8 +106,6 @@ function MetricRow({ icon: Icon, label, desc, value, color }: any) {
     </View>
   );
 }
-
-import { TouchableOpacity } from 'react-native';
 
 const styles = StyleSheet.create({
   container: {

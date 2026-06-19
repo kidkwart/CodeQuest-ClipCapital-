@@ -28,6 +28,7 @@ export default function ProductDetails() {
     const numericQty = parseInt(qty) || 1;
     cart.add({
       product_id: product.id,
+      vendor_id: product.vendor_id,
       name: product.name,
       price: product.price,
       qty: numericQty

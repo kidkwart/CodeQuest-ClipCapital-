@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Platform, ActivityIndicator } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { useProfile, useAddIncome } from "@/lib/app-queries";
+import { useProfile, useDeposit } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import { Input } from "@/components/native/input";
@@ -17,7 +17,7 @@ if (Platform.OS !== 'web') {
 export default function TopUpScreen() {
   const router = useRouter();
   const { data: profile, refetch: refetchProfile } = useProfile();
-  const addIncome = useAddIncome();
+  const deposit = useDeposit();
 
   const [amount, setAmount] = useState("");
   const [showPaystack, setShowPaystack] = useState(false);
@@ -32,9 +32,9 @@ export default function TopUpScreen() {
     setIsProcessing(true);
 
     try {
-      await addIncome.mutateAsync({
+      await deposit.mutateAsync({
         amount: Number(amount),
-        note: `Wallet Deposit (Ref: ${reference})`,
+        note: `Wallet Top-up (Ref: ${reference})`,
       });
 
       console.log("Database updated, refetching profile...");

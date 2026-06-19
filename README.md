@@ -110,4 +110,5 @@ supabase/
   migrations/       # Database schema migrations
 ```
 
-© 2024 ClipCapital. All rights reserved.
+© 2026 ClipCapital. All rights reserved.
+@kidkwart_jr

@@ -32,6 +32,10 @@ export function useUpdateProfile() {
       account_number?: string;
       account_name?: string;
       wallet_balance?: number;
+      notifications_enabled?: boolean;
+      privacy_mode_enabled?: boolean;
+      security_2fa_enabled?: boolean;
+      sms_backup_enabled?: boolean;
     }) => {
       const { error } = await supabase.from("profiles").update(v).eq("id", user!.id);
       if (error) throw error;
@@ -76,11 +80,12 @@ export function useAllProfiles() {
     queryKey: ["all-profiles"],
     queryFn: async () => {
       const { data, error } = await supabase.from("profiles")
-        .select("*")
+        .select("id, display_name, business_name, status, clip_score, avatar_url")
         .order("clip_score", { ascending: false });
       if (error) throw error;
       return data;
     },
+    staleTime: 60000,
   });
 }
 
@@ -96,17 +101,13 @@ export function useAdminStats() {
         : 0;
 
       return {
-        dailyIncome: data.dailyIncome,
-        dailyExpenses: data.dailyExpenses,
-        dailySales: data.dailySales,
-        dailyLoans: data.dailyLoans,
-        totalVolume: data.dailyIncome + data.dailySales,
-        totalCash: data.totalSales + data.totalIncome,
-        activeRisk: data.activeRisk,
+        ...data,
+        totalVolume: (data.dailyIncome || 0) + (data.dailySales || 0),
+        totalCash: (data.totalSales || 0) + (data.totalIncome || 0),
         approvalRate: Math.round(approvalRate),
-        totalUsers: data.totalUsers,
       };
     },
+    staleTime: 30000,
   });
 }
 
@@ -190,7 +191,7 @@ export function useMyRoles() {
   });
 }
 
-// ---------- Income ----------
+// ---------- Income (Accounting Log) ----------
 export function useIncome() {
   const { user } = useCurrentUser();
   return useQuery({
@@ -207,36 +208,55 @@ export function useIncome() {
 
 export function useAddIncome() {
   const qc = useQueryClient();
+  const { user } = useCurrentUser();
 
   return useMutation({
     mutationFn: async (v: { amount: number; note: string; entry_date?: string }) => {
+      // PURELY ACCOUNTING: Just insert the record
+      const { error } = await supabase.from("income_entries").insert({
+        user_id: user!.id,
+        amount: v.amount,
+        note: v.note,
+        entry_date: v.entry_date || new Date().toISOString().split('T')[0]
+      });
+
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["income"] }),
+        qc.invalidateQueries({ queryKey: ["recent-activity"] }),
+        qc.invalidateQueries({ queryKey: ["admin-stats"] }),
+        qc.invalidateQueries({ queryKey: ["user-health"] }),
+      ]);
+    },
+  });
+}
+
+// ---------- Deposits (Actual Money into Wallet) ----------
+export function useDeposit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { amount: number; note: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No active session found. Please sign in again.");
+      if (!user) throw new Error("No active session");
 
-      console.log("Attempting deposit for user:", user.id, "Amount:", v.amount);
-
-      // Use the RPC call for a perfectly synced, atomic transaction
+      // Use the RPC to actually increase the profile wallet balance
       const { error } = await supabase.rpc('deposit_funds', {
         user_uuid: user.id,
         deposit_amount: v.amount,
         deposit_note: v.note
       });
 
-      if (error) {
-        console.error("Supabase RPC Error:", error);
-        if (error.code === 'P0001' || error.message.includes('function')) {
-          throw new Error("DATABASE_FUNCTION_MISSING");
-        }
-        throw new Error(error.message);
-      }
+      if (error) throw error;
       return { success: true };
     },
     onSuccess: () => {
       return Promise.all([
-        qc.invalidateQueries({ queryKey: ["income"] }),
         qc.invalidateQueries({ queryKey: ["profile"] }),
-        qc.invalidateQueries({ queryKey: ["recent-activity"] }),
         qc.invalidateQueries({ queryKey: ["transaction-history"] }),
+        qc.invalidateQueries({ queryKey: ["recent-activity"] }),
       ]);
     },
   });
@@ -510,6 +530,23 @@ export function useMyLoans() {
   });
 }
 
+export function useMyActiveLoans() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["active-loans", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("loan_applications")
+        .select("*")
+        .eq("user_id", user!.id)
+        .in("status", ["approved", "repaying"])
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useApplyForLoan() {
   const qc = useQueryClient();
   const { user } = useCurrentUser();
@@ -596,11 +633,11 @@ export function usePendingLoans() {
     queryFn: async () => {
       const { data, error } = await supabase.from("loan_applications")
         .select("*, profiles:user_id(display_name, business_name)")
-        .eq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
+    staleTime: 10000,
   });
 }
 
@@ -811,34 +848,97 @@ export function usePlaceOrder() {
       items: CartItem[];
       momo_provider?: string;
       momo_reference?: string;
-      payment_method: "momo" | "loan";
+      payment_method: "momo" | "loan" | "wallet";
       loan_id?: string;
       status?: string;
     }) => {
+      console.log("Starting usePlaceOrder mutation with:", v);
       const total = v.items.reduce((s, i) => s + i.price * i.qty, 0);
-      const { data: order, error } = await supabase.from("orders").insert({
+
+      // 1. If paying with Wallet, deduct funds FIRST
+      if (v.payment_method === "wallet") {
+        console.log("Processing wallet payment, total:", total);
+        const { error: walletError } = await supabase.rpc('withdraw_funds', {
+          user_uuid: user!.id,
+          amount_to_withdraw: total,
+          withdrawal_note: `Marketplace Order`,
+          category_name: 'Shopping'
+        });
+        if (walletError) {
+          console.error("Wallet deduction failed:", walletError);
+          if (walletError.message.includes('balance')) throw new Error("INSUFFICIENT_BALANCE");
+          throw walletError;
+        }
+      }
+
+      // 2. Create the main order record
+      const orderData: any = {
         buyer_id: user!.id,
         total,
-        momo_provider: v.momo_provider ?? "",
-        momo_reference: v.momo_reference ?? "",
-        payment_method: v.payment_method,
-        loan_id: v.loan_id,
-        status: v.status || (v.payment_method === "loan" ? "paid" : "pending")
-      }).select().single();
+        momo_provider: v.momo_provider || (v.payment_method === 'wallet' ? 'Wallet' : "System"),
+        momo_reference: v.momo_reference || "",
+        payment_method: v.payment_method === 'wallet' ? 'momo' : v.payment_method,
+        status: v.status || (v.payment_method === "loan" || v.payment_method === "wallet" ? "paid" : "pending")
+      };
 
-      if (error) throw error;
+      if (v.loan_id) {
+        orderData.loan_id = v.loan_id;
+      }
 
-      const items = v.items.map((i) => ({
-        order_id: order.id, product_id: i.product_id, vendor_id: i.vendor_id, qty: i.qty, price: i.price,
+      console.log("Inserting order into DB:", orderData);
+      const { data: order, error } = await supabase.from("orders").insert(orderData).select().single();
+
+      if (error) {
+        console.error("Supabase Order Insert Error:", error);
+        throw error;
+      }
+
+      // 3. Insert order items
+      const items = await Promise.all(v.items.map(async (i) => {
+        let vId = i.vendor_id;
+
+        // If vendor_id is missing in the cart item, try to find it on the product
+        if (!vId) {
+          const { data: pData } = await supabase
+            .from("products")
+            .select("vendor_id")
+            .eq("id", i.product_id)
+            .single();
+          vId = pData?.vendor_id;
+        }
+
+        if (!vId) {
+          throw new Error(`Missing vendor_id for product: ${i.name}`);
+        }
+
+        return {
+          order_id: order.id,
+          product_id: i.product_id,
+          vendor_id: vId,
+          qty: i.qty,
+          price: i.price,
+        };
       }));
+
+      console.log("Inserting order items:", items);
       const { error: iErr } = await supabase.from("order_items").insert(items);
-      if (iErr) throw iErr;
+      if (iErr) {
+        console.error("Supabase Order Items Insert Error:", iErr);
+        // Attempt to rollback the order
+        await supabase.from("orders").delete().eq("id", order.id);
+        throw iErr;
+      }
 
       return order;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["orders"] });
-      qc.invalidateQueries({ queryKey: ["loans"] });
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["orders"] }),
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+        qc.invalidateQueries({ queryKey: ["loans"] }),
+        qc.invalidateQueries({ queryKey: ["transaction-history"] }),
+        qc.invalidateQueries({ queryKey: ["recent-activity"] }),
+      ]);
     },
   });
 }
@@ -979,14 +1079,17 @@ export function useReplyToUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (v: { user_id: string, message: string }) => {
-      const { error = null } = await supabase.from("admin_messages").insert({
+      const { error } = await supabase.from("admin_messages").insert({
         user_id: v.user_id,
         message: v.message,
         is_from_admin: true
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["all-admin-messages"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["all-admin-messages"] });
+      qc.invalidateQueries({ queryKey: ["admin-messages"] });
+    },
   });
 }
 
@@ -1046,7 +1149,7 @@ export function useAllWithdrawalRequests() {
 export function useUpdateWithdrawalStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (v: { id: string, status: string, notes?: string }) => {
+    mutationFn: async (v: { id: string, status: 'completed' | 'rejected', notes?: string }) => {
       // 1. Get the withdrawal details first (to know the amount and user)
       const { data: request, error: fetchError } = await supabase
         .from("withdrawal_requests")
@@ -1056,42 +1159,119 @@ export function useUpdateWithdrawalStatus() {
 
       if (fetchError) throw fetchError;
 
-      // 2. Update the withdrawal status
+      // 2. If COMPLETED, deduct the money and log expense FIRST
+      // We do this first because if the wallet deduction fails (insufficient funds),
+      // we shouldn't mark the request as completed.
+      if (v.status === 'completed') {
+        const { error: rpcError } = await supabase.rpc('withdraw_funds', {
+          user_uuid: request.user_id,
+          amount_to_withdraw: Number(request.amount),
+          withdrawal_note: `Withdrawal Approved (ID: ${v.id})`,
+          category_name: 'Withdrawal'
+        });
+
+        if (rpcError) throw rpcError;
+      }
+
+      // 3. Update the withdrawal status in the table
       const { error: statusError } = await supabase.from("withdrawal_requests").update({
         status: v.status,
-        notes: v.notes,
+        notes: v.notes || (v.status === 'completed' ? 'Processed by Admin' : 'Declined by Admin'),
         processed_at: new Date().toISOString()
       }).eq("id", v.id);
 
       if (statusError) throw statusError;
 
-      // 3. If COMPLETED, deduct the money and log expense using the RPC
-      if (v.status === 'completed') {
-        const { error: rpcError } = await supabase.rpc('withdraw_funds', {
-          user_uuid: request.user_id,
-          amount_to_withdraw: request.amount,
-          withdrawal_note: `Withdrawal Approved (${v.id})`,
-          category_name: 'Withdrawal'
-        });
+      // 4. Create a notification for the user
+      await supabase.from("notifications").insert({
+        user_id: request.user_id,
+        title: v.status === 'completed' ? "Withdrawal Successful" : "Withdrawal Declined",
+        body: v.status === 'completed'
+          ? `Your withdrawal of GH₵ ${request.amount} has been processed and sent to your bank.`
+          : `Your withdrawal request for GH₵ ${request.amount} was declined.`,
+        type: v.status === 'completed' ? "success" : "error"
+      });
 
-        if (rpcError) throw rpcError;
-
-        // 4. Create a notification for the user
-        await supabase.from("notifications").insert({
-          user_id: request.user_id,
-          title: "Withdrawal Successful",
-          body: `Your withdrawal of GH₵ ${request.amount} has been processed.`,
-          type: "success"
-        });
-      }
+      return { id: v.id, status: v.status };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["all-withdrawal-requests"] });
-      qc.invalidateQueries({ queryKey: ["my-withdrawals"] });
-      qc.invalidateQueries({ queryKey: ["profile"] });
       qc.invalidateQueries({ queryKey: ["admin-stats"] });
-      qc.invalidateQueries({ queryKey: ["transaction-history"] });
-      qc.invalidateQueries({ queryKey: ["recent-activity"] });
+      qc.invalidateQueries({ queryKey: ["all-profiles"] });
+    },
+  });
+}
+
+// ---------- Performance & Growth ----------
+export function useWeeklyPerformance() {
+  const { user } = useCurrentUser();
+  return useQuery({
+    queryKey: ["weekly-performance", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      // 1. Calculate the Sunday of the CURRENT week
+      const today = new Date();
+      const dayOfWeek = today.getDay(); // 0 is Sunday
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - dayOfWeek);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      // We want Sunday to Sunday (8 days total)
+      const daysToFetch = 8;
+
+      const [income, expenses] = await Promise.all([
+        supabase.from("income_entries")
+          .select("amount, created_at")
+          .eq("user_id", user!.id)
+          .gte("created_at", startOfWeek.toISOString()),
+        supabase.from("expense_entries")
+          .select("amount, created_at")
+          .eq("user_id", user!.id)
+          .gte("created_at", startOfWeek.toISOString())
+      ]);
+
+      const labels: string[] = [];
+      const data: number[] = [];
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+      for (let i = 0; i < daysToFetch; i++) {
+        const d = new Date(startOfWeek);
+        d.setDate(startOfWeek.getDate() + i);
+
+        // Generate local date string (YYYY-MM-DD) for accurate comparison
+        const localDateStr = d.toLocaleDateString('en-CA');
+
+        labels.push(dayNames[i]);
+
+        const dailyIncome = income.data
+          ?.filter(i => new Date(i.created_at).toLocaleDateString('en-CA') === localDateStr)
+          .reduce((sum, i) => sum + Number(i.amount), 0) || 0;
+
+        const dailyExpense = expenses.data
+          ?.filter(e => new Date(e.created_at).toLocaleDateString('en-CA') === localDateStr)
+          .reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+
+        data.push(dailyIncome - dailyExpense);
+      }
+
+      // Calculate growth: Compare Sunday (Start) to Sunday (End) or latest logged day
+      const first = data[0] || 0;
+      const currentVal = data[dayOfWeek];
+
+      let growth = 0;
+      if (first !== 0) {
+        growth = ((currentVal - first) / Math.abs(first)) * 100;
+      } else if (currentVal !== 0) {
+        growth = 100;
+      }
+
+      return {
+        data,
+        labels,
+        todayIndex: dayOfWeek, // Pass the index of today
+        growth: growth.toFixed(1),
+        isPositive: growth >= 0
+      };
     },
   });
 }
@@ -1226,6 +1406,7 @@ export function useSystemSettings() {
         if (error) throw error;
         return data;
       },
+      staleTime: 300000, // 5 minutes
     }),
     updateSettings: useMutation({
       mutationFn: async (updates: any) => {
