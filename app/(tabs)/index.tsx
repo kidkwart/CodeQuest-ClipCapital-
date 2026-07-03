@@ -26,7 +26,7 @@ export default function Dashboard() {
   const [isLogged, setIsLogged] = useState(false);
   const [showScoreAudit, setShowScoreAudit] = useState(false);
 
-  const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
+  const isAdmin = roles.data?.includes("admin");
   const [localPrivate, setLocalPrivate] = useState<boolean | null>(null);
   const isPrivate = localPrivate ?? (profile?.privacy_mode_enabled ?? false);
 

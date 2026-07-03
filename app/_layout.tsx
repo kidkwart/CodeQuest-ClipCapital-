@@ -146,7 +146,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const roles = useMyRoles();
 
   const isMaintenanceActive = settings.data?.maintenance_mode ?? false;
-  const isAdmin = roles.data?.includes('admin') || user?.email === 'bernardyawkwarteng8@gmail.com';
+  const isAdmin = roles.data?.includes('admin');
 
   if (isMaintenanceActive && !isAdmin) {
     return (

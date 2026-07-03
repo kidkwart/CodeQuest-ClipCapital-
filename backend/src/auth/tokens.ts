@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { randomBytes } from "node:crypto";
 import { getEnv } from "../config/index.js";
+import { queryOne } from "../db.js";
 
 // ─── Types ──────────────────────────────────────────────
 export interface TokenPayload {
@@ -89,9 +90,9 @@ export function generateTokenPair(user: {
 }
 
 // ─── Refresh Flow ───────────────────────────────────────
-export function refreshTokensPair(
+export async function refreshTokensPair(
   refreshToken: string,
-): TokenPair | null {
+): Promise<TokenPair | null> {
   const [, rawToken] = refreshToken.split(".");
   if (!rawToken) return null;
 
@@ -103,11 +104,23 @@ export function refreshTokensPair(
   // Revoke the old one (rotate)
   row.revoked = true;
 
-  // TODO: look up user from DB — placeholder for now
+  // Look up user from DB
+  const userRow = await queryOne<{ id: string; email: string; role: string }>(
+    `SELECT u.id, u.email, COALESCE(r.role, 'user') as role
+     FROM auth.users u
+     LEFT JOIN user_roles r ON u.id = r.user_id
+     WHERE u.id = $1`,
+    [row.user_id]
+  );
+
+  if (!userRow) {
+    return null;
+  }
+
   return generateTokenPair({
-    id: row.user_id,
-    email: "placeholder@clipcapital.com",
-    role: "user",
+    id: userRow.id,
+    email: userRow.email,
+    role: userRow.role,
   });
 }
 
