@@ -59,17 +59,17 @@ export default function ProductDetails() {
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
           <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-            <ArrowLeft size={20} color={colors.text} />
+            <ArrowLeft size={18} color={colors.text} />
           </TouchableOpacity>
         ),
         headerRight: () => (
-          <View style={{ flexDirection: 'row', gap: 12, marginRight: 16 }}>
+          <View style={{ flexDirection: 'row', gap: 10, marginRight: 16 }}>
             <TouchableOpacity onPress={() => router.push("/market/orders")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-              <ClipboardList size={20} color={colors.primary} />
+              <ClipboardList size={18} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push("/market/cart")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View>
-                 <ShoppingCart size={20} color={colors.text} />
+                 <ShoppingCart size={18} color={colors.text} />
                  {totalItems > 0 && (
                    <View style={[styles.badge, { backgroundColor: colors.primary, borderColor: colors.background }]}>
                      <Text style={styles.badgeTextCount}>{totalItems}</Text>
@@ -81,8 +81,8 @@ export default function ProductDetails() {
         )
       }} />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 150 }}>
-        <View style={{ width: width, height: width }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+        <View style={{ width: width, height: width * 0.85 }}>
           <Image
             source={{ uri: product.image_url }}
             style={{ width: '100%', height: '100%' }}
@@ -90,16 +90,16 @@ export default function ProductDetails() {
           />
           <LinearGradient
             colors={theme === 'dark' ? ['transparent', '#080c0a'] : ['transparent', colors.background]}
-            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 100 }}
+            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80 }}
           />
         </View>
 
-        <View style={{ paddingHorizontal: 24, marginTop: -20 }}>
+        <View style={{ paddingHorizontal: 20, marginTop: -10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <View style={[styles.choiceBadge, { backgroundColor: colors.gold + '15', borderColor: colors.gold + '30' }]}>
-                  <Sparkles size={10} color={colors.gold} />
+                  <Sparkles size={8} color={colors.gold} />
                   <Text style={[styles.choiceBadgeText, { color: colors.gold }]}>Premium Choice</Text>
                 </View>
               </View>
@@ -111,12 +111,12 @@ export default function ProductDetails() {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* Quantity Input */}
-          <View style={{ marginBottom: 32 }}>
+          <View style={{ marginBottom: 24 }}>
             <Text style={[styles.sectionLabel, { color: colors.textDim }]}>Purchase Quantity</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                <View style={[styles.qtyContainer, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
                   <TouchableOpacity onPress={decrement} style={[styles.qtyBtn, { backgroundColor: colors.cardBg }]}>
-                     <Minus size={20} color={parseInt(qty) > 1 ? colors.primary : colors.textDim} />
+                     <Minus size={18} color={parseInt(qty) > 1 ? colors.primary : colors.textDim} />
                   </TouchableOpacity>
                   <TextInput
                     value={qty}
@@ -126,21 +126,21 @@ export default function ProductDetails() {
                     selectTextOnFocus
                   />
                   <TouchableOpacity onPress={increment} style={[styles.qtyBtn, { backgroundColor: colors.cardBg }]}>
-                     <Plus size={20} color={colors.primary} />
+                     <Plus size={18} color={colors.primary} />
                   </TouchableOpacity>
                </View>
-               <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: 'bold' }}>Total: GH₵ {(product.price * (parseInt(qty) || 0)).toLocaleString()}</Text>
+               <Text style={{ color: colors.textMuted, fontSize: 12, fontWeight: '600' }}>Total: GH₵ {(product.price * (parseInt(qty) || 0)).toLocaleString()}</Text>
             </View>
           </View>
 
           <Text style={[styles.sectionLabel, { color: colors.textDim }]}>Authenticity Check</Text>
-          <Card style={{ marginBottom: 32, padding: 24, backgroundColor: colors.cardBg, borderColor: colors.border }}>
-            <View style={{ flexDirection: 'row', gap: 16 }}>
-              <ShieldCheck size={24} color={colors.primary} />
+          <Card style={{ marginBottom: 24, padding: 16, backgroundColor: colors.cardBg, borderColor: colors.border, borderRadius: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <ShieldCheck size={20} color={colors.primary} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.text, fontFamily: 'Display-Bold', fontSize: 15, marginBottom: 4 }}>Verified Genuine</Text>
-                <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 20 }}>
-                  Sourced from certified manufacturers. Full 12-month warranty included with every purchase.
+                <Text style={{ color: colors.text, fontFamily: 'Display-Bold', fontSize: 14, marginBottom: 2 }}>Verified Genuine</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 11, lineHeight: 18 }}>
+                  Sourced from certified manufacturers. Full 12-month warranty included.
                 </Text>
               </View>
             </View>
@@ -158,17 +158,17 @@ export default function ProductDetails() {
         <View style={[styles.bottomBarInner, { backgroundColor: Platform.OS === 'web' ? colors.background : 'transparent' }]}>
           <View style={{ flex: 1 }}>
             <Button
-              title={isAdded ? "Added ✓" : "Add to Cart"}
+              title={isAdded ? "Added" : "Add"}
               variant="outline"
-              size="lg"
+              size="default"
               onPress={handleAddToCart}
             />
           </View>
-          <View style={{ flex: 1.5 }}>
+          <View style={{ flex: 2 }}>
             <Button
-              title="Buy Now"
+              title="Buy on Credit"
               variant="default"
-              size="lg"
+              size="default"
               onPress={() => {
                 handleAddToCart();
                 router.push("/market/cart");
@@ -183,9 +183,9 @@ export default function ProductDetails() {
 
 const styles = StyleSheet.create({
   headerBtn: {
-    height: 48,
-    width: 48,
-    borderRadius: 16,
+    height: 40,
+    width: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -194,79 +194,79 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -5,
     right: -5,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
   },
   badgeTextCount: {
     color: 'black',
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 'bold'
   },
   title: {
     fontFamily: 'Display-Bold',
-    fontSize: 32,
-    lineHeight: 38,
-    letterSpacing: -1
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -0.5
   },
   price: {
     fontFamily: 'Display-Bold',
-    fontSize: 26,
-    marginLeft: 16
+    fontSize: 22,
+    marginLeft: 12
   },
   choiceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 100,
     borderWidth: 1,
   },
   choiceBadgeText: {
     fontWeight: '900',
-    fontSize: 9,
+    fontSize: 8,
     textTransform: 'uppercase',
     letterSpacing: 1
   },
   sectionLabel: {
     fontWeight: '900',
-    fontSize: 10,
-    letterSpacing: 4,
+    fontSize: 9,
+    letterSpacing: 3,
     textTransform: 'uppercase',
-    marginBottom: 16,
+    marginBottom: 12,
     marginLeft: 4
   },
   description: {
     fontSize: 14,
-    lineHeight: 24,
+    lineHeight: 22,
     marginBottom: 40
   },
   divider: {
     height: 1,
-    marginVertical: 32
+    marginVertical: 20
   },
   qtyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 6
+    padding: 4
   },
   qtyBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center'
   },
   qtyInput: {
     fontFamily: 'Display-Bold',
-    fontSize: 20,
-    minWidth: 60,
+    fontSize: 18,
+    minWidth: 50,
     textAlign: 'center',
     padding: 0
   },
@@ -282,7 +282,8 @@ const styles = StyleSheet.create({
   bottomBarInner: {
     flexDirection: 'row',
     gap: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
   }
 });

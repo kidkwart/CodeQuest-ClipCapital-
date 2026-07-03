@@ -3,6 +3,7 @@ import { Pressable, Text, ActivityIndicator, View, StyleSheet } from "react-nati
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from "@/context/theme-context";
 
 const buttonVariants = cva(
   "flex-row items-center justify-center rounded-[26px] px-8 active:scale-[0.96]",
@@ -17,10 +18,10 @@ const buttonVariants = cva(
         link: "bg-transparent",
       },
       size: {
-        default: "h-16",
-        sm: "h-11 px-6",
-        lg: "h-20 px-12",
-        icon: "h-16 w-16",
+        default: "h-14",
+        sm: "h-10 px-4",
+        lg: "h-16 px-10",
+        icon: "h-12 w-12",
       },
     },
     defaultVariants: {
@@ -41,11 +42,20 @@ export interface ButtonProps extends VariantProps<typeof buttonVariants> {
 }
 
 export function Button({ className, variant, size, onPress, title, loading, disabled, style, children, ...props }: ButtonProps) {
+  const { theme } = useTheme();
+
   const isDarkText = variant === 'default' || variant === 'secondary';
   const isGold = variant === 'secondary';
   const isEmerald = variant === 'default';
+  const isOutline = variant === 'outline';
 
   const isDisabled = disabled || loading;
+
+  const getTextColor = () => {
+    if (isDarkText) return "#0d1310";
+    if (isOutline) return "#10b981"; // Always use emerald for outline text
+    return "white";
+  };
 
   return (
     <Pressable
@@ -65,11 +75,17 @@ export function Button({ className, variant, size, onPress, title, loading, disa
       )}
 
       {loading ? (
-        <ActivityIndicator color={isDarkText ? "#0d1310" : "white"} />
+        <ActivityIndicator color={getTextColor()} />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {children ? children : (
-            <Text style={{ fontFamily: 'Display-Bold', color: isDarkText ? '#0d1310' : 'white', fontSize: 14, letterSpacing: 3, textTransform: 'uppercase' }}>
+            <Text style={{
+              fontFamily: 'Display-Bold',
+              color: getTextColor(),
+              fontSize: 14,
+              letterSpacing: 3,
+              textTransform: 'uppercase'
+            }}>
               {title}
             </Text>
           )}

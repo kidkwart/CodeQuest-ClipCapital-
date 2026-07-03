@@ -1358,6 +1358,30 @@ export function useUpdateWithdrawalStatus() {
   });
 }
 
+export function useTransferFunds() {
+  const qc = useQueryClient();
+  const { user } = useCurrentUser();
+  return useMutation({
+    mutationFn: async (v: { recipient_id: string, amount: number, note: string }) => {
+      const { error } = await supabase.rpc('transfer_funds', {
+        sender_id: user!.id,
+        receiver_id: v.recipient_id,
+        amount_to_transfer: v.amount,
+        transfer_note: v.note
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: ["profile"] }),
+        qc.invalidateQueries({ queryKey: ["transaction-history"] }),
+        qc.invalidateQueries({ queryKey: ["recent-activity"] }),
+      ]);
+    }
+  });
+}
+
 export function useBulkApproveWithdrawals() {
     const qc = useQueryClient();
     const updateOne = useUpdateWithdrawalStatus();

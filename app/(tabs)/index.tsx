@@ -2,18 +2,17 @@ import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, SafeAreaView, Platform, StyleSheet, Vibration } from "react-native";
 import { useProfile, useClipScore, useRecentActivity, useAddIncome, useMyRoles, useWeeklyPerformance, useUserHealth, useUpdateProfile } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
-import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid, Zap, MapPin, FileText, BookOpen } from "lucide-react-native";
+import { Plus, TrendingUp, ShoppingBag, ArrowUpRight, ArrowDownLeft, MessageCircle, Bell, ShieldCheck, ArrowDownToLine, Check, Eye, EyeOff, LayoutGrid, Zap, MapPin, FileText, BookOpen, Scan, ShieldAlert, HelpCircle } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { ClipScoreBreakdown } from "@/components/native/clipscore-breakdown";
 import { CreditCapacityGauge } from "@/components/native/credit-capacity-gauge";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/context/theme-context";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { colors, theme } = useTheme();
+  const { colors } = useTheme();
   const { data: profile, isLoading: isProfileLoading } = useProfile();
   const roles = useMyRoles();
   const { user } = useCurrentUser();
@@ -81,56 +80,50 @@ export default function Dashboard() {
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 180, paddingTop: Platform.OS === 'ios' ? 60 : 60 }}
+        contentContainerStyle={{ paddingBottom: 140, paddingTop: Platform.OS === 'ios' ? 60 : 40 }}
         refreshControl={<RefreshControl refreshing={isProfileLoading || performance.isLoading} tintColor={colors.primary} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
 
-          {/* Institutional Header */}
+          {/* Header */}
           <View style={styles.header}>
-            <View style={{ flex: 1, marginRight: 16 }}>
+            <View style={{ flex: 1 }}>
               <View style={styles.supHeaderRow}>
-                <View style={[styles.institutionalDot, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.supHeaderText, { color: colors.primary }]}>CLIPCAPITAL PREMIUM</Text>
+                <View style={[styles.statusDot, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.supHeaderText, { color: colors.primary }]}>PREMIUM ACCOUNT</Text>
               </View>
-              <Text
-                numberOfLines={2}
-                style={[styles.greetingText, { color: colors.text }]}
-              >
-                Akwaaba,{"\n"}@{profile?.username || profile?.display_name?.toLowerCase().replace(/\s/g, '_') || "artisan"}
+              <Text numberOfLines={1} style={[styles.greetingText, { color: colors.text }]}>
+                Akwaaba, {profile?.display_name?.split(' ')[0] || "Artisan"}
               </Text>
-                  {profile?.location && (
+              {profile?.location && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                   <MapPin size={10} color={colors.textDim} />
-                   <Text style={{ color: colors.textDim, fontSize: 10, fontWeight: 'bold' }}>{profile.location}</Text>
+                   <MapPin size={12} color={colors.textDim} />
+                   <Text style={{ color: colors.textDim, fontSize: 11, fontWeight: '600' }}>{profile.location}</Text>
                 </View>
               )}
             </View>
             <View style={styles.headerActions}>
-              <TouchableOpacity onPress={togglePrivacy} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-                {isPrivate ? <EyeOff size={18} color={colors.primary} /> : <Eye size={18} color={colors.textMuted} />}
+              <TouchableOpacity onPress={() => router.push("/scan")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                <Scan size={20} color={colors.primary} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push("/notifications")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-                <Bell size={18} color={colors.primary} />
-                <View style={[styles.notifBadge, { borderColor: colors.cardBg }]} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => router.push("/support")} style={[styles.headerBtnInstitutional, { backgroundColor: colors.cardBg, borderColor: colors.primary + '20' }]}>
-                <MessageCircle size={18} color={colors.primary} />
+                <Bell size={20} color={colors.primary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Premium Financial Power Gauge */}
-          <CreditCapacityGauge
-            score={score}
-            limit={score * 5}
-            loading={isProfileLoading}
-            onAudit={() => setShowScoreAudit(!showScoreAudit)}
-          />
-
+          {/* Main Stats */}
+          <View style={{ marginBottom: 32 }}>
+            <CreditCapacityGauge
+              score={score}
+              limit={score * 5}
+              loading={isProfileLoading}
+              onAudit={() => setShowScoreAudit(!showScoreAudit)}
+            />
+          </View>
 
           {showScoreAudit && (
-            <View style={{ marginBottom: 40 }}>
+            <View style={{ marginBottom: 32 }}>
               <ClipScoreBreakdown
                 score={score}
                 health={health.data}
@@ -139,218 +132,185 @@ export default function Dashboard() {
             </View>
           )}
 
-          {/* Premium Quick Actions */}
-          <View style={styles.quickActionsRow}>
-            <ServiceNode title="Market" icon={ShoppingBag} color={theme === 'dark' ? colors.gold : "#e11d48"} onPress={() => router.push("/market")} theme={theme} />
-            <ServiceNode title="Credit" icon={TrendingUp} color={colors.primary} onPress={() => router.push("/loans")} theme={theme} />
-            <ServiceNode title="Payout" icon={ArrowDownToLine} color={theme === 'dark' ? "#3b82f6" : "#2563eb"} onPress={() => router.push("/withdraw")} theme={theme} />
-            <ServiceNode title="Audit" icon={LayoutGrid} color={colors.primary} onPress={() => router.push("/history")} theme={theme} />
+          {/* Revenue Quick Log */}
+          <View style={[styles.revenueCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <View style={{ padding: 20 }}>
+              <Text style={[styles.cardLabel, { color: colors.textMuted }]}>LOG TODAY'S SALES</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 56, backgroundColor: colors.surfaceElevated, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border }}>
+                  <Text style={{ color: colors.textDim, fontSize: 18, fontWeight: 'bold', marginRight: 8 }}>GH₵</Text>
+                  <TextInput
+                    value={incomeAmt}
+                    onChangeText={setIncomeAmt}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.textDim}
+                    keyboardType="numeric"
+                    style={{ flex: 1, color: colors.text, fontSize: 20, fontWeight: 'bold' }}
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={handleLogIncome}
+                  disabled={addIncome.isPending || !incomeAmt}
+                  style={[styles.plusBtn, { backgroundColor: colors.primary }]}
+                >
+                  {addIncome.isPending ? <ActivityIndicator color="#000" /> : <Plus size={24} color="#000" strokeWidth={3} />}
+                </TouchableOpacity>
+              </View>
+              <View style={{ marginTop: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                 <Text style={{ color: colors.textDim, fontSize: 12 }}>Today's Total</Text>
+                 <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 14 }}>
+                   {isPrivate ? "••••" : `GH₵ ${todayTotal.toLocaleString()}`}
+                 </Text>
+              </View>
+            </View>
           </View>
 
-          {/* Business Tools Section */}
-          <View style={{ marginBottom: 48 }}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Business Growth Tools</Text>
-            </View>
-            <View style={styles.toolsGrid}>
-              <ToolCard
-                title="The Vault"
-                desc="Save for business goals"
+          {/* Tools Grid */}
+          <View style={{ marginVertical: 32 }}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Business Solutions</Text>
+            <View style={styles.grid}>
+              <ToolItem
+                icon={ShoppingBag}
+                label="Market"
+                onPress={() => router.push("/market")}
+                color="#e11d48"
+              />
+              <ToolItem
+                icon={ArrowDownToLine}
+                label="Payout"
+                onPress={() => router.push("/withdraw")}
+                color="#3b82f6"
+              />
+              <ToolItem
                 icon={ShieldCheck}
+                label="Vault"
                 onPress={() => router.push("/vault")}
-                color={colors.primary}
-              />
-              <ToolCard
-                title="Invoices"
-                desc="Create digital receipts"
-                icon={FileText}
-                onPress={() => router.push("/invoices")}
-                color={colors.primary}
-              />
-              <ToolCard
-                title="My QR"
-                desc="Get paid instantly"
-                icon={Zap}
-                onPress={() => router.push("/my-qr")}
                 color={colors.gold}
               />
-              <ToolCard
-                title="Academy"
-                desc="Master your business"
+              <ToolItem
+                icon={FileText}
+                label="Invoices"
+                onPress={() => router.push("/invoices")}
+                color="#8b5cf6"
+              />
+              <ToolItem
                 icon={BookOpen}
+                label="Academy"
                 onPress={() => router.push("/academy")}
-                color={colors.primary}
+                color="#ec4899"
+              />
+              <ToolItem
+                icon={Zap}
+                label="My QR"
+                onPress={() => router.push("/my-qr")}
+                color="#f59e0b"
+              />
+              <ToolItem
+                icon={isPrivate ? EyeOff : Eye}
+                label="Privacy"
+                onPress={togglePrivacy}
+                color={isPrivate ? colors.primary : "#64748b"}
+              />
+              <ToolItem
+                icon={HelpCircle}
+                label="Support"
+                onPress={() => router.push("/support")}
+                color="#64748b"
               />
               {isAdmin && (
-                <View style={{ width: '100%', marginTop: 8 }}>
-                    <ToolCard
-                    title="Admin Command Center"
-                    desc="Manage global operations, users and risk."
-                    icon={Lock}
-                    onPress={() => router.push("/admin")}
-                    color={colors.destructive}
-                    fullWidth
-                    />
-                </View>
+                <ToolItem
+                  icon={ShieldAlert}
+                  label="Admin"
+                  onPress={() => router.push("/admin")}
+                  color={colors.destructive}
+                />
               )}
             </View>
           </View>
 
-          {/* Revenue Card */}
-          <View style={{ marginBottom: 48 }}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Business Tracking</Text>
-              <Text style={[styles.sectionStat, { color: colors.primary }]}>
-                Today: {isPrivate ? "••••" : `GH₵ ${todayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              </Text>
-            </View>
-
-            <View style={[styles.revenueCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-              <View style={{ padding: 24, flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardLabel, { color: isLogged ? colors.primary : colors.textMuted }]}>
-                    {isLogged ? "REVENUE RECORDED" : "LOG DAILY SALES"}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', height: 44 }}>
-                    <Text style={[styles.currencyPrefix, { color: colors.textDim }]}>GH₵</Text>
-                    <TextInput
-                      value={incomeAmt}
-                      onChangeText={setIncomeAmt}
-                      placeholder="0.00"
-                      placeholderTextColor={colors.textDim}
-                      keyboardType="numeric"
-                      style={[styles.revenueInput, { color: colors.text }]}
-                      editable={!addIncome.isPending}
-                    />
-                  </View>
-                </View>
-                <BouncyTap
-                  onPress={handleLogIncome}
-                  disabled={addIncome.isPending || !incomeAmt}
-                  style={[styles.logBtn, { backgroundColor: colors.primary }]}
-                >
-                  {addIncome.isPending ? (
-                    <ActivityIndicator color="#080c0a" />
-                  ) : (
-                    <Plus size={24} color="#080c0a" strokeWidth={3} />
-                  )}
-                </BouncyTap>
-              </View>
-              <View style={[styles.cardFooter, { backgroundColor: colors.primary + '08' }]}>
-                  <Text style={[styles.footerText, { color: colors.primary }]}>
-                    * Improves your credit worthiness and shop visibility.
-                  </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Recent Activity */}
+          {/* Activity */}
           <View style={styles.activityHeader}>
             <Text style={[styles.activityTitle, { color: colors.text }]}>Recent Activity</Text>
             <TouchableOpacity onPress={() => router.push("/history")}>
-              <Text style={[styles.viewHistoryLink, { color: colors.primary }]}>LEDGER →</Text>
+              <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 12 }}>VIEW ALL</Text>
             </TouchableOpacity>
           </View>
 
-          <Card style={[styles.activityCard, { backgroundColor: colors.cardBg }]}>
-            {(activity.data ?? []).length === 0 ? (
-               <View style={{ padding: 40, alignItems: 'center' }}>
-                  <Text style={{ color: colors.textDim, fontStyle: 'italic', fontSize: 13 }}>No activity logged.</Text>
-               </View>
-            ) : (
-              activity.data?.slice(0, 5).map((item, idx) => (
-                <View key={item.id} style={[styles.activityItem, { borderBottomColor: colors.border }, idx === 4 && { borderBottomWidth: 0 }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, flex: 1 }}>
-                    <View style={[styles.activityIconBox, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-                      {item.amount > 0 ? <ArrowUpRight size={20} color={colors.primary} /> : <ArrowDownLeft size={20} color={colors.destructive} />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text numberOfLines={1} style={[styles.activityNote, { color: colors.text }]}>{item.note || item.title}</Text>
-                      <Text style={[styles.activityDateText, { color: colors.textDim }]}>{formatActivityDate(item.date)}</Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.activityAmount, { color: item.amount > 0 ? colors.primary : colors.text }]}>
+          <View style={{ gap: 12 }}>
+            {activity.data?.slice(0, 4).map((item) => (
+              <View key={item.id} style={[styles.activityItem, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                 <View style={[styles.activityIcon, { backgroundColor: colors.surfaceElevated }]}>
+                    {item.amount > 0 ? <ArrowUpRight size={18} color={colors.primary} /> : <ArrowDownLeft size={18} color={colors.destructive} />}
+                 </View>
+                 <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.text, fontWeight: '600' }} numberOfLines={1}>{item.note || "Transaction"}</Text>
+                    <Text style={{ color: colors.textDim, fontSize: 10 }}>{formatActivityDate(item.date)}</Text>
+                 </View>
+                 <Text style={{ color: item.amount > 0 ? colors.primary : colors.text, fontWeight: 'bold' }}>
                     {item.amount > 0 ? '+' : ''}{isPrivate ? "•••" : item.amount.toLocaleString()}
-                  </Text>
-                </View>
-              ))
-            )}
-          </Card>
+                 </Text>
+              </View>
+            ))}
+          </View>
+
         </View>
       </ScrollView>
     </View>
   );
 }
 
-function ToolCard({ title, desc, icon: Icon, onPress, color, fullWidth }: any) {
-  const { colors } = useTheme();
-  return (
-    <BouncyTap onPress={onPress} style={{ width: fullWidth ? '100%' : '48%' }}>
-      <Card style={{ padding: 16, backgroundColor: colors.cardBg, borderColor: colors.border, height: 120, justifyContent: 'space-between' }}>
-        <View style={[styles.toolIconBox, { backgroundColor: color + '10' }]}>
-          <Icon size={20} color={color} />
-        </View>
-        <View>
-          <Text style={[styles.toolTitle, { color: colors.text }]}>{title}</Text>
-          <Text style={[styles.toolDesc, { color: colors.textMuted }]}>{desc}</Text>
-        </View>
-      </Card>
-    </BouncyTap>
-  );
-}
-
-function ServiceNode({ title, icon: Icon, color, onPress, theme }: any) {
-  const { colors } = useTheme();
-  return (
-    <BouncyTap onPress={onPress} style={{ alignItems: 'center' }}>
-      <LinearGradient
-        colors={theme === 'dark' ? ['#0f1714', '#080c0a'] : ['#ffffff', '#f1f5f9']}
-        style={[styles.serviceIconContainer, { borderColor: `${color}20` }]}
-      >
-        <Icon size={24} color={color} strokeWidth={2.5} />
-        <View style={[styles.serviceGlow, { backgroundColor: color }]} />
-      </LinearGradient>
-      <Text style={[styles.serviceTitle, { color: colors.textDim }]}>{title}</Text>
-    </BouncyTap>
-  );
+function ToolItem({ icon: Icon, label, onPress, color }: any) {
+    const { colors } = useTheme();
+    return (
+        <TouchableOpacity onPress={onPress} style={styles.gridItem}>
+            <View style={[styles.toolIconBox, { backgroundColor: color + '15', borderColor: color + '30' }]}>
+                <Icon size={24} color={color} />
+            </View>
+            <Text numberOfLines={1} style={[styles.toolLabel, { color: colors.text }]}>{label}</Text>
+        </TouchableOpacity>
+    );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, marginTop: 10 },
-  supHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  institutionalDot: { width: 6, height: 6, borderRadius: 3, marginRight: 8 },
-  supHeaderText: { fontWeight: '900', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase' },
-  greetingText: { fontFamily: 'Display-Bold', fontSize: 24, lineHeight: 28, letterSpacing: -0.5 },
-  headerActions: { flexDirection: 'row', gap: 10 },
-  headerBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  headerBtnInstitutional: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  notifBadge: { position: 'absolute', top: 12, right: 12, width: 6, height: 6, borderRadius: 3, backgroundColor: '#ef4444', borderWidth: 1.5 },
-  quickActionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 50, marginTop: 10 },
-  serviceIconContainer: { width: 68, height: 68, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginBottom: 12, overflow: 'hidden' },
-  serviceGlow: { position: 'absolute', width: 40, height: 40, borderRadius: 20, opacity: 0.03 },
-  serviceTitle: { fontWeight: '900', fontSize: 8, textTransform: 'uppercase', letterSpacing: 2 },
-  toolsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
-  toolIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  toolTitle: { fontFamily: 'Display-Bold', fontSize: 14, marginBottom: 4 },
-  toolDesc: { fontSize: 10, lineHeight: 14 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 8 },
-  sectionTitle: { fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
-  sectionStat: { fontWeight: 'bold', fontSize: 11 },
-  revenueCard: { borderRadius: 28, overflow: 'hidden', borderWidth: 1 },
-  cardLabel: { fontWeight: '900', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  currencyPrefix: { fontFamily: 'Display-Bold', fontSize: 18, marginRight: 8 },
-  revenueInput: { fontFamily: 'Display-Bold', fontSize: 32, flex: 1, height: 44, includeFontPadding: false },
-  logBtn: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  cardFooter: { paddingVertical: 10, paddingHorizontal: 20 },
-  footerText: { fontSize: 8, fontWeight: '900', textAlign: 'center', letterSpacing: 0.5 },
-  activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20, paddingHorizontal: 8 },
-  activityTitle: { fontFamily: 'Display-Bold', fontSize: 22 },
-  viewHistoryLink: { fontWeight: '900', fontSize: 9, letterSpacing: 1 },
-  activityCard: { padding: 4, borderRadius: 24 },
-  activityItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
-  activityIconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  activityNote: { fontWeight: 'bold', fontSize: 14 },
-  activityDateText: { fontWeight: '900', fontSize: 9, textTransform: 'uppercase', marginTop: 3, letterSpacing: 1 },
-  activityAmount: { fontFamily: 'Display-Bold', fontSize: 16, marginLeft: 12 }
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, marginTop: 10 },
+  supHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  supHeaderText: { fontWeight: '900', fontSize: 10, letterSpacing: 2 },
+  greetingText: { fontFamily: 'Display-Bold', fontSize: 28 },
+  headerActions: { flexDirection: 'row', gap: 12 },
+  headerBtn: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  revenueCard: { borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
+  cardLabel: { fontWeight: '900', fontSize: 10, letterSpacing: 2, marginBottom: 12 },
+  plusBtn: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontWeight: '900', fontSize: 11, letterSpacing: 2, marginBottom: 20, textTransform: 'uppercase' },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    gap: 12
+  },
+  gridItem: {
+    width: '22%',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12
+  },
+  toolIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1
+  },
+  toolLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    textAlign: 'center'
+  },
+  activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  activityTitle: { fontFamily: 'Display-Bold', fontSize: 20 },
+  activityItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 20, borderWidth: 1, gap: 16 },
+  activityIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }
 });

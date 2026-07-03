@@ -11,12 +11,12 @@ import {
   useAllOrders,
   useUpdateOrderStatus,
   useAllSusuGroups,
-  useDisburseSusuPot
+  useDisburseSusuPot,
+  useBulkApproveWithdrawals
 } from "@/lib/app-queries";
 import { Card, StatCard } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { cn } from "@/lib/utils";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { LinearGradient } from "expo-linear-gradient";
 import { BouncyTap } from "@/components/native/bouncy-tap";
@@ -24,7 +24,7 @@ import { useTheme } from "@/context/theme-context";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { colors, theme } = useTheme();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<"stats" | "loans" | "withdrawals" | "orders" | "circles" | "chat" | "users" | "settings">("stats");
   const { data: stats, isLoading: statsLoading, refetch: refetchStats, isRefetching } = useAdminStats();
 
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
               <TabItem active={activeTab === "circles"} label="Circles" icon={Lucide.Users} onPress={() => setActiveTab("circles")} />
               <TabItem active={activeTab === "chat"} label="Support" icon={Lucide.MessageSquare} onPress={() => setActiveTab("chat")} />
               <TabItem active={activeTab === "users"} label="Users" icon={Lucide.User} onPress={() => setActiveTab("users")} />
-              <TabItem active={activeTab === "settings"} label="System" icon={Lucide.ShieldCheck} onPress={() => setActiveTab("settings")} />
+              <TabItem active={activeTab === "settings"} label="System" icon={Lucide.Settings} onPress={() => setActiveTab("settings")} />
             </ScrollView>
 
             <View>
@@ -209,7 +209,7 @@ function LoanQueue() {
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>GH₵ {loan.amount}</Text>
                   {loan.status !== 'pending' && (
-                    <View style={{ marginLeft: 8, paddingHorizontal: 8, py: 2, borderRadius: 6, backgroundColor: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary + '20' : colors.destructive + '20' }}>
+                    <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary + '20' : colors.destructive + '20' }}>
                       <Text style={{ color: (loan.status === 'approved' || loan.status === 'completed' || loan.status === 'repaying') ? colors.primary : colors.destructive, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>
                         {loan.status}
                       </Text>
@@ -310,7 +310,7 @@ function WithdrawalQueue() {
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>GH₵ {req.amount}</Text>
-                  <View style={{ marginLeft: 8, paddingHorizontal: 8, py: 2, borderRadius: 6, backgroundColor: req.status === 'pending' ? colors.gold + '15' : req.status === 'completed' ? colors.primary + '15' : colors.destructive + '15' }}>
+                  <View style={{ marginLeft: 8, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, backgroundColor: req.status === 'pending' ? colors.gold + '15' : req.status === 'completed' ? colors.primary + '15' : colors.destructive + '15' }}>
                     <Text style={{ color: req.status === 'pending' ? colors.gold : req.status === 'completed' ? colors.primary : colors.destructive, fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' }}>
                       {req.status}
                     </Text>
@@ -682,7 +682,7 @@ function SettingsSection() {
                 </View>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                    <View style={{ backgroundColor: colors.cardBg, flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, px: 20, height: 60, borderWidth: 1, borderColor: colors.border }}>
+                    <View style={{ backgroundColor: colors.cardBg, flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 20, height: 60, borderWidth: 1, borderColor: colors.border }}>
                         <TextInput
                             value={localRate}
                             keyboardType="decimal-pad"
