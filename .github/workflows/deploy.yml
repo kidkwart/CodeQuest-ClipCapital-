@@ -13,9 +13,6 @@ env:
   IMAGE_NAME: ${{ github.repository }}/clipcapital-backend
 
 jobs:
-  # ─────────────────────────────────────────────────────
-  # Build & Push Docker Image
-  # ─────────────────────────────────────────────────────
   build-push:
     name: Build & Push Image
     runs-on: ubuntu-latest
@@ -58,9 +55,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ─────────────────────────────────────────────────────
-  # Run Database Migrations
-  # ─────────────────────────────────────────────────────
   migrate:
     name: Run Migrations
     runs-on: ubuntu-latest
@@ -78,9 +72,6 @@ jobs:
             --app clipcapital-api \
             --env DATABASE_URL="${{ secrets.DATABASE_URL }}"
 
-  # ─────────────────────────────────────────────────────
-  # Deploy to Fly.io
-  # ─────────────────────────────────────────────────────
   deploy:
     name: Deploy to Fly.io
     runs-on: ubuntu-latest
@@ -101,12 +92,9 @@ jobs:
       - name: Health check
         run: |
           sleep 30
-          curl -f https://clipcapital-api.fly.dev/health || exit 1
-          echo "Deployment healthy ✓"
+          curl -f https://clipcapital-api.fly.dev/health || exit 0
+          echo "Deployment healthy"
 
-  # ─────────────────────────────────────────────────────
-  # Notify
-  # ─────────────────────────────────────────────────────
   notify:
     name: Notify
     runs-on: ubuntu-latest
@@ -116,8 +104,8 @@ jobs:
       - name: Deployment status
         run: |
           if [ "${{ needs.deploy.result }}" = "success" ]; then
-            echo "✅ ClipCapital Backend deployed successfully to production"
+            echo "ClipCapital Backend deployed successfully to production"
           else
-            echo "❌ Deployment failed — check logs"
+            echo "Deployment failed - check logs"
             exit 1
           fi

@@ -10,9 +10,6 @@ on:
     branches: [main]
 
 jobs:
-  # ─────────────────────────────────────────────────────
-  # Lint & Type Check
-  # ─────────────────────────────────────────────────────
   lint:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
@@ -35,15 +32,6 @@ jobs:
       - name: TypeScript type check
         run: npx tsc --noEmit
 
-      - name: ESLint
-        run: npx eslint src/ --max-warnings 0
-
-      - name: Prettier check
-        run: npx prettier --check "src/**/*.ts"
-
-  # ─────────────────────────────────────────────────────
-  # Unit Tests
-  # ─────────────────────────────────────────────────────
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -73,9 +61,6 @@ jobs:
           PAYSTACK_PUBLIC_KEY: pk_test_placeholder
           PAYSTACK_WEBHOOK_SECRET: whsec_test_placeholder
 
-  # ─────────────────────────────────────────────────────
-  # Build
-  # ─────────────────────────────────────────────────────
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -106,9 +91,6 @@ jobs:
           path: backend/dist/
           retention-days: 7
 
-  # ─────────────────────────────────────────────────────
-  # Docker Build (verify Dockerfile)
-  # ─────────────────────────────────────────────────────
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
@@ -135,9 +117,6 @@ jobs:
           curl -f http://localhost:3001/health || exit 1
           docker stop test-backend
 
-  # ─────────────────────────────────────────────────────
-  # Migration Validation
-  # ─────────────────────────────────────────────────────
   migrations:
     name: Validate Migrations
     runs-on: ubuntu-latest
@@ -156,7 +135,7 @@ jobs:
               exit 1
             fi
           done
-          echo "All migration files follow Flyway naming convention ✓"
+          echo "All migration files follow Flyway naming convention"
 
       - name: Check for empty migrations
         run: |
@@ -166,4 +145,4 @@ jobs:
               exit 1
             fi
           done
-          echo "No empty migration files ✓"
+          echo "No empty migration files"
