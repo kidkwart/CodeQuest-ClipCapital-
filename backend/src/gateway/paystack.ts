@@ -77,7 +77,7 @@ router.post("/charge-mobile-money", authenticate, async (req: Request, res: Resp
 router.get("/verify/:reference", authenticate, async (req: Request, res: Response) => {
   try {
     const { reference } = req.params;
-    const result = await verifyTransaction(reference);
+    const result = await verifyTransaction(reference as string);
 
     res.json({
       status: result.status,

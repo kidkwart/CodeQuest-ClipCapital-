@@ -56,7 +56,7 @@ async function paystackFetch(
     },
   });
 
-  const body = await res.json();
+  const body = await res.json() as any;
 
   if (!body.status) {
     throw new Error(body.message || "Paystack API error");

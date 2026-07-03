@@ -45,7 +45,7 @@ function signToken(
   secret: string,
   expiresIn: string,
 ): string {
-  return jwt.sign(payload, secret, { expiresIn, algorithm: "HS256" });
+  return jwt.sign(payload, secret, { expiresIn: expiresIn as any, algorithm: "HS256" });
 }
 
 export function verifyAccessToken(token: string): TokenPayload {
