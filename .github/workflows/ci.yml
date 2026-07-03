@@ -53,7 +53,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npx vitest run --coverage
+        run: npx vitest run
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
           JWT_SECRET: test-secret-key-for-ci-only-min-32-chars!!

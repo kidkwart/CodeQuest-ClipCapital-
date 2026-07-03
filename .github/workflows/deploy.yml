@@ -63,8 +63,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Flyway migrations
-        uses: flyctl/flyctl-actions/setup-flyctl@master
+      - name: Setup Fly.io CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Execute migrations
         run: |
@@ -81,7 +81,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Fly.io CLI
-        uses: flyctl/flyctl-actions/setup-flyctl@master
+        uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy
         run: |
