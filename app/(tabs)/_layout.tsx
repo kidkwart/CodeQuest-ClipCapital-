@@ -4,16 +4,17 @@ import { BlurView } from 'expo-blur';
 import { StyleSheet, View, Platform, Animated, Vibration } from 'react-native';
 import React, { useRef, useEffect } from 'react';
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "@/context/language-context";
 
 function TabIcon({ Icon, color, focused }: { Icon: any, color: string, focused: boolean }) {
-  const scaleValue = useRef(new Animated.Value(focused ? 1.2 : 1)).current;
+  const scaleValue = useRef(new Animated.Value(focused ? 1.1 : 1)).current;
 
   useEffect(() => {
     if (focused) {
-      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 5);
+      Vibration.vibrate(Platform.OS === 'ios' ? 1 : 5);
     }
     Animated.spring(scaleValue, {
-      toValue: focused ? 1.2 : 1,
+      toValue: focused ? 1.1 : 1,
       useNativeDriver: true,
       friction: 4,
     }).start();
@@ -24,23 +25,29 @@ function TabIcon({ Icon, color, focused }: { Icon: any, color: string, focused: 
       styles.iconContainer,
       { transform: [{ scale: scaleValue }] }
     ]}>
-      <Icon size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
-      {focused && <View style={styles.activeDot} />}
+      <Icon size={20} color={color} strokeWidth={focused ? 2.5 : 2} />
     </Animated.View>
   );
 }
 
 export default function TabsLayout() {
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarShowLabel: false,
+          tabBarShowLabel: true,
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textDim,
+          tabBarLabelStyle: {
+            fontFamily: 'Display-Bold',
+            fontSize: 10,
+            marginTop: -4,
+            marginBottom: Platform.OS === 'ios' ? 0 : 8,
+          },
           tabBarStyle: {
             position: 'absolute',
             bottom: 0,
@@ -52,12 +59,12 @@ export default function TabsLayout() {
             borderTopColor: colors.border,
             borderTopLeftRadius: 32,
             borderTopRightRadius: 32,
-            paddingTop: 8,
             elevation: 20,
             shadowColor: '#000',
             shadowOffset: { width: 0, height: -10 },
             shadowOpacity: theme === 'dark' ? 0.4 : 0.1,
             shadowRadius: 15,
+            paddingTop: 8,
           },
           tabBarBackground: () => (
             Platform.OS === 'ios' ? (
@@ -73,30 +80,35 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="index"
           options={{
+            title: t.dashboard.toUpperCase(),
             tabBarIcon: (props) => <TabIcon Icon={LayoutDashboard} {...props} />,
           }}
         />
         <Tabs.Screen
           name="wallet"
           options={{
+            title: t.wallet.toUpperCase(),
             tabBarIcon: (props) => <TabIcon Icon={Wallet} {...props} />,
           }}
         />
         <Tabs.Screen
           name="susu"
           options={{
+            title: t.groups.toUpperCase(),
             tabBarIcon: (props) => <TabIcon Icon={Users} {...props} />,
           }}
         />
         <Tabs.Screen
           name="loans"
           options={{
+            title: t.loans.toUpperCase(),
             tabBarIcon: (props) => <TabIcon Icon={TrendingUp} {...props} />,
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
+            title: t.settings.toUpperCase(),
             tabBarIcon: (props) => <TabIcon Icon={Settings} {...props} />,
           }}
         />
@@ -109,20 +121,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 44,
-    height: 44,
-  },
-  activeDot: {
-    position: 'absolute',
-    bottom: -6,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#10B981',
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 5
+    width: 32,
+    height: 32,
   }
 });

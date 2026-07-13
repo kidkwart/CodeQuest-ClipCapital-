@@ -9,6 +9,8 @@ import { PremiumHeader } from "@/components/native/premium-header";
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, FadeInDown } from "react-native-reanimated";
+import { AnimatedNumber } from "@/components/native/animated-number";
 
 export default function VaultScreen() {
   const router = useRouter();
@@ -69,11 +71,11 @@ export default function VaultScreen() {
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title="The Vault" subtitle="Strategic Capital Reserve" />
 
-          <Card style={[styles.balanceCard, { backgroundColor: colors.cardBg, borderColor: colors.primary + '20' }]}>
+          <Animated.View entering={FadeInDown.delay(100)} style={[styles.balanceCard, { backgroundColor: colors.cardBg, borderColor: colors.primary + '20' }]}>
              <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>AVAILABLE TO LOCK</Text>
-             <Text style={[styles.balanceValue, { color: colors.text }]}>GH₵ {profile?.wallet_balance?.toLocaleString() || "0"}</Text>
+             <AnimatedNumber value={profile?.wallet_balance || 0} prefix="GH₵ " style={[styles.balanceValue, { color: colors.text }]} />
              <Text style={[styles.balanceDesc, { color: colors.textDim }]}>Transfer funds from your wallet into specific business goals.</Text>
-          </Card>
+          </Animated.View>
 
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Active Goals</Text>
@@ -89,31 +91,14 @@ export default function VaultScreen() {
                <Text style={[styles.emptySub, { color: colors.textDim }]}>Start building your capital reserve today.</Text>
             </View>
           ) : (
-            goals.map((goal) => {
-              const progress = (goal.current_amount / goal.target_amount) * 100;
-              return (
-                <Card key={goal.id} style={[styles.goalCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-                  <View style={styles.goalHeader}>
-                    <View>
-                      <Text style={[styles.goalName, { color: colors.text }]}>{goal.name}</Text>
-                      <Text style={[styles.goalTarget, { color: colors.textMuted }]}>Target: GH₵ {goal.target_amount.toLocaleString()}</Text>
-                    </View>
-                    <BouncyTap onPress={() => setShowDepositModal(goal.id)} style={[styles.depositBtn, { backgroundColor: colors.primary + '15' }]}>
-                        <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 10 }}>DEPOSIT</Text>
-                    </BouncyTap>
-                  </View>
-
-                  <View style={styles.progressContainer}>
-                     <View style={[styles.progressBase, { backgroundColor: colors.surfaceElevated }]}>
-                        <View style={[styles.progressBar, { backgroundColor: colors.primary, width: `${Math.min(progress, 100)}%` }]} />
-                     </View>
-                     <Text style={[styles.progressText, { color: colors.primary }]}>{Math.round(progress)}%</Text>
-                  </View>
-
-                  <Text style={[styles.currentAmt, { color: colors.text }]}>GH₵ {goal.current_amount.toLocaleString()} saved</Text>
-                </Card>
-              );
-            })
+            goals.map((goal, index) => (
+               <AnimatedGoalCard
+                key={goal.id}
+                goal={goal}
+                index={index}
+                onDeposit={() => setShowDepositModal(goal.id)}
+               />
+            ))
           )}
         </View>
       </ScrollView>
@@ -178,6 +163,45 @@ export default function VaultScreen() {
       </Modal>
     </View>
   );
+}
+
+function AnimatedGoalCard({ goal, index, onDeposit }: { goal: any, index: number, onDeposit: () => void }) {
+    const { colors } = useTheme();
+    const progressVal = (goal.current_amount / goal.target_amount);
+    const animatedWidth = useSharedValue(0);
+
+    React.useEffect(() => {
+        animatedWidth.value = withSpring(Math.min(progressVal, 1), { damping: 20 });
+    }, [goal.current_amount, goal.target_amount]);
+
+    const progressStyle = useAnimatedStyle(() => ({
+        width: `${animatedWidth.value * 100}%`,
+    }));
+
+    return (
+        <Animated.View entering={FadeInDown.delay(200 + (index * 100))}>
+            <Card style={[styles.goalCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                <View style={styles.goalHeader}>
+                <View>
+                    <Text style={[styles.goalName, { color: colors.text }]}>{goal.name}</Text>
+                    <Text style={[styles.goalTarget, { color: colors.textMuted }]}>Target: GH₵ {goal.target_amount.toLocaleString()}</Text>
+                </View>
+                <BouncyTap onPress={onDeposit} style={[styles.depositBtn, { backgroundColor: colors.primary + '15' }]}>
+                    <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 10 }}>DEPOSIT</Text>
+                </BouncyTap>
+                </View>
+
+                <View style={styles.progressContainer}>
+                    <View style={[styles.progressBase, { backgroundColor: colors.surfaceElevated }]}>
+                        <Animated.View style={[styles.progressBar, { backgroundColor: colors.primary }, progressStyle]} />
+                    </View>
+                    <Text style={[styles.progressText, { color: colors.primary }]}>{Math.round(progressVal * 100)}%</Text>
+                </View>
+
+                <Text style={[styles.currentAmt, { color: colors.text }]}>GH₵ {goal.current_amount.toLocaleString()} saved</Text>
+            </Card>
+        </Animated.View>
+    );
 }
 
 const styles = StyleSheet.create({

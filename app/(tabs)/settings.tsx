@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, Alert, Platform, Modal, Switch, TextInput, Vibration } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, Alert, Platform, Modal, Switch, TextInput, Vibration, Image, Share } from "react-native";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile, useUpdateProfile } from "@/lib/app-queries";
-import { Input } from "@/components/native/input";
-import { Button } from "@/components/native/button";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X, Eye, EyeOff, Smartphone, BellRing, Fingerprint, Key, Palette } from "lucide-react-native";
+import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X, Eye, EyeOff, Smartphone, BellRing, Fingerprint, Key, Palette, Camera, HelpCircle, Share2, FileText, Globe, Info, Activity } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { BouncyTap } from "@/components/native/bouncy-tap";
-import { LinearGradient } from "expo-linear-gradient";
-import { theme as ThemeColors, ThemeType } from "@/lib/theme";
+import { useRouter } from "expo-router";
+import { ThemeType } from "@/lib/theme";
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "@/context/language-context";
+import { LanguageType } from "@/lib/translations";
+import { getDeviceSecureID } from "@/lib/security-module";
 
 // Optional import for biometrics
 let LocalAuthentication: any = null;
@@ -20,7 +21,9 @@ try {
 } catch (e) {}
 
 export default function Settings() {
+  const router = useRouter();
   const { colors, theme, toggleTheme } = useTheme();
+  const { language, t, setLanguage } = useLanguage();
   const { data: profile, refetch, isLoading } = useProfile();
   const updateProfile = useUpdateProfile();
 
@@ -28,18 +31,11 @@ export default function Settings() {
   const [showPayoutModal, setShowPayoutModal] = useState(false);
   const [showNotifModal, setShowNotifModal] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [pin, setPin] = useState("");
-
-  // local states for inputs
-  const [formData, setFormData] = useState({
-    display_name: "",
-    username: "",
-    business_name: "",
-    location: "",
-    phone_number: "",
-  });
+  const [deviceId, setDeviceId] = useState("Fetching...");
 
   const [prefs, setPrefs] = useState({
     notifications_enabled: true,
@@ -57,15 +53,13 @@ export default function Settings() {
   });
 
   useEffect(() => {
+    const loadDeviceInfo = async () => {
+      const id = await getDeviceSecureID();
+      setDeviceId(id);
+    };
     checkBiometrics();
+    loadDeviceInfo();
     if (profile) {
-      setFormData({
-        display_name: profile.display_name || "",
-        username: profile.username || "",
-        business_name: profile.business_name || "",
-        location: profile.location || "",
-        phone_number: profile.phone_number || "",
-      });
       setPayoutData({
         bank_name: profile.bank_name || "",
         account_number: profile.account_number || "",
@@ -100,23 +94,20 @@ export default function Settings() {
       const currentTheme = prefs.theme_preference;
       const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
-      // 1. Instant UI update
       setPrefs(p => ({ ...p, theme_preference: nextTheme }));
       toggleTheme();
-      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 10);
+      Vibration.vibrate(Platform.OS === 'ios' ? 1 : 10);
 
-      // 2. Database Sync
       try {
         await updateProfile.mutateAsync({ theme_preference: nextTheme });
       } catch (e: any) {
-        Alert.alert("Sync Error", "Theme choice not saved to vault: " + e.message);
+        Alert.alert("Sync Error", "Theme choice not saved: " + e.message);
       }
       return;
     }
 
     const newVal = !prefs[key];
 
-    // If enabling sensitive features, verify identity
     if ((key === 'biometric_enabled' || key === 'security_2fa_enabled') && newVal && LocalAuthentication) {
         const result = await LocalAuthentication.authenticateAsync({
             promptMessage: 'Authorize Security Change',
@@ -128,10 +119,6 @@ export default function Settings() {
     setPrefs(p => ({ ...p, [key]: newVal }));
     try {
       await updateProfile.mutateAsync({ [key]: newVal });
-      if (key === 'biometric_enabled') {
-        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-        await AsyncStorage.setItem("biometric_enabled", newVal ? "true" : "false");
-      }
     } catch (e: any) {
       alert("Failed to update preference: " + e.message);
     }
@@ -141,25 +128,9 @@ export default function Settings() {
     if (pin.length !== 4) return Alert.alert("Invalid Key", "Access key must be exactly 4 digits.");
     try {
         await updateProfile.mutateAsync({ access_pin: pin });
-        Alert.alert("Success", "Your private Institutional Access Key has been registered.");
+        Alert.alert("Success", "Access Key registered.");
     } catch (e: any) {
         alert(e.message);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      const updateData = {
-        ...formData,
-        ...prefs,
-        ...payoutData
-      };
-
-      await updateProfile.mutateAsync(updateData);
-      Vibration.vibrate(Platform.OS === 'ios' ? 0 : 20);
-      alert("Vault Synchronized: Your merchant identity and preferences are now secured.");
-    } catch (e: any) {
-      alert("Synchronization Failed: " + e.message);
     }
   };
 
@@ -173,10 +144,20 @@ export default function Settings() {
     }
   };
 
+  const onShare = async () => {
+    try {
+      await Share.share({
+        message: 'Join me on ClipCapital, the elite banking protocol for Ghanaian artisans. Secure your capital and grow your business today: https://clipcapital.app/download',
+      });
+    } catch (error: any) {
+      Alert.alert(error.message);
+    }
+  };
+
   const handleSignOut = async () => {
     Alert.alert(
       "Confirm Logout",
-      "Are you sure you want to terminate your current session?",
+      "Terminate current session?",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -196,23 +177,19 @@ export default function Settings() {
         const { error } = await supabase.rpc('delete_user_account');
         if (error) throw error;
         await supabase.auth.signOut();
-        alert("Account successfully purged from system.");
+        alert("Account successfully purged.");
       } catch (e: any) {
         alert("Action restricted: " + e.message);
       }
     };
 
-    if (Platform.OS === 'web') {
-      if (confirm("Permanently delete account? This is irreversible.")) performDelete();
-    } else {
-      Alert.alert("Institutional Purge", "Are you sure you want to permanently delete your account, your wallet balance, and all business records? This cannot be undone.", [
-        { text: "Cancel", style: "cancel" },
-        { text: "DELETE PERMANENTLY", style: "destructive", onPress: performDelete }
-      ]);
-    }
+    Alert.alert("Institutional Purge", "Permanently delete account?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "DELETE PERMANENTLY", style: "destructive", onPress: performDelete }
+    ]);
   };
 
-  const SettingRow = ({ icon: Icon, label, color = "#10b981", onPress, value }: any) => (
+  const SettingRow = ({ icon: Icon, label, color = colors.primary, onPress, value }: any) => (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
@@ -223,7 +200,7 @@ export default function Settings() {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
-        {value ? <Text style={[styles.settingValueText, { color: colors.textMuted }]}>{value}</Text> : null}
+        {value ? <Text style={[styles.settingValueText, { color: colors.textDim }]}>{value}</Text> : null}
       </View>
       <ChevronRight size={14} color={colors.textDim} />
     </TouchableOpacity>
@@ -238,117 +215,140 @@ export default function Settings() {
         refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={onRefresh} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
-          <PremiumHeader title="Settings" subtitle="Merchant Portal" />
+          <PremiumHeader title={t.settings} subtitle={t.merchant_portal} />
 
-          {/* Verification Status Card */}
-          <Card style={[styles.statusCard, { backgroundColor: colors.cardBg, borderColor: colors.primary + '30' }]}>
-             <View style={styles.statusHeader}>
-                <View style={[styles.sessionBadge, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '20' }]}>
-                   <Text style={[styles.sessionText, { color: colors.primary }]}>Active Session</Text>
-                </View>
-                <BadgeCheck size={18} color={colors.primary} />
-             </View>
-             <Text style={[styles.identityLabel, { color: colors.textMuted }]}>Authorized Identity</Text>
-             <Text style={[styles.displayName, { color: colors.text }]}>{profile?.display_name || 'Artisan Account'}</Text>
-          </Card>
+          {/* Profile Overview Card */}
+          <BouncyTap onPress={() => router.push("/identity")} style={{ marginBottom: 40 }}>
+            <Card style={[styles.statusCard, { backgroundColor: colors.cardBg, borderColor: colors.primary + '30' }]}>
+               <View style={styles.statusHeader}>
+                    <View style={[styles.avatarBox, { borderColor: colors.primary + '40' }]}>
+                        {profile?.avatar_url ? (
+                            <Image source={{ uri: profile.avatar_url }} style={styles.miniAvatar} />
+                        ) : (
+                            <User size={20} color={colors.textDim} />
+                        )}
+                    </View>
+                    <BadgeCheck size={18} color={colors.primary} />
+               </View>
+               <Text style={[styles.identityLabel, { color: colors.textDim }]}>{t.auth_identity}</Text>
+               <View style={styles.nameRow}>
+                    <Text style={[styles.displayName, { color: colors.text }]}>{profile?.display_name || 'Artisan Account'}</Text>
+                    <ChevronRight size={16} color={colors.textDim} />
+               </View>
+               <Text style={[styles.businessName, { color: colors.textDim }]}>{profile?.business_name || 'Individual Merchant'}</Text>
+            </Card>
+          </BouncyTap>
 
-          {/* Preferences - THEME FIRST */}
+          {/* Preferences Section */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Appearance & Signals</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.core_config}</Text>
 
             <SettingRow
               icon={Palette}
-              label="Display Appearance"
+              label={t.display_mode}
               color="#3b82f6"
-              value={prefs.theme_preference === 'dark' ? "Midnight Emerald (Dark)" : "Pristine White (Light)"}
+              value={prefs.theme_preference === 'dark' ? "Midnight Emerald" : "Pristine White"}
               onPress={() => handleTogglePref('theme_preference')}
             />
 
             <SettingRow
+              icon={Globe}
+              label={t.dialect}
+              color="#ec4899"
+              value={
+                language === 'en' ? 'English (Standard)' :
+                language === 'twi' ? 'Twi (Asante)' :
+                language === 'ga' ? 'Ga (Accra)' :
+                language === 'ewe' ? 'Ewe (Volta)' :
+                language === 'zh' ? 'Chinese (Mandarin)' : 'French (Standard)'
+              }
+              onPress={() => setShowLanguageModal(true)}
+            />
+
+            <SettingRow
               icon={Bell}
-              label="Alert Notifications"
-              value={prefs.notifications_enabled ? "Enabled" : "Muted"}
+              label={t.alerts}
+              value={prefs.notifications_enabled ? "Active" : "Muted"}
               onPress={() => setShowNotifModal(true)}
             />
 
             <SettingRow
               icon={Shield}
-              label="Security Protocol"
+              label={t.security}
               value={prefs.security_2fa_enabled ? "High Security" : "Standard"}
               onPress={() => setShowSecurityModal(true)}
             />
           </View>
 
-          {/* Identity Form */}
+          {/* Business & Growth Section */}
           <View style={styles.section}>
-             <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Identity Modification</Text>
-             <Card style={[styles.formCard, { backgroundColor: colors.cardBg }]}>
-                <Input
-                  label="Display Name"
-                  value={formData.display_name}
-                  onChangeText={(t) => setFormData({...formData, display_name: t})}
-                  containerClassName="mb-6"
-                />
-                <Input
-                  label="Unique Username"
-                  value={formData.username}
-                  onChangeText={(t) => setFormData({...formData, username: t.toLowerCase().replace(/[^a-z0-9_]/g, '')})}
-                  containerClassName="mb-6"
-                />
-                <Input
-                  label="Registered Business"
-                  value={formData.business_name}
-                  onChangeText={(t) => setFormData({...formData, business_name: t})}
-                  containerClassName="mb-6"
-                />
-                <Input
-                  label="Business Location"
-                  value={formData.location}
-                  onChangeText={(t) => setFormData({...formData, location: t})}
-                  placeholder="e.g. Accra, Madina Market"
-                  containerClassName="mb-6"
-                />
-                <Input
-                  label="Merchant Contact"
-                  value={formData.phone_number}
-                  onChangeText={(t) => setFormData({...formData, phone_number: t})}
-                  keyboardType="phone-pad"
-                  containerClassName="mb-8"
-                />
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.biz_growth}</Text>
 
-                <Button
-                  title="Save Profile"
-                  onPress={handleSave}
-                  loading={updateProfile.isPending}
-                />
-             </Card>
-          </View>
-
-          {/* Payout Preferences */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Liquidation Payouts</Text>
             <SettingRow
               icon={CreditCard}
-              label="Payout Destination"
-              color="#f59e0b"
+              label={t.payout_destination || "Payout Destination"}
+              color={colors.gold}
               value={profile?.account_number ? `${profile.bank_name} • ${profile.account_number}` : "Not configured"}
               onPress={() => setShowPayoutModal(true)}
             />
+
+            <SettingRow
+              icon={Share2}
+              label={t.invite}
+              color="#8b5cf6"
+              value="Expand the community"
+              onPress={onShare}
+            />
+          </View>
+
+          {/* Resources Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.resources}</Text>
+
+            <SettingRow
+              icon={HelpCircle}
+              label={t.support_center}
+              color="#10b981"
+              onPress={() => router.push("/support")}
+            />
+
+            <SettingRow
+              icon={FileText}
+              label={t.legal}
+              color={colors.textDim}
+              onPress={() => Alert.alert("Legal Manifest", "Terms of Service and Privacy Policy v4.2 are synchronized with Ghanaian financial regulations.")}
+            />
+          </View>
+
+          {/* Technical Info Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.sys_manifest}</Text>
+            <View style={[styles.manifestCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+                <View style={styles.manifestRow}>
+                    <Info size={14} color={colors.textDim} />
+                    <Text style={[styles.manifestText, { color: colors.textDim }]}>{t.version}</Text>
+                    <Text style={[styles.manifestValue, { color: colors.text }]}>v4.2.0-STABLE</Text>
+                </View>
+                <View style={styles.manifestDivider} />
+                <View style={styles.manifestRow}>
+                    <Activity size={14} color={colors.primary} />
+                    <Text style={[styles.manifestText, { color: colors.textDim }]}>{t.vault_status}</Text>
+                    <Text style={[styles.manifestValue, { color: colors.primary }]}>{t.operational}</Text>
+                </View>
+            </View>
           </View>
 
           {/* Account Actions */}
           <View style={{ marginBottom: 40 }}>
-            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Account Control</Text>
             <TouchableOpacity onPress={handleSignOut} style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: colors.border }]}>
               <View style={styles.actionIconBox}>
                 <LogOut size={20} color={colors.text} />
               </View>
-              <Text style={[styles.actionBtnText, { color: colors.text }]}>Secure Sign Out</Text>
+              <Text style={[styles.actionBtnText, { color: colors.text }]}>{t.sign_out}</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={{ marginBottom: 100 }}>
-            <Text style={[styles.sectionTitle, { color: colors.destructive }]}>Danger Zone</Text>
+          <View style={{ marginBottom: 120 }}>
             <TouchableOpacity
               onPress={handleDeleteAccount}
               style={[styles.actionBtn, { backgroundColor: colors.destructive + '05', borderColor: colors.destructive + '10' }]}
@@ -356,11 +356,8 @@ export default function Settings() {
               <View style={[styles.actionIconBox, { backgroundColor: colors.destructive + '10' }]}>
                 <UserX size={20} color={colors.destructive} />
               </View>
-              <Text style={[styles.actionBtnText, { color: colors.destructive }]}>Delete Institutional Account</Text>
+              <Text style={[styles.actionBtnText, { color: colors.destructive }]}>{t.purge}</Text>
             </TouchableOpacity>
-            <Text style={{ color: colors.textDim, fontSize: 10, textAlign: 'center', marginTop: 12, paddingHorizontal: 20 }}>
-                Terminating your account will permanently wipe all vault data and financial history.
-            </Text>
           </View>
         </View>
       </ScrollView>
@@ -371,16 +368,15 @@ export default function Settings() {
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Security Protocol</Text>
-              <TouchableOpacity onPress={() => setShowSecurityModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t.security}</Text>
+              <TouchableOpacity onPress={() => setShowSecurityModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Access PIN Section */}
               <View style={[styles.pinSection, { backgroundColor: colors.background, borderColor: colors.border }]}>
                  <View style={styles.pinHeader}>
                     <Key size={16} color={colors.primary} />
-                    <Text style={[styles.pinLabel, { color: colors.textMuted }]}>ACCESS KEY (4-DIGITS)</Text>
+                    <Text style={[styles.pinLabel, { color: colors.textDim }]}>{t.access_key} ({t.digits_4})</Text>
                  </View>
                  <View style={styles.pinInputRow}>
                     <TextInput
@@ -396,35 +392,65 @@ export default function Settings() {
                         <Check size={18} color="#000" strokeWidth={3} />
                     </TouchableOpacity>
                  </View>
-                 <Text style={[styles.pinHint, { color: colors.textDim }]}>This key will be required during 2FA challenges.</Text>
               </View>
 
+              <View style={[styles.pinSection, { backgroundColor: colors.background, borderColor: colors.border, marginTop: -12 }]}>
+                 <View style={styles.pinHeader}>
+                    <Smartphone size={16} color={colors.primary} />
+                    <Text style={[styles.pinLabel, { color: colors.textDim }]}>SECURE DEVICE ID (JAVA)</Text>
+                 </View>
+                 <Text style={{ color: colors.text, fontFamily: 'Display-Bold', fontSize: 14 }}>{deviceId}</Text>
+              </View>
               <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
 
-              <ToggleRow
-                icon={EyeOff}
-                label="Privacy Protocol"
-                desc="Mask capital balances across vault"
-                value={prefs.privacy_mode_enabled}
-                onToggle={() => handleTogglePref('privacy_mode_enabled')}
-              />
-              <ToggleRow
-                icon={Shield}
-                label="Two-Factor Auth"
-                desc="Challenge mode for vault entry"
-                value={prefs.security_2fa_enabled}
-                onToggle={() => handleTogglePref('security_2fa_enabled')}
-              />
+              <ToggleRow icon={EyeOff} label={t.privacy_protocol} desc="Mask capital balances across vault" value={prefs.privacy_mode_enabled} onToggle={() => handleTogglePref('privacy_mode_enabled')} />
+              <ToggleRow icon={Shield} label={t.two_factor} desc="Challenge mode for vault entry" value={prefs.security_2fa_enabled} onToggle={() => handleTogglePref('security_2fa_enabled')} />
               {isBiometricSupported && (
-                  <ToggleRow
-                    icon={Fingerprint}
-                    label="Biometric Unlock"
-                    desc="Institutional Body Signature Login"
-                    value={prefs.biometric_enabled}
-                    onToggle={() => handleTogglePref('biometric_enabled')}
-                  />
+                  <ToggleRow icon={Fingerprint} label={t.biometric} desc="Institutional Signature Login" value={prefs.biometric_enabled} onToggle={() => handleTogglePref('biometric_enabled')} />
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Language Modal */}
+      <Modal visible={showLanguageModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t.dialect}</Text>
+              <TouchableOpacity onPress={() => setShowLanguageModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
+            </View>
+            <View style={{ gap: 12 }}>
+                {[
+                  { id: 'en', name: 'English (Standard)' },
+                  { id: 'twi', name: 'Twi (Asante)' },
+                  { id: 'ga', name: 'Ga (Accra)' },
+                  { id: 'ewe', name: 'Ewe (Volta)' },
+                  { id: 'zh', name: 'Chinese (Mandarin)' },
+                  { id: 'fr', name: 'French (Standard)' }
+                ].map((lang) => (
+                    <TouchableOpacity
+                      key={lang.id}
+                      onPress={async () => {
+                        await setLanguage(lang.id as LanguageType);
+                        Vibration.vibrate(Platform.OS === 'ios' ? 1 : 10);
+                        setShowLanguageModal(false);
+                      }}
+                      style={[
+                        styles.langBtn,
+                        {
+                          backgroundColor: language === lang.id ? colors.primary + '10' : 'transparent',
+                          borderColor: language === lang.id ? colors.primary + '40' : colors.border
+                        }
+                      ]}
+                    >
+                        <Text style={[styles.langText, { color: language === lang.id ? colors.primary : colors.text }]}>{lang.name}</Text>
+                        {language === lang.id && <Check size={16} color={colors.primary} />}
+                    </TouchableOpacity>
+                ))}
+            </View>
           </View>
         </View>
       </Modal>
@@ -436,13 +462,15 @@ export default function Settings() {
           <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Payout Destination</Text>
-              <TouchableOpacity onPress={() => setShowPayoutModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowPayoutModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Input label="Provider / Bank" placeholder="MTN, GCB, etc." value={payoutData.bank_name} onChangeText={(t) => setPayoutData({...payoutData, bank_name: t})} containerClassName="mb-6" />
-              <Input label="Account Number" placeholder="024..." value={payoutData.account_number} onChangeText={(t) => setPayoutData({...payoutData, account_number: t})} keyboardType="numeric" containerClassName="mb-6" />
-              <Input label="Account Name" placeholder="Exact name on account" value={payoutData.account_name} onChangeText={(t) => setPayoutData({...payoutData, account_name: t})} containerClassName="mb-8" />
-              <Button title="Update Payout Account" onPress={handleSavePayout} loading={updateProfile.isPending} variant="secondary" />
+              <TextInput value={payoutData.bank_name} onChangeText={(t) => setPayoutData({...payoutData, bank_name: t})} placeholder="PROVIDER / BANK (MTN, GCB, etc.)" placeholderTextColor={colors.textDim} style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceElevated }]} />
+              <TextInput value={payoutData.account_number} onChangeText={(t) => setPayoutData({...payoutData, account_number: t})} placeholder="ACCOUNT NUMBER" placeholderTextColor={colors.textDim} keyboardType="numeric" style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceElevated, marginTop: 16 }]} />
+              <TextInput value={payoutData.account_name} onChangeText={(t) => setPayoutData({...payoutData, account_name: t})} placeholder="FULL ACCOUNT NAME" placeholderTextColor={colors.textDim} style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceElevated, marginTop: 16, marginBottom: 32 }]} />
+              <BouncyTap onPress={handleSavePayout} style={{ backgroundColor: colors.primary, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#000', fontFamily: 'Display-Bold', fontSize: 14 }}>AUTHORIZE PAYOUT UPDATE</Text>
+              </BouncyTap>
             </ScrollView>
           </View>
         </View>
@@ -455,7 +483,7 @@ export default function Settings() {
           <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>Alert Preferences</Text>
-              <TouchableOpacity onPress={() => setShowNotifModal(false)}><X size={24} color={colors.textMuted} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowNotifModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               <ToggleRow icon={BellRing} label="Push Notifications" desc="Get real-time updates" value={prefs.notifications_enabled} onToggle={() => handleTogglePref('notifications_enabled')} />
@@ -476,7 +504,7 @@ const ToggleRow = ({ icon: Icon, label, desc, value, onToggle }: any) => {
         <View style={[styles.toggleIcon, { backgroundColor: colors.primary + '10' }]}><Icon size={18} color={colors.primary} /></View>
         <View style={{ flex: 1 }}>
           <Text style={[styles.toggleLabel, { color: colors.text }]}>{label}</Text>
-          <Text style={[styles.toggleDesc, { color: colors.textMuted }]}>{desc}</Text>
+          <Text style={[styles.toggleDesc, { color: colors.textDim }]}>{desc}</Text>
         </View>
       </View>
       <Switch value={value} onValueChange={onToggle} trackColor={{ false: colors.background, true: colors.primary }} thumbColor="#fff" />
@@ -487,37 +515,45 @@ const ToggleRow = ({ icon: Icon, label, desc, value, onToggle }: any) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 160, paddingTop: 60 },
-  statusCard: { marginBottom: 40, padding: 24, borderWidth: 1, borderRadius: 28 },
+  statusCard: { marginBottom: 40, padding: 24, borderWidth: 1, borderRadius: 32 },
   statusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sessionBadge: { height: 28, paddingHorizontal: 12, borderRadius: 100, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  sessionText: { fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 2, textTransform: 'uppercase' },
-  identityLabel: { fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 },
+  avatarBox: { width: 50, height: 50, borderRadius: 25, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  miniAvatar: { width: '100%', height: '100%' },
+  identityLabel: { fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 6 },
+  nameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   displayName: { fontFamily: 'Display-Bold', fontSize: 24, letterSpacing: -0.5 },
+  businessName: { fontFamily: 'Display-Bold', fontSize: 10, letterSpacing: 2, marginTop: 4, textTransform: 'uppercase' },
   section: { marginBottom: 40 },
   sectionTitle: { fontFamily: 'Display-Bold', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase', marginBottom: 24, marginLeft: 8 },
-  formCard: { padding: 28, borderRadius: 32 },
   settingRow: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 24, marginBottom: 12, borderWidth: 1 },
-  settingIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  settingIconBox: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   settingLabel: { fontFamily: 'Display-Bold', fontSize: 14 },
-  settingValueText: { fontSize: 12, marginTop: 2 },
+  settingValueText: { fontSize: 11, marginTop: 2, opacity: 0.7 },
+  manifestCard: { padding: 20, borderRadius: 24, borderWidth: 1 },
+  manifestRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  manifestText: { fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 2, flex: 1 },
+  manifestValue: { fontFamily: 'Display-Bold', fontSize: 10, letterSpacing: 1 },
+  manifestDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginVertical: 12 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 24, borderWidth: 1, marginBottom: 12 },
-  actionIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  actionIconBox: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   actionBtnText: { fontFamily: 'Display-Bold', fontSize: 14 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.85)' },
   modalContent: { borderTopLeftRadius: 40, borderTopRightRadius: 40, padding: 32, maxHeight: '90%', borderWidth: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 },
-  modalTitle: { fontFamily: 'Display-Bold', fontSize: 20 },
+  modalTitle: { fontFamily: 'Display-Bold', fontSize: 22 },
+  modalInput: { height: 60, borderRadius: 18, paddingHorizontal: 20, fontFamily: 'Display-Bold', fontSize: 14, borderWidth: 1 },
   pinSection: { marginBottom: 24, padding: 20, borderRadius: 24, borderWidth: 1 },
   pinHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-  pinLabel: { fontWeight: '900', fontSize: 9, letterSpacing: 2 },
+  pinLabel: { fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 2 },
   pinInputRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pinInput: { flex: 1, backgroundColor: 'rgba(0,0,0,0.05)', height: 56, borderRadius: 16, textAlign: 'center', fontFamily: 'Display-Bold', fontSize: 24, letterSpacing: 10, borderWidth: 1 },
   pinSaveBtn: { width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  pinHint: { fontSize: 10, fontWeight: 'bold', marginTop: 12, textAlign: 'center' },
   modalDivider: { height: 1, marginVertical: 32 },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
   toggleLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 16 },
-  toggleIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  toggleIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
   toggleLabel: { fontFamily: 'Display-Bold', fontSize: 14 },
-  toggleDesc: { fontSize: 12, marginTop: 2 }
+  toggleDesc: { fontSize: 11, marginTop: 2 },
+  langBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18, borderRadius: 18, borderWidth: 1 },
+  langText: { fontFamily: 'Display-Bold', fontSize: 14 }
 });

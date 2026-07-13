@@ -5,6 +5,7 @@ import * as Lucide from "lucide-react-native";
 import { useTheme } from "@/context/theme-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeIn, FadeInRight, FadeOutLeft } from "react-native-reanimated";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get("window");
 

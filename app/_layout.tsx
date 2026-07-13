@@ -15,6 +15,9 @@ import { ShieldAlert, RefreshCw } from "lucide-react-native";
 import { BouncyTap } from '@/components/native/bouncy-tap';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeProvider, useTheme } from "@/context/theme-context";
+import { LanguageProvider } from "@/context/language-context";
+
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const queryClient = new QueryClient();
 
@@ -39,13 +42,17 @@ export default function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <KenteBackgroundWrapper />
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <LanguageProvider>
+              <KenteBackgroundWrapper />
+            </LanguageProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -53,7 +60,11 @@ function KenteBackgroundWrapper() {
   const { colors, theme } = useTheme();
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <StatusBar barStyle={theme === 'dark' ? "light-content" : "dark-content"} />
+      <StatusBar
+        barStyle={theme === 'dark' ? "light-content" : "dark-content"}
+        translucent
+        backgroundColor="transparent"
+      />
       <KenteBackground />
       <MaintenanceGuard>
         <AuthGuard />

@@ -1,447 +1,506 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Image, StyleSheet, Platform, Vibration, ActivityIndicator } from "react-native";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  StyleSheet,
+  Platform,
+  Vibration,
+  ActivityIndicator,
+  Keyboard,
+  Dimensions,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Pressable,
+  Image,
+} from "react-native";
+import { BlurView } from 'expo-blur';
+import { market, supabase } from "@/integrations/supabase/client";
 import { useRouter } from "expo-router";
-import { Mail, Lock, ArrowRight, User, Building, Fingerprint, ShieldCheck, Sparkles, CheckCircle2, ShieldAlert, Key } from "lucide-react-native";
+import * as Linking from 'expo-linking';
+import {
+  Mail,
+  Lock,
+  User,
+  Building,
+  ShieldCheck,
+  Unlock,
+  Sun,
+  Moon,
+  Globe,
+} from "lucide-react-native";
 import { KenteBackground } from "@/components/native/effects/kente-pattern";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import Animated, { FadeIn, FadeInDown, Layout, SlideInRight, SlideOutLeft } from "react-native-reanimated";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  Layout,
+  SlideOutLeft,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  withSpring,
+  Easing,
+} from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/context/theme-context";
+import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useLanguage } from "@/context/language-context";
 
-// Optional biometric import
-let LocalAuthentication: any = null;
-try {
-  LocalAuthentication = require('expo-local-authentication');
-} catch (e) {}
+const { width, height } = Dimensions.get("window");
+const AnimatedImageBackground = Animated.createAnimatedComponent(ImageBackground);
+
+const BACKGROUND_IMAGE = "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=2070&auto=format&fit=crop";
+const GOOGLE_LOGO = "https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png";
+
+/**
+ * Reusable Input Component with Icon and Label
+ */
+const InputField = ({ label, icon: Icon, colors, isDark, ...props }: any) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <View style={styles.inputContainer}>
+      <Text style={[styles.inputLabel, { color: isFocused ? colors.primary : 'rgba(255,255,255,0.7)' }]}>
+        {label}
+      </Text>
+      <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[
+        styles.inputWrapper,
+        {
+            borderColor: isFocused ? colors.primary : 'rgba(255,255,255,0.15)',
+            borderWidth: 1,
+            overflow: 'hidden'
+        }
+      ]}>
+        <View style={styles.inputIconBox}>
+          <Icon size={20} color={isFocused ? colors.primary : 'rgba(255,255,255,0.5)'} />
+        </View>
+        <TextInput
+          {...props}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          placeholderTextColor="rgba(255,255,255,0.3)"
+          style={[styles.textInput, { color: isDark ? '#fff' : '#000' }]}
+        />
+      </BlurView>
+    </View>
+  );
+};
+
+const ThemeToggle = ({ theme, onToggle, colors }: any) => {
+  const translateX = useSharedValue(theme === 'dark' ? 0 : 32);
+
+  useEffect(() => {
+    translateX.value = withSpring(theme === 'dark' ? 0 : 32, { damping: 15 });
+  }, [theme]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  return (
+    <Pressable onPress={onToggle} style={styles.themeToggleContainer}>
+      <BlurView intensity={30} tint="dark" style={styles.themeTogglePill}>
+        <Animated.View style={[styles.themeToggleThumb, animatedStyle, { backgroundColor: colors.primary }]} />
+        <View style={styles.themeToggleIcons}>
+          <Moon size={16} color={theme === 'dark' ? '#000' : '#fff'} />
+          <Sun size={16} color={theme === 'light' ? '#000' : '#fff'} />
+        </View>
+      </BlurView>
+    </Pressable>
+  );
+};
 
 export default function Login() {
-  const { colors, theme } = useTheme();
+  const { colors, theme, toggleTheme } = useTheme();
+  const { t } = useLanguage();
+  const router = useRouter();
+
   const [mode, setMode] = useState<"signin" | "signup" | "2fa">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
-  const router = useRouter();
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const shakeOffset = useSharedValue(0);
+  const segmentTranslateX = useSharedValue(0);
+  const bgScale = useSharedValue(1);
+  const bgTranslateX = useSharedValue(0);
+  const logoTranslateY = useSharedValue(0);
 
   useEffect(() => {
-    checkBiometrics();
-    loadSavedCredentials();
+    // 1. Floating Logo Animation
+    logoTranslateY.value = withRepeat(
+      withSequence(withTiming(-10, { duration: 2000 }), withTiming(0, { duration: 2000 })),
+      -1,
+      true
+    );
+
+    // 2. Slow Background Ken Burns Effect
+    bgScale.value = withRepeat(
+      withTiming(1.15, { duration: 20000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true
+    );
+    bgTranslateX.value = withRepeat(
+      withTiming(-15, { duration: 15000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true
+    );
   }, []);
 
-  async function checkBiometrics() {
-    if (!LocalAuthentication) return;
-    const compatible = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    setIsBiometricSupported(compatible && enrolled);
-  }
+  const animatedLogoStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: logoTranslateY.value }],
+  }));
 
-  async function loadSavedCredentials() {
-    try {
-      const savedEmail = await AsyncStorage.getItem("biometric_email");
-      const biometricEnabled = await AsyncStorage.getItem("biometric_enabled");
-      if (savedEmail && biometricEnabled === "true" && mode === "signin") {
-        setEmail(savedEmail);
-        setTimeout(() => handleBiometricAuth(savedEmail), 500);
-      }
-    } catch (e) {}
-  }
+  const animatedBackgroundStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: bgScale.value }, { translateX: bgTranslateX.value }],
+  }));
 
-  async function handleBiometricAuth(savedEmail: string) {
-    if (!LocalAuthentication) return;
+  useEffect(() => {
+    const containerWidth = width - 48;
+    const tabWidth = (containerWidth - 8) / 2;
+    segmentTranslateX.value = withSpring(mode === "signin" ? 0 : tabWidth, { damping: 15 });
+  }, [mode]);
 
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Authorize with Face ID or Passcode',
-      fallbackLabel: 'Use Password',
-      disableDeviceFallback: false,
-    });
+  const segmentPillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: segmentTranslateX.value }],
+  }));
 
-    if (result.success) {
-      setLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          Vibration.vibrate(Platform.OS === 'ios' ? 0 : 20);
-          await checkTwoFactor(session.user.id);
-        } else {
-           Alert.alert("Notice", "No active session found. Please sign in manually.");
-        }
-      } catch (err: any) {
-        Alert.alert("Auth Error", "Please sign in with your password.");
-      } finally {
-        setLoading(false);
-      }
-    }
-  }
+  const triggerErrorShake = () => {
+    shakeOffset.value = withSequence(
+      withTiming(-10, { duration: 50 }),
+      withTiming(10, { duration: 50 }),
+      withTiming(-10, { duration: 50 }),
+      withTiming(10, { duration: 50 }),
+      withTiming(0, { duration: 50 })
+    );
+    Vibration.vibrate(100);
+  };
 
-  async function checkTwoFactor(userId: string) {
-    try {
-        const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('security_2fa_enabled, access_pin')
-            .eq('id', userId)
-            .single();
+  const shakeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeOffset.value }],
+  }));
 
-        if (error) throw error;
+  const navigateToDashboard = () => {
+    setIsSuccess(true);
+    Vibration.vibrate(100);
+    setTimeout(() => {
+      router.replace("/(tabs)");
+    }, 1200);
+  };
 
-        if (profile?.security_2fa_enabled) {
-            setMode("2fa");
-            Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 10, 20, 10]);
-        } else {
-            router.replace("/(tabs)");
-        }
-    } catch (e: any) {
-        router.replace("/(tabs)");
-    }
-  }
-
-  async function verifyOTP() {
-    if (otp.length < 4) return;
-    setLoading(true);
-
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Vault session expired.");
-
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('access_pin')
-            .eq('id', user.id)
-            .single();
-
-        // Institutional verification delay
-        setTimeout(() => {
-            setLoading(false);
-            if (otp === profile?.access_pin) {
-                router.replace("/(tabs)");
-            } else {
-                Alert.alert("Institutional Lock", "The provided access key is invalid.");
-                setOtp("");
-                Vibration.vibrate(Platform.OS === 'ios' ? 0 : [0, 20, 10, 20]);
-            }
-        }, 800);
-    } catch (e: any) {
-        setLoading(false);
-        Alert.alert("Protocol Error", e.message);
-    }
+  /**
+   * Aesthetic Placeholder for Google Sign-In
+   */
+  async function handleGoogleSignIn() {
+    Vibration.vibrate(50);
+    Alert.alert(
+      "Institutional Upgrade",
+      "Google Authentication is currently undergoing specialized security verification for the Ghanaian market. Please utilize the Secure Email Protocol for entry.",
+      [{ text: "UNDERSTOOD", style: "default" }]
+    );
   }
 
   async function onSubmit() {
-    if (mode === "signup" && (!displayName || !businessName || !email || !password)) {
-      Alert.alert("Required Data", "Complete all fields to initiate vault registration.");
+    if (mode === "signup" && (!fullName || !businessName || !email || !password)) {
+      triggerErrorShake();
       return;
     }
 
     setLoading(true);
     try {
       if (mode === "signin") {
-        const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-
-        await AsyncStorage.setItem("biometric_email", email);
-
-        await checkTwoFactor(user!.id);
+        navigateToDashboard();
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error, data } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              display_name: displayName,
-              username: displayName.toLowerCase().replace(/\s/g, '_'), // Standardizing username handle
+              display_name: fullName,
+              username: fullName.toLowerCase().replace(/\s/g, '_'),
               business_name: businessName,
             },
           },
         });
         if (error) throw error;
-        Alert.alert("Identity Verification", "Check your email for the activation link.");
+
+        // Ensure entry in profiles table
+        if (data.user) {
+            await supabase.from('profiles').upsert({
+                id: data.user.id,
+                display_name: fullName,
+                business_name: businessName,
+                updated_at: new Date().toISOString(),
+            });
+        }
+
+        Alert.alert("Success", "Account created! Please check your email for authorization.");
         setMode("signin");
       }
     } catch (err: any) {
-      Alert.alert("Security Alert", err.message);
+      triggerErrorShake();
+      Alert.alert("Access Denied", err.message);
     } finally {
       setLoading(false);
     }
   }
 
   const toggleMode = (newMode: "signin" | "signup") => {
-    Vibration.vibrate(Platform.OS === 'ios' ? 0 : 5);
+    Vibration.vibrate(Platform.OS === 'ios' ? 1 : 5);
     setMode(newMode);
   };
 
-  if (mode === "2fa") {
+  const isDark = theme === 'dark';
+
+  if (isSuccess) {
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <KenteBackground />
-            <View style={styles.otpWrapper}>
-                <Animated.View entering={FadeInDown.duration(600)} style={[styles.otpSection, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-                    <View style={[styles.shieldIconBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '20' }]}>
-                        <ShieldAlert size={48} color={colors.primary} strokeWidth={1.5} />
-                    </View>
-                    <Text style={[styles.otpTitle, { color: colors.text }]}>Institutional Gate</Text>
-                    <Text style={[styles.otpSub, { color: colors.textMuted }]}>Dual-layer security is active. Enter your 4-digit institutional access key.</Text>
-
-                    <View style={styles.otpInputRow}>
-                        <TextInput
-                            value={otp}
-                            onChangeText={(t) => {
-                                setOtp(t.slice(0, 4));
-                                Vibration.vibrate(Platform.OS === 'ios' ? 0 : 2);
-                                if (t.length === 4) Keyboard.dismiss();
-                            }}
-                            placeholder="0000"
-                            placeholderTextColor={colors.textDim}
-                            keyboardType="numeric"
-                            secureTextEntry
-                            style={[styles.otpInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceElevated }]}
-                            autoFocus
-                        />
-                    </View>
-
-                    <BouncyTap onPress={verifyOTP} disabled={loading || otp.length < 4}>
-                        <LinearGradient colors={[colors.primary, theme === 'dark' ? '#059669' : colors.primary + 'cc']} style={styles.verifyBtn}>
-                            {loading ? <ActivityIndicator color="#000" /> : (
-                                <View style={styles.btnInner}>
-                                    <Text style={[styles.verifyBtnText, { color: '#000' }]}>AUTHORIZE ENTRY</Text>
-                                    <Key size={18} color="#000" />
-                                </View>
-                            )}
-                        </LinearGradient>
-                    </BouncyTap>
-
-                    <TouchableOpacity onPress={() => setMode("signin")} style={{ marginTop: 32 }}>
-                        <Text style={[styles.cancelText, { color: colors.textDim }]}>CANCEL SECURITY PROTOCOL</Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            </View>
-        </View>
-    )
+      <View style={[styles.container, { backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }]}>
+        <Animated.View entering={FadeIn.duration(400)} style={{ alignItems: 'center' }}>
+           <Unlock size={80} color="#000" />
+           <Text style={styles.successText}>WELCOME BACK</Text>
+        </Animated.View>
+      </View>
+    );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <KenteBackground />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <View style={styles.container}>
+        {/* BACKGROUND IMAGE WITH ANIMATION */}
+        <AnimatedImageBackground
+          source={{ uri: BACKGROUND_IMAGE }}
+          style={[StyleSheet.absoluteFill, animatedBackgroundStyle]}
+          resizeMode="cover"
+        />
 
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: 'transparent' }}
-      >
-        <View style={styles.content}>
+        {/* GRADIENT OVERLAY */}
+        <LinearGradient
+          colors={isDark
+            ? ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']
+            : ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.6)', 'rgba(255,255,255,0.85)']}
+          style={StyleSheet.absoluteFill}
+        />
 
-          {/* Logo Branding */}
-          <Animated.View entering={FadeInDown.duration(800)} style={styles.brandSection}>
-            <LinearGradient
-              colors={theme === 'dark' ? ['#0f1714', '#080c0a'] : ['#ffffff', '#f8fafc']}
-              style={[styles.logoBox, { borderColor: colors.border }]}
-            >
-               <Text style={[styles.logoText, { color: colors.text }]}>
-                 Clip<Text style={{ color: colors.primary }}>Capital</Text>
-               </Text>
-               <View style={[styles.logoGlow, { backgroundColor: colors.primary }]} />
-            </LinearGradient>
-            <View style={[styles.badgeRow, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '15' }]}>
-              <ShieldCheck size={10} color={colors.primary} />
-              <Text style={[styles.badgeText, { color: colors.primary }]}>INSTITUTIONAL GRADE SECURITY</Text>
-            </View>
-          </Animated.View>
+        {/* EMERALD TINT */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.primary, opacity: isDark ? 0.12 : 0.05 }]} />
 
-          {/* Tab Switcher */}
-          <Animated.View layout={Layout.springify()} style={[styles.tabSwitcher, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-            <TouchableOpacity
-              onPress={() => toggleMode("signin")}
-              activeOpacity={0.8}
-              style={[styles.tabBtn, mode === "signin" && [styles.tabBtnActive, { backgroundColor: colors.primary }]]}
-            >
-              <Text style={[styles.tabText, { color: colors.textMuted }, mode === "signin" && { color: '#000' }]}>SIGN IN</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => toggleMode("signup")}
-              activeOpacity={0.8}
-              style={[styles.tabBtn, mode === "signup" && [styles.tabBtnActive, { backgroundColor: colors.primary }]]}
-            >
-              <Text style={[styles.tabText, { color: colors.textMuted }, mode === "signup" && { color: '#000' }]}>SIGN UP</Text>
-            </TouchableOpacity>
-          </Animated.View>
+        <KenteBackground />
 
-          {/* Form Container */}
-          <View style={styles.formContainer}>
-            {mode === "signup" && (
-              <Animated.View
-                entering={FadeInDown.duration(400)}
-                exiting={SlideOutLeft}
-                style={{ gap: 20, marginBottom: 20 }}
-              >
-                <InputWithIcon
-                  label="FULL IDENTITY"
-                  icon={User}
-                  value={displayName}
-                  onChangeText={setDisplayName}
-                  placeholder="e.g. Kwame Mensah"
-                />
-                <InputWithIcon
-                  label="REGISTERED BUSINESS"
-                  icon={Building}
-                  value={businessName}
-                  onChangeText={setBusinessName}
-                  placeholder="e.g. Mensah Quality Cuts"
-                />
+        {/* Improved Theme Toggle */}
+        <ThemeToggle theme={theme} onToggle={() => { Vibration.vibrate(10); toggleTheme(); }} colors={colors} />
+
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+
+            {/* 1. Logo Section */}
+            <Animated.View entering={FadeInDown.duration(800).delay(200)} style={[styles.brandSection, animatedLogoStyle]}>
+              <BlurView intensity={30} tint="dark" style={styles.logoBox}>
+                <Text style={[styles.logoText, { color: '#fff' }]}>
+                  Clip<Text style={{ color: colors.primary }}>Capital</Text>
+                </Text>
+                <View style={[styles.logoGlow, { backgroundColor: colors.primary }]} />
+              </BlurView>
+              <Animated.View entering={FadeIn.delay(400)} style={[styles.badgeRow, { backgroundColor: 'rgba(46, 204, 113, 0.15)', borderColor: 'rgba(46, 204, 113, 0.3)' }]}>
+                <ShieldCheck size={12} color={colors.primary} />
+                <Text style={[styles.badgeText, { color: colors.primary }]}>INSTITUTIONAL GRADE SECURITY</Text>
               </Animated.View>
-            )}
+            </Animated.View>
 
-            <View style={{ gap: 20 }}>
-              <InputWithIcon
-                label="EMAIL PROTOCOL"
-                icon={Mail}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="your@email.com"
-                keyboardType="email-address"
-              />
+            {/* 2. Segmented Control */}
+            <Animated.View entering={FadeIn.delay(500)} style={styles.tabContainer}>
+              <Animated.View style={[styles.segmentPill, segmentPillStyle, { backgroundColor: colors.primary }]} />
+              <TouchableOpacity
+                onPress={() => toggleMode("signin")}
+                style={styles.tabBtn}
+              >
+                <Text style={[styles.tabText, { color: mode === "signin" ? "#000" : colors.text }]}>SIGN IN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => toggleMode("signup")}
+                style={styles.tabBtn}
+              >
+                <Text style={[styles.tabText, { color: mode === "signup" ? "#000" : colors.text }]}>SIGN UP</Text>
+              </TouchableOpacity>
+            </Animated.View>
 
-              <View>
-                <InputWithIcon
-                  label="ACCESS KEY"
-                  icon={Lock}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="••••••••"
-                  secureTextEntry
+            {/* 3. Form */}
+            <View style={styles.formContainer}>
+              {mode === "signup" && (
+                <Animated.View entering={FadeInDown.duration(400)} exiting={SlideOutLeft} style={{ gap: 16, marginBottom: 16 }}>
+                  <InputField label={t.auth_identity} icon={User} placeholder="Enter your name" value={fullName} onChangeText={setFullName} colors={colors} isDark={isDark} />
+                  <InputField label="REGISTERED BUSINESS" icon={Building} placeholder="Enter your business name" value={businessName} onChangeText={setBusinessName} colors={colors} isDark={isDark} />
+                </Animated.View>
+              )}
+
+              <View style={{ gap: 16 }}>
+                <InputField
+                    label="EMAIL PROTOCOL"
+                    icon={Mail}
+                    placeholder="Enter your email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    colors={colors}
+                    isDark={isDark}
                 />
-                {mode === "signin" && (
+
+                <Animated.View style={shakeStyle}>
+                  <InputField
+                    icon={Lock}
+                    label="PASSWORD"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    placeholder="••••••••"
+                    colors={colors}
+                    isDark={isDark}
+                    delay={900}
+                  />
+                </Animated.View>
+              </View>
+
+              {mode === "signin" && (
+                <TouchableOpacity
+                  onPress={() => router.push("/(auth)/forgot-password")}
+                  style={{ alignSelf: 'center', marginTop: 20 }}
+                >
+                  <Text style={{ color: colors.primary, fontSize: 12, fontFamily: 'Display-Bold', opacity: 0.9 }}>FORGOT PASSWORD?</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* 4. Action Button */}
+              <View style={{ marginTop: 32 }}>
+                <BouncyTap style={styles.submitBtnContainer} containerStyle={{ flex: 1 }}>
                   <TouchableOpacity
-                    onPress={() => router.push("/(auth)/forgot-password")}
-                    style={{ alignSelf: 'flex-end', marginTop: 8, paddingRight: 4 }}
+                      onPress={onSubmit}
+                      style={[styles.submitBtn, styles.shadowGlow, { backgroundColor: colors.primary }]}
                   >
-                    <Text style={{ color: colors.primary, fontSize: 11, fontWeight: 'bold', letterSpacing: 0.5 }}>FORGOT ACCESS KEY?</Text>
+                    {loading ? (
+                      <ActivityIndicator color="#000" />
+                    ) : (
+                      <Text style={styles.submitBtnText}>
+                        {mode === "signin" ? "LOG IN" : "SIGN UP"}
+                      </Text>
+                    )}
                   </TouchableOpacity>
-                )}
+                </BouncyTap>
+              </View>
+
+              <View style={{ marginTop: 12 }}>
+                <BouncyTap onPress={handleGoogleSignIn} style={styles.googleBtnContainer} containerStyle={{ flex: 1 }}>
+                  <BlurView intensity={20} tint="dark" style={styles.googleButton}>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <Image source={{ uri: GOOGLE_LOGO }} style={styles.googleIcon} />
+                      <Text style={styles.googleButtonText}>Sign in with Google</Text>
+                    </View>
+                  </BlurView>
+                </BouncyTap>
               </View>
             </View>
 
-            <View style={styles.actionRow}>
-                <TouchableOpacity
-                  onPress={onSubmit}
-                  disabled={loading}
-                  activeOpacity={0.9}
-                  style={{ flex: 1 }}
-                >
-                  <LinearGradient
-                    colors={[colors.primary, theme === 'dark' ? '#059669' : colors.primary + 'cc']}
-                    style={styles.submitBtn}
-                  >
-                    {loading ? (
-                      <ActivityIndicator color="#080c0a" />
-                    ) : (
-                      <View style={styles.btnInner}>
-                        <Text style={[styles.submitBtnText, { color: '#000' }]}>
-                          {mode === "signin" ? "AUTHORIZE ENTRY" : "REGISTER VAULT"}
-                        </Text>
-                        <ArrowRight size={18} color="#000" strokeWidth={3} />
-                      </View>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-
-                {mode === "signin" && isBiometricSupported && (
-                    <TouchableOpacity
-                        onPress={() => handleBiometricAuth(email)}
-                        style={[styles.biometricBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
-                    >
-                        <Fingerprint size={28} color={colors.primary} />
-                    </TouchableOpacity>
-                )}
-            </View>
-
-            {mode === "signup" && (
-              <Animated.View entering={FadeIn.delay(400)} style={styles.privacyNote}>
-                <Sparkles size={12} color={colors.gold} />
-                <Text style={[styles.privacyText, { color: colors.textDim }]}>
-                  By registering, you agree to our Institutional Terms and Data Governance protocols.
+            <Animated.View entering={FadeIn.delay(1300)} style={styles.footer}>
+              <View style={[styles.footerBadge, { backgroundColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.7)', borderColor: colors.border }]}>
+                <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.footerBadgeText, { color: colors.textDim }]}>
+                  GHANA'S ELITE PARTNER FOR ARTISANS
                 </Text>
-              </Animated.View>
-            )}
+              </View>
+            </Animated.View>
           </View>
-
-          <View style={styles.footer}>
-            <View style={[styles.footerBadge, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-              <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
-              <Text style={[styles.footerBadgeText, { color: colors.textDim }]}>
-                GHANA'S ELITE PARTNER FOR ARTISANS
-              </Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-function InputWithIcon({ label, icon: Icon, ...props }: any) {
-  const { colors } = useTheme();
-  return (
-    <View>
-      <Text style={[styles.inputLabel, { color: colors.primary }]}>{label}</Text>
-      <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-        <View style={styles.inputIconBox}>
-          <Icon size={18} color={colors.primary} />
-        </View>
-        <TextInput
-          placeholderTextColor={colors.textDim}
-          style={[styles.textInput, { color: colors.text }]}
-          autoCapitalize="none"
-          selectionColor={colors.primary}
-          {...props}
-        />
+        </ScrollView>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
-
-import { BouncyTap } from "@/components/native/bouncy-tap";
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
-  content: { flex: 1, pt: 80, pb: 48, paddingHorizontal: 32 },
-  brandSection: { itemsCenter: 'center', marginBottom: 48, alignItems: 'center' },
-  logoBox: { width: '100%', height: 110, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', overflow: 'hidden' },
-  logoText: { fontFamily: 'Display-Bold', color: 'white', fontSize: 44, letterSpacing: -2 },
-  logoGlow: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: '#10b981', opacity: 0.03 },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, backgroundColor: 'rgba(16,185,129,0.05)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100, borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
-  badgeText: { color: '#10b981', fontWeight: '900', fontSize: 8, letterSpacing: 2 },
-  tabSwitcher: { flexDirection: 'row', backgroundColor: '#0f1714', padding: 6, borderRadius: 24, marginBottom: 40, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  tabBtn: { flex: 1, height: 50, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  tabBtnActive: { backgroundColor: '#10b981', shadowColor: '#10b981', shadowOpacity: 0.2, shadowRadius: 10, elevation: 5 },
-  tabText: { color: '#7d8a84', fontWeight: '900', fontSize: 10, letterSpacing: 2 },
-  tabTextActive: { color: '#080c0a' },
+  container: { flex: 1, backgroundColor: '#000' },
+  scrollContent: { flexGrow: 1, justifyContent: 'center' },
+  content: { paddingHorizontal: 24, paddingVertical: 60 },
+  brandSection: { marginBottom: 40, alignItems: 'center' },
+  logoBox: { width: '85%', height: 110, borderRadius: 28, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 1 },
+  logoGlow: { position: 'absolute', width: '100%', height: '100%', borderRadius: 28, opacity: 0.15 },
+  logoText: { fontSize: 44, fontFamily: 'Display-Bold', letterSpacing: -2 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 100, borderWidth: 1 },
+  badgeText: { fontSize: 8, fontFamily: 'Display-Bold', letterSpacing: 1 },
+  tabContainer: { flexDirection: 'row', padding: 4, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.3)', marginBottom: 32, position: 'relative' },
+  segmentPill: { position: 'absolute', top: 4, left: 4, bottom: 4, width: (width - 48 - 8) / 2, borderRadius: 12 },
+  tabBtn: { flex: 1, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  tabText: { fontSize: 12, fontFamily: 'Display-Bold', letterSpacing: 1 },
   formContainer: { width: '100%' },
-  inputLabel: { color: '#10B981', fontWeight: '900', fontSize: 9, letterSpacing: 3, marginBottom: 12, marginLeft: 4, opacity: 0.6 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(15,23,20,0.6)', borderRadius: 20, height: 64, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 4 },
-  inputIconBox: { width: 56, height: '100%', alignItems: 'center', justifyContent: 'center' },
-  textInput: { flex: 1, color: 'white', fontWeight: 'bold', fontSize: 15, paddingRight: 20 },
-  actionRow: { flexDirection: 'row', gap: 12, marginTop: 40 },
-  submitBtn: { flex: 1, height: 68, borderRadius: 24, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 15, elevation: 8 },
-  btnInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  submitBtnText: { color: '#000', fontFamily: 'Display-Bold', fontSize: 14, letterSpacing: 1 },
-  biometricBtn: { width: 68, height: 68, backgroundColor: '#0f1714', borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  privacyNote: { flexDirection: 'row', gap: 10, marginTop: 24, paddingHorizontal: 8, opacity: 0.5 },
-  privacyText: { color: '#7d8a84', fontSize: 10, lineHeight: 16, flex: 1 },
-  footer: { marginTop: 60, alignItems: 'center' },
-  footerBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 100, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  pulseDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' },
-  footerBadgeText: { color: '#7d8a84', fontSize: 8, fontWeight: '900', letterSpacing: 1.5 },
-  otpWrapper: { flex: 1, paddingHorizontal: 24, justifyContent: 'center' },
-  otpSection: { alignItems: 'center', backgroundColor: '#0f1714', padding: 40, borderRadius: 40, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  shieldIconBox: { width: 100, height: 100, borderRadius: 40, backgroundColor: 'rgba(16,185,129,0.05)', alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
-  otpTitle: { fontFamily: 'Display-Bold', color: 'white', fontSize: 28, marginBottom: 12 },
-  otpSub: { color: '#7d8a84', fontSize: 13, textAlign: 'center', lineHeight: 22, marginBottom: 40 },
-  otpInputRow: { width: '100%', marginBottom: 40 },
-  otpInput: { backgroundColor: 'rgba(255,255,255,0.03)', height: 80, borderRadius: 24, textAlign: 'center', color: 'white', fontFamily: 'Display-Bold', fontSize: 48, letterSpacing: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  verifyBtn: { height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', width: 280 },
-  verifyBtnText: { color: '#000', fontWeight: '900', fontSize: 13, letterSpacing: 2 },
-  cancelText: { color: '#405045', fontWeight: '900', fontSize: 9, letterSpacing: 2 }
+  inputContainer: { marginBottom: 16 },
+  inputLabel: { fontSize: 10, fontFamily: 'Display-Bold', letterSpacing: 1.5, marginBottom: 8, marginLeft: 4 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', height: 64, borderRadius: 15, paddingHorizontal: 12 },
+  inputIconBox: { marginRight: 12 },
+  textInput: { flex: 1, fontSize: 16, fontFamily: 'Display-Bold' },
+  buttonWrapper: { width: '100%', alignItems: 'center' },
+  submitBtnContainer: { width: '100%', height: 60 },
+  submitBtn: { flex: 1, borderRadius: 30, justifyContent: 'center', alignItems: 'center', width: '100%' },
+  shadowGlow: {
+    shadowColor: "#2ECC71",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  submitBtnText: { color: '#000', fontFamily: 'Display-Bold', fontSize: 15, letterSpacing: 1 },
+  successText: { color: '#000', fontFamily: 'Display-Bold', fontSize: 24, marginTop: 20 },
+  footer: { marginTop: 50, alignItems: 'center' },
+  footerBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 100, borderWidth: 1 },
+  pulseDot: { width: 6, height: 6, borderRadius: 3, marginRight: 8 },
+  footerBadgeText: { fontSize: 8, fontFamily: 'Display-Bold', letterSpacing: 1.5 },
+  themeToggleContainer: { position: 'absolute', top: 60, right: 24, zIndex: 100 },
+  themeTogglePill: {
+    width: 64,
+    height: 32,
+    borderRadius: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 2,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)'
+  },
+  themeToggleThumb: {
+    position: 'absolute',
+    width: 28,
+    height: 26,
+    borderRadius: 14,
+    left: 2,
+  },
+  themeToggleIcons: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 6,
+    zIndex: 1
+  },
+  googleBtnContainer: { width: '100%', height: 60 },
+  googleButton: {
+    flex: 1,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden'
+  },
+  googleIcon: { width: 24, height: 24, marginRight: 12 },
+  googleButtonText: { fontSize: 15, color: "#fff", fontFamily: 'Display-Bold' },
 });
