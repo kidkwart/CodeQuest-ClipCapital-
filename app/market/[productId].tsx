@@ -9,6 +9,7 @@ import { ArrowLeft, ShoppingCart, ShieldCheck, Sparkles, Plus, Minus, ClipboardL
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '@/context/theme-context';
+import { useLanguage } from "../../src/context/language-context";
 import { FALLBACK_PRODUCTS } from './index';
 
 const { width } = Dimensions.get('window');
@@ -19,6 +20,7 @@ export default function ProductDetails() {
   const { productId } = useLocalSearchParams();
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
   const { data: dbProducts } = useProducts();
   const cart = useCart();
 

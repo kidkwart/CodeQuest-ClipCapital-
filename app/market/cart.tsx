@@ -10,6 +10,7 @@ import { ArrowLeft, Trash2, ShoppingBag, Wallet, CreditCard, Banknote, CheckCirc
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "../../src/context/language-context";
 
 // Safer conditional import for Paystack
 const PaystackComponent = Platform.OS !== 'web' ? require('react-native-paystack-webview').Paystack : null;
@@ -17,6 +18,7 @@ const PaystackComponent = Platform.OS !== 'web' ? require('react-native-paystack
 export default function CartScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
   const isDark = theme === 'dark';
   const cart = useCart();
   const place = usePlaceOrder();
@@ -35,7 +37,7 @@ export default function CartScreen() {
   const handleSuccess = async (reference: string) => {
     setShowPaystack(false);
     setLoading(true);
-    setStatusMessage({ text: "Finalizing order...", type: "success" });
+    setStatusMessage({ text: t.finalizing_order, type: "success" });
 
     try {
       await place.mutateAsync({
@@ -47,11 +49,11 @@ export default function CartScreen() {
       });
 
       await cart.clear();
-      Alert.alert("Success! 🎉", "Your order has been placed successfully.");
+      Alert.alert("Success! 🎉", t.order_success);
       router.replace("/(tabs)");
     } catch (e: any) {
       console.error("Order placement failed:", e);
-      setStatusMessage({ text: "Order failed to save. Please contact support.", type: "error" });
+      setStatusMessage({ text: t.sync_error, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export default function CartScreen() {
 
   const handleWalletPayment = async () => {
     if (Number(profile?.wallet_balance || 0) < total) {
-      setStatusMessage({ text: "Insufficient wallet balance.", type: "error" });
+      setStatusMessage({ text: t.sync_error, type: "error" });
       return;
     }
 
@@ -72,11 +74,11 @@ export default function CartScreen() {
       });
 
       await cart.clear();
-      Alert.alert("Success! 🎉", "Order placed using your wallet balance.");
+      Alert.alert("Success! 🎉", t.order_success);
       router.replace("/(tabs)");
     } catch (e: any) {
       console.error("Wallet payment failed:", e);
-      setStatusMessage({ text: e.message || "Transaction failed.", type: "error" });
+      setStatusMessage({ text: e.message || t.sync_error, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -98,11 +100,11 @@ export default function CartScreen() {
       });
 
       await cart.clear();
-      Alert.alert("Success! 💳", "Order placed using your credit line.");
+      Alert.alert("Success! 💳", t.order_success);
       router.replace("/(tabs)");
     } catch (e: any) {
       console.error("Loan payment failed:", e);
-      setStatusMessage({ text: e.message || "Order failed.", type: "error" });
+      setStatusMessage({ text: e.message || t.sync_error, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -132,7 +134,7 @@ export default function CartScreen() {
                         handleSuccess("SIM-MARKET-" + Date.now());
                     }, 1500);
                 }},
-                { text: "Cancel", style: "cancel" }
+                { text: t.cancel, style: "cancel" }
             ]
         );
     }
@@ -162,8 +164,8 @@ export default function CartScreen() {
               <ShoppingBag size={40} color="#000" strokeWidth={2} />
            </LinearGradient>
 
-           <Text style={[styles.emptyTitle, { color: colors.text }]}>Cart is empty</Text>
-           <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Your premium equipment selections will appear here. Ready to scale your business?</Text>
+           <Text style={[styles.emptyTitle, { color: colors.text }]}>{t.cart_empty}</Text>
+           <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>{t.cart_empty_desc}</Text>
 
            <TouchableOpacity
              onPress={() => router.push("/market")}
@@ -177,7 +179,7 @@ export default function CartScreen() {
                 style={styles.browseButtonInner}
               >
                 <Sparkles size={16} color="#000" />
-                <Text style={styles.browseButtonText}>GO TO MARKETPLACE</Text>
+                <Text style={styles.browseButtonText}>{t.go_to_market}</Text>
               </LinearGradient>
            </TouchableOpacity>
 
@@ -186,7 +188,7 @@ export default function CartScreen() {
              style={styles.backLink}
            >
               <ArrowLeft size={14} color={colors.textDim} />
-              <Text style={[styles.backLinkText, { color: colors.textDim }]}>Return to Dashboard</Text>
+              <Text style={[styles.backLinkText, { color: colors.textDim }]}>{t.return_to_dash}</Text>
            </TouchableOpacity>
         </View>
       </View>
@@ -214,7 +216,7 @@ export default function CartScreen() {
       {(loading || place.isPending) && (
         <View style={[styles.overlay, { backgroundColor: theme === 'dark' ? 'rgba(8,12,10,0.95)' : 'rgba(255,255,255,0.95)' }]}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.overlayText, { color: colors.text }]}>Processing Order...</Text>
+          <Text style={[styles.overlayText, { color: colors.text }]}>{t.processing_order}</Text>
         </View>
       )}
 
@@ -226,11 +228,11 @@ export default function CartScreen() {
             </BouncyTap>
             <TouchableOpacity onPress={handleClearCart} style={styles.clearBtn}>
                <Trash2 size={18} color={colors.destructive} />
-               <Text style={[styles.clearText, { color: colors.destructive }]}>CLEAR</Text>
+               <Text style={[styles.clearText, { color: colors.destructive }]}>{t.clear}</Text>
             </TouchableOpacity>
           </View>
 
-          <PremiumHeader title="Checkout" subtitle={`${cart.items.length} Premium Items`} />
+          <PremiumHeader title={t.checkout} subtitle={`${cart.items.length} ${t.items_count}`} />
 
           <View style={styles.itemList}>
             {cart.items.map((item) => (
@@ -257,7 +259,7 @@ export default function CartScreen() {
                    </View>
                    <TouchableOpacity onPress={() => cart.remove(item.product_id)} style={styles.removeBtn}>
                       <Trash2 size={14} color={colors.destructive} />
-                      <Text style={[styles.removeText, { color: colors.destructive }]}>REMOVE</Text>
+                      <Text style={[styles.removeText, { color: colors.destructive }]}>{t.purge.toUpperCase()}</Text>
                    </TouchableOpacity>
                 </View>
               </Card>
@@ -266,7 +268,7 @@ export default function CartScreen() {
 
           <Card style={[styles.summaryCard, { backgroundColor: colors.cardBg }]}>
             <View style={[styles.summaryRow, { borderBottomColor: colors.border }]}>
-               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>GRAND TOTAL</Text>
+               <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>{t.grand_total}</Text>
                <Text style={[styles.summaryValue, { color: colors.text }]}>GH₵ {total.toLocaleString()}</Text>
             </View>
 
@@ -284,8 +286,8 @@ export default function CartScreen() {
                    <TouchableOpacity onPress={handleLoanPayment} style={[styles.payBtn, { backgroundColor: colors.surfaceElevated, borderColor: `${colors.gold}40`, borderWidth: 1 }]}>
                       <Banknote size={20} color={colors.gold} />
                       <View style={{ flex: 1 }}>
-                         <Text style={[styles.payBtnTitle, { color: colors.text }]}>Pay with Credit</Text>
-                         <Text style={[styles.payBtnSub, { color: colors.textMuted }]}>Active Loan Line</Text>
+                         <Text style={[styles.payBtnTitle, { color: colors.text }]}>{t.pay_with_credit}</Text>
+                         <Text style={[styles.payBtnSub, { color: colors.textMuted }]}>{t.active_loan_line}</Text>
                       </View>
                       <ArrowRight size={16} color={colors.textDim} />
                    </TouchableOpacity>
@@ -294,14 +296,14 @@ export default function CartScreen() {
                 <TouchableOpacity onPress={handleWalletPayment} style={[styles.payBtn, { backgroundColor: colors.surfaceElevated, borderColor: `${colors.primary}40`, borderWidth: 1 }]}>
                    <Wallet size={20} color={colors.primary} />
                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.payBtnTitle, { color: colors.text }]}>Pay with Wallet</Text>
-                      <Text style={[styles.payBtnSub, { color: colors.textMuted }]}>Balance: GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
+                      <Text style={[styles.payBtnTitle, { color: colors.text }]}>{t.pay_with_wallet}</Text>
+                      <Text style={[styles.payBtnSub, { color: colors.textMuted }]}>{t.available_liquidity}: GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
                    </View>
                    <ArrowRight size={16} color={colors.textDim} />
                 </TouchableOpacity>
 
                 <Button
-                    title="Pay with Mobile Money"
+                    title={t.pay_with_momo}
                     onPress={handlePaystackLaunch}
                     size="lg"
                 />

@@ -8,9 +8,12 @@ import { ArrowLeft, ShoppingBag, Package } from "lucide-react-native";
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
 
+import { useLanguage } from "../../src/context/language-context";
+
 export default function MyOrdersScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
   const isDark = theme === 'dark';
   const { data: orders, isLoading, refetch } = useMyOrders();
 
@@ -42,19 +45,19 @@ export default function MyOrdersScreen() {
         refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={refetch} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
-          <PremiumHeader title="My Orders" subtitle="Purchase Records" />
+          <PremiumHeader title={t.my_orders} subtitle={t.purchase_records} />
 
           {isLoading ? (
             <View style={styles.loader}>
               <ActivityIndicator color={colors.primary} />
-              <Text style={[styles.loaderText, { color: colors.primary }]}>RETRIEVING SHIPMENTS...</Text>
+              <Text style={[styles.loaderText, { color: colors.primary }]}>{t.retrieving_shipments}</Text>
             </View>
           ) : (orders ?? []).length === 0 ? (
             <View style={styles.emptyState}>
               <ShoppingBag size={48} color={colors.textDim} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>No orders found.</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>{t.no_orders_found}</Text>
               <TouchableOpacity onPress={() => router.push("/market")} style={[styles.browseBtn, { backgroundColor: colors.primary }]}>
-                 <Text style={[styles.browseBtnText, { color: '#000' }]}>START SHOPPING</Text>
+                 <Text style={[styles.browseBtnText, { color: '#000' }]}>{t.start_shopping}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -64,7 +67,7 @@ export default function MyOrdersScreen() {
                   <View style={styles.orderHeader}>
                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Package size={16} color={colors.primary} />
-                        <Text style={[styles.orderId, { color: colors.text }]}>ORDER #{order.id.slice(0, 8).toUpperCase()}</Text>
+                        <Text style={[styles.orderId, { color: colors.text }]}>{t.order_id} #{order.id.slice(0, 8).toUpperCase()}</Text>
                      </View>
                      <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(order.status)}15` }]}>
                         <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>{order.status.toUpperCase()}</Text>
@@ -86,7 +89,7 @@ export default function MyOrdersScreen() {
 
                   <View style={[styles.footer, { borderTopColor: colors.border }]}>
                      <View>
-                        <Text style={[styles.totalLabel, { color: colors.textDim }]}>TOTAL AMOUNT</Text>
+                        <Text style={[styles.totalLabel, { color: colors.textDim }]}>{t.total_amount}</Text>
                         <Text style={[styles.totalValue, { color: colors.text }]}>GH₵ {Number(order.total).toLocaleString()}</Text>
                      </View>
                      <Text style={[styles.orderDate, { color: colors.textDim }]}>{new Date(order.created_at).toLocaleDateString('en-GB')}</Text>

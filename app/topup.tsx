@@ -8,7 +8,7 @@ import { ArrowLeft, ShieldCheck, CheckCircle2, FlaskConical, Zap, ChevronRight }
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
-import { useLanguage } from "@/context/language-context";
+import { useLanguage } from "../src/context/language-context";
 
 // Defensive import for Paystack
 let Paystack: any = null;
