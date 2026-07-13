@@ -32,7 +32,8 @@
       "bundler": "metro"
     },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/clipcapital/"
     },
     "plugins": [
       "expo-router"
