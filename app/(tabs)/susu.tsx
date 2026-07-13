@@ -225,7 +225,7 @@ export default function SusuScreen() {
             </View>
           </Animated.View>
 
-          {/* SWIPPABLE INFORMATION CAROUSEL WITH IMAGES */}
+          {/* TOP INFORMATION CAROUSEL WITH IMAGES */}
           <View style={styles.carouselContainer}>
             <FlatList
               data={SUSU_INFO_SLIDES}
@@ -258,7 +258,7 @@ export default function SusuScreen() {
             />
           </View>
 
-          {/* Action Row with 3D Tilt */}
+          {/* Action Row with 3D Tilt - NOW WITH IMAGES */}
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.actionRow, animatedActionStyle]}>
                 {/* Floating Node background for Action area */}
@@ -269,36 +269,52 @@ export default function SusuScreen() {
                 </View>
 
                 <BouncyTap style={{ flex: 1 }} onPress={() => setShowCreateModal(true)}>
-                <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={[styles.actionCard, { borderColor: colors.border }]}>
-                    <View style={[styles.createIconBg, { backgroundColor: colors.primary + '10' }]}>
-                        <Plus size={20} color={colors.primary} strokeWidth={3} />
-                    </View>
-                    <Text style={[styles.actionTitleLabel, { color: colors.textDim }]}>{t.create.toUpperCase()}</Text>
-                    <Text style={[styles.actionSubLabel, { color: colors.text }]}>{t.new_circle.toUpperCase()}</Text>
-                </BlurView>
+                <ImageBackground
+                    source={{ uri: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=400&auto=format&fit=crop" }}
+                    style={[styles.actionCard, { borderColor: colors.border }]}
+                    imageStyle={{ borderRadius: 24, opacity: 0.3 }}
+                >
+                    <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill}>
+                        <View style={{ padding: 20, justifyContent: 'center', flex: 1 }}>
+                            <View style={[styles.createIconBg, { backgroundColor: colors.primary + '10' }]}>
+                                <Plus size={20} color={colors.primary} strokeWidth={3} />
+                            </View>
+                            <Text style={[styles.actionTitleLabel, { color: colors.textDim }]}>{t.create.toUpperCase()}</Text>
+                            <Text style={[styles.actionSubLabel, { color: colors.text }]}>{t.new_circle.toUpperCase()}</Text>
+                        </View>
+                    </BlurView>
+                </ImageBackground>
                 </BouncyTap>
 
-                <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={[styles.actionCard, { flex: 1.4, borderColor: colors.border }]}>
-                    <Text style={[styles.actionTitleLabel, { color: colors.textDim }]}>{t.secure_join.toUpperCase()}</Text>
-                    <View style={[styles.joinInputWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: colors.border }]}>
-                        <TextInput
-                            value={invite}
-                            onChangeText={setInvite}
-                            placeholder={t.code}
-                            placeholderTextColor={colors.textDim}
-                            style={[styles.joinInput, { color: colors.text }]}
-                            autoCapitalize="characters"
-                        />
-                        <BouncyTap onPress={() => handleJoin()} disabled={joiningId === "manual"} hitSlop={8}>
-                            <LinearGradient
-                            colors={[colors.primary, "#059669"]}
-                            style={styles.joinBtnSmall}
-                            >
-                            {joiningId === "manual" ? <ActivityIndicator size="small" color="#000" /> : <ArrowRight size={16} color="#000" strokeWidth={3} />}
-                            </LinearGradient>
-                        </BouncyTap>
-                    </View>
-                </BlurView>
+                <ImageBackground
+                    source={{ uri: "https://images.unsplash.com/photo-1554224155-1696413565d3?q=80&w=400&auto=format&fit=crop" }}
+                    style={[styles.actionCard, { flex: 1.4, borderColor: colors.border }]}
+                    imageStyle={{ borderRadius: 24, opacity: 0.3 }}
+                >
+                    <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={StyleSheet.absoluteFill}>
+                        <View style={{ padding: 20, justifyContent: 'center', flex: 1 }}>
+                            <Text style={[styles.actionTitleLabel, { color: colors.textDim }]}>{t.secure_join.toUpperCase()}</Text>
+                            <div style={[styles.joinInputWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: colors.border }]}>
+                                <TextInput
+                                    value={invite}
+                                    onChangeText={setInvite}
+                                    placeholder={t.code}
+                                    placeholderTextColor={colors.textDim}
+                                    style={[styles.joinInput, { color: colors.text }]}
+                                    autoCapitalize="characters"
+                                />
+                                <BouncyTap onPress={() => handleJoin()} disabled={joiningId === "manual"} hitSlop={8}>
+                                    <LinearGradient
+                                    colors={[colors.primary, "#059669"]}
+                                    style={styles.joinBtnSmall}
+                                    >
+                                    {joiningId === "manual" ? <ActivityIndicator size="small" color="#000" /> : <ArrowRight size={16} color="#000" strokeWidth={3} />}
+                                    </LinearGradient>
+                                </BouncyTap>
+                            </div>
+                        </View>
+                    </BlurView>
+                </ImageBackground>
             </Animated.View>
           </GestureDetector>
 
@@ -353,7 +369,7 @@ export default function SusuScreen() {
                                 <Text style={{ color: colors.text, fontFamily: 'Display-Bold', fontSize: 14 }}>{g.name.toUpperCase()}</Text>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                                     <Text style={{ color: colors.primary, fontSize: 10, fontFamily: 'Display-Bold' }}>GH₵ {g.contribution}</Text>
-                                    <View style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textDim, opacity: 0.3 }} />
+                                    <div style={{ width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.textDim, opacity: 0.3 }} />
                                     <Text style={{ color: colors.textDim, fontSize: 10, fontFamily: 'Display-Bold', opacity: 0.7 }}>{g.frequency.toUpperCase()}</Text>
                                 </View>
                             </View>
@@ -389,7 +405,7 @@ export default function SusuScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.textDim }]}>{t.circle_name}</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textDim }]}>CIRCLE NAME</Text>
                   <TextInput
                     style={[styles.modalInput, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', color: colors.text, borderColor: colors.border }]}
                     placeholder={t.circle_name_placeholder}
@@ -457,19 +473,24 @@ const styles = StyleSheet.create({
   carouselContainer: { marginBottom: 32, height: 200 },
   carouselSlide: { width: width - 40, marginRight: 0 },
   carouselCard: { height: 200, borderRadius: 28, overflow: 'hidden', borderWidth: 1, backgroundColor: '#000' },
+  carouselCardRich: { height: 200, borderRadius: 28, overflow: 'hidden', borderWidth: 1, backgroundColor: '#000' },
   carouselImage: { ...StyleSheet.absoluteFillObject, opacity: 0.8 },
   carouselOverlay: { ...StyleSheet.absoluteFillObject },
   carouselTextContent: { position: 'absolute', bottom: 24, left: 24, right: 24 },
+  carouselTextContentRich: { position: 'absolute', bottom: 24, left: 24, right: 24 },
   infoBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100, marginBottom: 12 },
   infoBadgeText: { fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 1.5 },
   carouselTitle: { fontFamily: 'Display-Bold', fontSize: 18, letterSpacing: 1, marginBottom: 6 },
+  carouselTitleRich: { fontFamily: 'Display-Bold', fontSize: 18, letterSpacing: 1, marginBottom: 6 },
   carouselDesc: { fontFamily: 'Display-Bold', fontSize: 13, lineHeight: 18 },
+  carouselDescRich: { fontFamily: 'Display-Bold', fontSize: 13, lineHeight: 18 },
   actionRow: { flexDirection: 'row', gap: 12, marginBottom: 40 },
-  actionCard: { height: 140, borderRadius: 24, padding: 20, justifyContent: 'center', borderWidth: 1, overflow: 'hidden' },
+  actionCard: { height: 160, borderRadius: 24, padding: 20, justifyContent: 'center', borderWidth: 1, overflow: 'hidden' },
+  actionCardRich: { height: 160, borderRadius: 24, overflow: 'hidden', borderWidth: 1, backgroundColor: '#000' },
   createIconBg: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   actionTitleLabel: { fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 1.5 },
   actionSubLabel: { fontFamily: 'Display-Bold', fontSize: 12, marginTop: 2 },
-  joinInputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 4, borderWidth: 1, marginTop: 12 },
+  joinInputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 4, borderWidth: 1 },
   joinInput: { flex: 1, height: 40, paddingHorizontal: 12, fontFamily: 'Display-Bold', fontSize: 14 },
   joinBtnSmall: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   section: { marginBottom: 32 },
