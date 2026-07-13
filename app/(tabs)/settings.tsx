@@ -13,6 +13,7 @@ import { useTheme } from "@/context/theme-context";
 import { useLanguage } from "@/context/language-context";
 import { LanguageType } from "@/lib/translations";
 import { getDeviceSecureID } from "@/lib/security-module";
+import { getBatteryLevel, getSystemUptime, getAndroidVersion, showNativeToast } from "@/lib/device-module";
 
 // Optional import for biometrics
 let LocalAuthentication: any = null;
@@ -36,6 +37,9 @@ export default function Settings() {
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [pin, setPin] = useState("");
   const [deviceId, setDeviceId] = useState("Fetching...");
+  const [batteryLevel, setBatteryLevel] = useState<number | string>("...");
+  const [uptime, setUptime] = useState("...");
+  const [androidVer, setAndroidVer] = useState("...");
 
   const [prefs, setPrefs] = useState({
     notifications_enabled: true,
@@ -56,6 +60,15 @@ export default function Settings() {
     const loadDeviceInfo = async () => {
       const id = await getDeviceSecureID();
       setDeviceId(id);
+
+      const batt = await getBatteryLevel();
+      setBatteryLevel(batt);
+
+      const up = await getSystemUptime();
+      setUptime(up);
+
+      const ver = await getAndroidVersion();
+      setAndroidVer(ver);
     };
     checkBiometrics();
     loadDeviceInfo();
@@ -336,6 +349,35 @@ export default function Settings() {
                     <Text style={[styles.manifestValue, { color: colors.primary }]}>{t.operational}</Text>
                 </View>
             </View>
+          </View>
+
+          {/* Native Java Diagnostics Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Native System Diagnostics (JAVA)</Text>
+
+            <SettingRow
+              icon={Smartphone}
+              label="OS Version"
+              value={androidVer}
+              color="#f472b6"
+              onPress={() => showNativeToast(`Android System: ${androidVer}`)}
+            />
+
+            <SettingRow
+              icon={Zap}
+              label="Battery Health"
+              value={`${batteryLevel}%`}
+              color="#fbbf24"
+              onPress={() => showNativeToast(`Current Battery Level: ${batteryLevel}%`)}
+            />
+
+            <SettingRow
+              icon={Clock}
+              label="System Uptime"
+              value={uptime}
+              color="#38bdf8"
+              onPress={() => showNativeToast(`System has been up for: ${uptime}`)}
+            />
           </View>
 
           {/* Account Actions */}
