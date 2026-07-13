@@ -9,6 +9,7 @@ import { ArrowLeft, ShoppingCart, Sparkles, Check, ShoppingBag, Star, Zap, Chevr
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "@/context/language-context";
 
 const { width } = Dimensions.get('window');
 
