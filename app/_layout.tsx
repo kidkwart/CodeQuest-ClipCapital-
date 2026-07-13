@@ -19,6 +19,14 @@ import { LanguageProvider } from "@/context/language-context";
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import Animated, {
+  useAnimatedStyle,
+  interpolateColor,
+  useDerivedValue,
+  withTiming,
+  FadeIn
+} from 'react-native-reanimated';
+
 const queryClient = new QueryClient();
 
 if (Platform.OS === 'web') {
@@ -58,8 +66,23 @@ export default function RootLayout() {
 
 function KenteBackgroundWrapper() {
   const { colors, theme } = useTheme();
+
+  // Fast background color transition
+  const progress = useDerivedValue(() => {
+    return withTiming(theme === 'dark' ? 0 : 1, { duration: 150 });
+  }, [theme]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      progress.value,
+      [0, 1],
+      ['#080c0a', '#f8fafc'] // Exact dark.background and light.background
+    );
+    return { backgroundColor, flex: 1 };
+  });
+
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <Animated.View style={animatedStyle}>
       <StatusBar
         barStyle={theme === 'dark' ? "light-content" : "dark-content"}
         translucent
@@ -69,7 +92,7 @@ function KenteBackgroundWrapper() {
       <MaintenanceGuard>
         <AuthGuard />
       </MaintenanceGuard>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -80,46 +103,60 @@ function AuthGuard() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    // Wait for the auth session to be loaded from storage
     if (loading) return;
 
+    let mounted = true;
+
     const performNavigation = async () => {
-      const hasOnboarded = await AsyncStorage.getItem('has_onboarded');
-      const rootSegment = segments[0];
+      try {
+        const hasOnboarded = await AsyncStorage.getItem('has_onboarded');
+        if (!mounted) return;
 
-      // 1. Handle Onboarding
-      if (!hasOnboarded) {
-        if (rootSegment !== "onboarding") {
-          router.replace("/onboarding");
-        } else {
-          setIsReady(true);
-        }
-        return;
-      }
+        const rootSegment = segments[0];
 
-      // 2. Handle Authentication
-      if (!user) {
-        if (rootSegment !== "(auth)" && rootSegment !== "reset-password") {
-          router.replace("/(auth)/login");
-        } else {
-          setIsReady(true);
+        // 1. Handle Onboarding redirection
+        if (hasOnboarded !== 'true') {
+          if (rootSegment !== "onboarding") {
+            router.replace("/onboarding");
+          } else {
+            setIsReady(true);
+          }
+          return;
         }
-      } else {
-        if (rootSegment === "(auth)" || rootSegment === "onboarding" || !rootSegment) {
-          router.replace("/(tabs)");
+
+        // 2. Handle Authentication redirection
+        if (!user) {
+          // If no user, must be in (auth) or reset-password
+          if (rootSegment !== "(auth)" && rootSegment !== "reset-password") {
+            router.replace("/(auth)/login");
+          } else {
+            setIsReady(true);
+          }
         } else {
-          setIsReady(true);
+          // If user exists, must NOT be in (auth) or onboarding
+          if (rootSegment === "(auth)" || rootSegment === "onboarding" || !rootSegment) {
+            router.replace("/(tabs)");
+          } else {
+            setIsReady(true);
+          }
         }
+      } catch (e) {
+        console.error("Navigation Error:", e);
+        setIsReady(true); // Fail-safe to prevent stuck spinner
       }
     };
 
     performNavigation();
+
+    return () => { mounted = false; };
   }, [user, loading, segments]);
 
   if (!isReady || loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: '#080c0a', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#10b981" />
-        <Text style={{ color: 'gray', marginTop: 10, fontSize: 10, letterSpacing: 2 }}>SECURE GATEWAY...</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.4)', marginTop: 16, fontSize: 10, fontFamily: 'Display-Bold', letterSpacing: 2 }}>SECURE GATEWAY</Text>
       </View>
     );
   }

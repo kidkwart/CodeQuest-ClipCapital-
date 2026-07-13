@@ -27,7 +27,7 @@ export default function NotificationsScreen() {
         headerLeft: () => (
           <BouncyTap
             onPress={() => router.back()}
-            style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
+            style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}
           >
             <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
@@ -109,9 +109,9 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
+  container: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 40 },
-  headerBtn: { marginLeft: 16, height: 44, width: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  headerBtn: { marginLeft: 16, height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   sweepBtn: { marginRight: 16, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(16,185,129,0.1)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
   sweepBtnText: { color: '#10b981', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   loader: { paddingVertical: 80, alignItems: 'center', gap: 16 },

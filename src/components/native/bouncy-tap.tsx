@@ -69,7 +69,7 @@ export function BouncyTap({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={style}
-      hitSlop={8} // Makes the hit area larger and more responsive
+      hitSlop={props.hitSlop || 20}
     >
       <Animated.View style={[containerStyle, animatedStyle]}>
         {children}

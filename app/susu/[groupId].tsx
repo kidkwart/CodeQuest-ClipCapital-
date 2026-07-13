@@ -1,27 +1,36 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet, Modal, Alert, Share } from "react-native";
+import React, { useState, useEffect, useMemo } from "react";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet, Modal, Alert, Share, Platform, Dimensions } from "react-native";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useGroup, useGroupMembers, useGroupContributions, useRecordContribution, useProfile, useLeaveGroup } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
-import { Button } from "@/components/native/button";
-import { PremiumHeader } from "@/components/native/premium-header";
-import { ArrowLeft, Users, Check, Clock, ShieldCheck, Wallet, TrendingUp, X, Copy, Zap, AlertCircle, Share2, Crown, Plus, LogOut, Info } from "lucide-react-native";
+import { ArrowLeft, Users, Check, Clock, Wallet, X, Zap, AlertCircle, Share2, Crown, Plus, LogOut, Info, ChevronRight, BarChart3, TrendingUp, ShieldCheck } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
 import * as Clipboard from 'expo-clipboard';
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "@/context/language-context";
+import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KenteBackground } from "@/components/native/effects/kente-pattern";
+import { Button } from "@/components/native/button";
+import { AnimatedNumber } from "@/components/native/animated-number";
+import { BlurView } from 'expo-blur';
+
+const { width } = Dimensions.get("window");
 
 export default function GroupDetails() {
   const { groupId } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
   const { data: profile } = useProfile();
 
   const id = Array.isArray(groupId) ? groupId[0] : groupId;
 
-  const group = useGroup(id as string);
-  const members = useGroupMembers(id as string);
-  const contributions = useGroupContributions(id as string);
+  const groupQuery = useGroup(id as string);
+  const membersQuery = useGroupMembers(id as string);
+  const contributionsQuery = useGroupContributions(id as string);
   const record = useRecordContribution();
   const leave = useLeaveGroup();
 
@@ -29,48 +38,42 @@ export default function GroupDetails() {
   const [showExitModal, setShowExitModal] = useState(false);
 
   const isPrivate = profile?.privacy_mode_enabled ?? false;
+  const isDark = theme === 'dark';
 
-  if (group.isError) {
+  if (groupQuery.isError) {
     return (
-      <View style={styles.loaderContainer}>
-        <AlertCircle size={48} color="#ef4444" />
-        <Text style={{ color: 'white', marginTop: 16, fontSize: 18, fontWeight: 'bold' }}>Oops! Load Failed</Text>
-        <Text style={{ color: '#7d8a84', textAlign: 'center', marginTop: 8, paddingHorizontal: 20 }}>
-            {(group.error as any)?.message || "Could not find this circle."}
-        </Text>
-        <Button
-          title="Go Back"
-          variant="outline"
-          style={{ marginTop: 24, width: 200 }}
-          onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/susu")}
-        />
-      </View>
-    );
-  }
-
-  if (group.isLoading || !group.data) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
-        <Text style={{ color: '#7d8a84', marginTop: 12, fontWeight: 'bold' }}>Syncing with Vault...</Text>
-        <TouchableOpacity
-          style={{ marginTop: 40 }}
+      <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
+        <AlertCircle size={48} color={colors.destructive} />
+        <Text style={{ color: colors.text, marginTop: 16, fontSize: 18, fontWeight: 'bold' }}>Oops! Load Failed</Text>
+        <BouncyTap
+          style={[styles.returnBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}
           onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/susu")}
         >
-            <Text style={{ color: '#10b981', fontSize: 12, fontWeight: 'bold' }}>CANCEL & GO BACK</Text>
-        </TouchableOpacity>
+            <Text style={{ color: colors.text }}>Go Back</Text>
+        </BouncyTap>
       </View>
     );
   }
 
-  const g = group.data;
+  if (groupQuery.isLoading || !groupQuery.data) {
+    return (
+      <View style={[styles.loaderContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.textDim, marginTop: 12, fontWeight: 'bold' }}>Syncing Vault...</Text>
+      </View>
+    );
+  }
+
+  const g = groupQuery.data;
   const currentCycle = g?.cycle_index || 1;
   const contribution = g?.contribution || 0;
-  const memberCount = g?.members_count || 1;
+  const membersData = membersQuery.data || [];
+  const memberCount = membersData.length;
   const frequency = g?.frequency || "Periodic";
   const isOwner = profile?.id === g.owner_id;
 
-  const hasPaidCurrent = contributions.data?.some(c => c.user_id === profile?.id && c.cycle_index === currentCycle);
+  const hasPaidCurrent = contributionsQuery.data?.some(c => c.user_id === profile?.id && c.cycle_index === currentCycle);
+  const currentWinner = membersData.find(m => m.payout_order === currentCycle);
 
   const handlePay = async () => {
     if (!g?.id) return;
@@ -113,168 +116,176 @@ export default function GroupDetails() {
     }
   };
 
-  const copyInvite = async () => {
-    if (!g?.invite_code) return;
-    await Clipboard.setStringAsync(g.invite_code);
-    Alert.alert("Copied", "Invite code copied!");
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KenteBackground />
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity
+          <BouncyTap
             onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/susu")}
-            style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
+            style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}
           >
             <ArrowLeft size={20} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         ),
         headerRight: () => (
-          <TouchableOpacity onPress={shareInvite} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={shareInvite} style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
              <Share2 size={20} color={colors.primary} />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={group.isRefetching} onRefresh={() => group.refetch()} tintColor={colors.primary} />}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 60 }]}
+        refreshControl={<RefreshControl refreshing={groupQuery.isRefetching} onRefresh={() => groupQuery.refetch()} tintColor={colors.primary} />}
       >
-        <View style={{ paddingHorizontal: 24 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-             {isOwner && <Crown size={14} color={colors.gold} fill={colors.gold} />}
-             <Text style={{ color: colors.primary, fontWeight: '900', fontSize: 10, letterSpacing: 4, textTransform: 'uppercase' }}>{frequency} Savings</Text>
-          </View>
-          <Text style={{ fontFamily: 'Display-Bold', color: colors.text, fontSize: 32, marginBottom: 32 }}>{g?.name || "Circle"}</Text>
+        <View style={{ paddingHorizontal: 20 }}>
 
-          {/* Pot Status */}
-          <Card style={[styles.potCard, { backgroundColor: colors.primary }]}>
-            <View style={{ zIndex: 2 }}>
-              <Text style={[styles.potLabel, { color: 'rgba(255,255,255,0.7)' }]}>ACCUMULATED POT</Text>
-              <Text style={[styles.potValue, { color: 'white' }]}>{isPrivate ? "••••••" : `GH₵ ${(g?.pot || 0).toLocaleString()}`}</Text>
-
-              <View style={styles.potFooter}>
-                <View style={[styles.tag, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                   <Clock size={12} color="#fff" />
-                   <Text style={styles.tagText}>Round #{currentCycle}</Text>
-                </View>
-                <Text style={styles.potSub}>Round Goal: {isPrivate ? "••••" : `GH₵ ${(contribution * memberCount).toLocaleString()}`}</Text>
-              </View>
-            </View>
-            <Wallet size={160} color="white" style={styles.potIcon} />
-          </Card>
-
-          {/* Your Status / CTA */}
-          <View style={styles.section}>
-            <Card style={[styles.statusCard, { backgroundColor: colors.cardBg, borderColor: colors.border }, hasPaidCurrent && { borderColor: colors.primary + '40' }]}>
-               <View style={styles.statusRow}>
-                  <View style={styles.statusInfo}>
-                     <Text style={[styles.statusLabel, { color: colors.textDim }]}>{hasPaidCurrent ? "Your Contribution" : "Next Payment"}</Text>
-                     <Text style={[styles.statusValue, { color: colors.text }]}>{isPrivate ? "••••" : `GH₵ ${contribution}`}</Text>
-                  </View>
-                  {hasPaidCurrent ? (
-                    <View style={[styles.paidBadge, { backgroundColor: colors.primary + '10' }]}>
-                       <Check size={16} color={colors.primary} />
-                       <Text style={[styles.paidText, { color: colors.primary }]}>PAID</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity onPress={() => setShowPayModal(true)} activeOpacity={0.8}>
-                      <LinearGradient
-                        colors={['#10b981', '#059669']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.premiumPayBtn}
-                      >
-                        <Text style={styles.premiumPayBtnText}>PAY NOW</Text>
-                        <Zap size={14} color="#000" fill="#000" />
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  )}
+          {/* 1. Header with Metadata */}
+          <Animated.View entering={FadeInDown.duration(400)} style={styles.headerSection}>
+            <View style={styles.row}>
+               <View style={[styles.badge, { backgroundColor: colors.gold + '10' }]}>
+                  <ShieldCheck size={10} color={colors.gold} />
+                  <Text style={[styles.badgeText, { color: colors.gold }]}>{frequency.toUpperCase()} PROTOCOL</Text>
                </View>
-            </Card>
-          </View>
+               {isOwner && <Crown size={14} color={colors.gold} fill={colors.gold} />}
+            </View>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>{g?.name || "Circle"}</Text>
+          </Animated.View>
 
-          {/* Members List */}
+          {/* 2. DEDICATED ROUND STATUS (NEW - VERY OBVIOUS) */}
+          <Animated.View entering={FadeInDown.delay(100)} style={[styles.roundStatusContainer, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
+             <View style={styles.roundInfo}>
+                <Text style={[styles.roundLabel, { color: colors.primary }]}>CURRENT ROUND</Text>
+                <Text style={[styles.roundNumber, { color: colors.text }]}>#{currentCycle}</Text>
+             </View>
+             <View style={styles.roundDivider} />
+             <View style={styles.roundTarget}>
+                <Text style={[styles.roundLabel, { color: colors.textDim }]}>PAYOUT TARGET</Text>
+                <Text style={[styles.roundWinner, { color: colors.text }]} numberOfLines={1}>
+                    {currentWinner?.profiles?.display_name || "PENDING"}
+                </Text>
+             </View>
+          </Animated.View>
+
+          {/* 3. Institutional Summary Row */}
+          <Animated.View entering={FadeInDown.delay(200)} style={styles.summaryGrid}>
+             <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.summaryTile, { borderColor: colors.border }]}>
+                <Text style={[styles.tileLabel, { color: colors.textDim }]}>ACCUMULATED POT</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 4 }}>
+                   <Text style={{ color: colors.primary, fontSize: 12, fontFamily: 'Display-Bold', marginRight: 4 }}>GH₵</Text>
+                   <AnimatedNumber value={isPrivate ? 0 : (g?.pot || 0)} style={{ color: colors.text, fontSize: 24, fontFamily: 'Display-Bold' }} />
+                </View>
+             </BlurView>
+
+             <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.summaryTile, { borderColor: colors.border }]}>
+                <Text style={[styles.tileLabel, { color: colors.textDim }]}>ROUND GOAL</Text>
+                <Text style={[styles.tileValue, { color: colors.text }]}>GH₵ {(contribution * memberCount).toLocaleString()}</Text>
+             </BlurView>
+          </Animated.View>
+
+          {/* 4. Contribution Status */}
+          <Animated.View entering={FadeInDown.delay(300)} style={styles.paymentSection}>
+             <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={[styles.paymentCard, { borderColor: hasPaidCurrent ? colors.primary + '40' : colors.border }]}>
+                <View style={styles.paymentRow}>
+                   <View>
+                      <Text style={[styles.paymentLabel, { color: colors.textDim }]}>{hasPaidCurrent ? "VERIFIED DEPOSIT" : "DUE CONTRIBUTION"}</Text>
+                      <Text style={[styles.paymentAmount, { color: colors.text }]}>GH₵ {contribution.toLocaleString()}</Text>
+                   </View>
+                   {hasPaidCurrent ? (
+                     <View style={[styles.verifiedBadge, { backgroundColor: colors.primary + '20' }]}>
+                        <Check size={18} color={colors.primary} strokeWidth={3} />
+                        <Text style={[styles.verifiedText, { color: colors.primary }]}>PAID</Text>
+                     </View>
+                   ) : (
+                     <BouncyTap onPress={() => setShowPayModal(true)}>
+                        <LinearGradient colors={[colors.primary, "#059669"]} style={styles.payBtn}>
+                           <Text style={styles.payBtnText}>SEND</Text>
+                           <Zap size={14} color="#000" fill="#000" />
+                        </LinearGradient>
+                     </BouncyTap>
+                   )}
+                </View>
+             </BlurView>
+          </Animated.View>
+
+          {/* 5. Partners Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-               <Users size={14} color={colors.primary} />
-               <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Partners ({memberCount})</Text>
+               <View style={styles.row}>
+                  <Users size={14} color={colors.textDim} />
+                  <Text style={[styles.sectionTitle, { color: colors.textDim }]}>PARTNERS ({memberCount})</Text>
+               </View>
+               <BouncyTap onPress={shareInvite}>
+                  <Text style={{ color: colors.primary, fontSize: 10, fontFamily: 'Display-Bold' }}>INVITE +</Text>
+               </BouncyTap>
             </View>
-            <Card style={{ padding: 8, backgroundColor: colors.cardBg, borderColor: colors.border }}>
-               {members.data?.map((m: any, idx: number) => {
-                 const hasPaid = contributions.data?.some(c => c.user_id === m.user_id && c.cycle_index === currentCycle);
-                 const isMe = m.user_id === profile?.id;
-                 const isTheWinner = m.payout_order === currentCycle;
+
+            <View style={[styles.listContainer, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+               {membersData.map((m: any, idx: number) => {
+                 const hasPaid = contributionsQuery.data?.some(c => c.user_id === m.user_id && c.cycle_index === currentCycle);
+                 const isWinner = m.payout_order === currentCycle;
 
                  return (
-                   <View key={m.id} style={[styles.memberRow, { borderBottomColor: colors.border }, idx === (members.data?.length || 0) - 1 && { borderBottomWidth: 0 }]}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                         <View style={[styles.avatar, { backgroundColor: colors.surfaceElevated }, isTheWinner && { borderColor: colors.gold, borderWidth: 2 }]}>
+                   <View key={m.id} style={[styles.memberRow, { borderBottomColor: colors.border }, idx === membersData.length - 1 && { borderBottomWidth: 0 }]}>
+                      <View style={styles.row}>
+                         <View style={[styles.avatar, { backgroundColor: colors.surfaceElevated }, isWinner && { borderColor: colors.gold, borderWidth: 2 }]}>
                             <Text style={[styles.avatarText, { color: colors.text }]}>{m.profiles?.display_name?.charAt(0) || "?"}</Text>
-                            {isTheWinner && <View style={[styles.crownMini, { backgroundColor: colors.gold }]}><Crown size={8} color="white" fill="white" /></View>}
+                            {isWinner && <View style={[styles.crownMini, { backgroundColor: colors.gold }]}><Crown size={8} color="white" fill="white" /></View>}
                          </View>
                          <View>
-                            <Text style={[styles.memberName, { color: colors.text }, isMe && { color: colors.primary }]}>
-                                {m.profiles?.display_name || "Unknown"} {isMe ? "(You)" : ""}
-                            </Text>
-                            <Text style={[styles.memberSub, { color: colors.textDim }]}>Order: #{m.payout_order}</Text>
+                            <Text style={[styles.memberName, { color: colors.text }]}>{m.profiles?.display_name}</Text>
+                            <Text style={[styles.memberSub, { color: colors.textDim }]}>PAYOUT ORDER: #{m.payout_order}</Text>
                          </View>
                       </View>
-                      {hasPaid ? (
-                        <View style={[styles.checkCircle, { borderColor: colors.primary + '30' }]}>
-                           <Check size={12} color={colors.primary} />
-                        </View>
-                      ) : (
-                        <View style={[styles.checkCircle, { borderColor: colors.border }]} />
-                      )}
+                      <View style={styles.row}>
+                          {isWinner && (
+                              <View style={[styles.payoutBadge, { backgroundColor: colors.gold + '20' }]}>
+                                  <Text style={{ color: colors.gold, fontSize: 8, fontFamily: 'Display-Bold' }}>PAYOUT</Text>
+                              </View>
+                          )}
+                          {hasPaid ? <Check size={18} color={colors.primary} strokeWidth={2.5} /> : <Clock size={16} color={colors.textDim} opacity={0.3} />}
+                      </View>
                    </View>
                  );
                })}
-               <TouchableOpacity onPress={shareInvite} style={styles.addMemberBtn}>
-                  <Plus size={16} color={colors.textDim} />
-                  <Text style={[styles.addMemberText, { color: colors.textDim }]}>Invite Partner</Text>
-               </TouchableOpacity>
-            </Card>
+            </View>
           </View>
 
-          {/* History */}
+          {/* 6. Recent Activity */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Recent Activity</Text>
-            {contributions.data && contributions.data.length > 0 ? (
-                contributions.data.slice(0, 5).map((c: any) => (
-                    <View key={c.id} style={[styles.historyItem, { borderBottomColor: colors.border }]}>
-                       <View style={styles.historyLeft}>
+            <Text style={[styles.sectionTitle, { color: colors.textDim, marginBottom: 12 }]}>VAULT LOGS</Text>
+            {contributionsQuery.data && contributionsQuery.data.length > 0 ? (
+                contributionsQuery.data.slice(0, 3).map((c: any) => (
+                    <View key={c.id} style={[styles.historyRow, { borderBottomColor: colors.border }]}>
+                       <View style={styles.row}>
                           <View style={[styles.historyIcon, { backgroundColor: colors.surfaceElevated }]}>
-                             <Zap size={14} color={colors.textDim} />
+                             <TrendingUp size={12} color={colors.primary} />
                           </View>
                           <View>
-                             <Text style={[styles.historyUser, { color: colors.text }]}>{c.momo_provider || "Wallet"}</Text>
+                             <Text style={[styles.historyLabel, { color: colors.text }]}>Contribution</Text>
                              <Text style={[styles.historyDate, { color: colors.textDim }]}>{new Date(c.created_at).toLocaleDateString()}</Text>
                           </View>
                        </View>
-                       <Text style={[styles.historyAmount, { color: colors.primary }]}>+ {isPrivate ? "•••" : `GH₵ ${c.amount}`}</Text>
+                       <Text style={[styles.historyAmount, { color: colors.primary }]}>+ GH₵ {c.amount}</Text>
                     </View>
                 ))
             ) : (
-                <Text style={{ color: colors.textDim, fontSize: 13, textAlign: 'center', marginTop: 10 }}>No activity yet.</Text>
+                <Text style={{ color: colors.textDim, fontSize: 11, textAlign: 'center' }}>No logs detected.</Text>
             )}
           </View>
 
-          {/* Exit Group - Now more prominent */}
-          <View style={{ marginTop: 20, marginBottom: 40 }}>
-              <Card style={{ backgroundColor: colors.destructive + '05', borderColor: colors.destructive + '15' }}>
-                <TouchableOpacity
-                    style={styles.exitBtnContainer}
-                    onPress={() => setShowExitModal(true)}
-                >
-                    <LogOut size={16} color={colors.destructive} />
-                    <Text style={[styles.exitBtnText, { color: colors.destructive }]}>EXIT THIS CIRCLE</Text>
-                </TouchableOpacity>
-              </Card>
-          </View>
+          {/* 7. Exit Button */}
+          <BouncyTap style={{ marginTop: 20, marginBottom: 60 }} onPress={() => setShowExitModal(true)}>
+             <View style={[styles.exitBtn, { borderColor: colors.destructive + '30', backgroundColor: colors.destructive + '05' }]}>
+                <LogOut size={16} color={colors.destructive} />
+                <Text style={[styles.exitBtnText, { color: colors.destructive }]}>EXIT CIRCLE</Text>
+             </View>
+          </BouncyTap>
+
         </View>
       </ScrollView>
 
@@ -284,29 +295,17 @@ export default function GroupDetails() {
            <Animated.View entering={FadeInDown} style={{ width: '100%' }}>
              <Card style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <View style={styles.modalHeader}>
-                   <Text style={[styles.modalTitle, { color: colors.text }]}>Confirm Payment</Text>
-                   <TouchableOpacity onPress={() => setShowPayModal(false)}>
-                      <X color={colors.textDim} />
-                   </TouchableOpacity>
+                   <Text style={[styles.modalTitle, { color: colors.text }]}>Confirm Deposit</Text>
+                   <TouchableOpacity onPress={() => setShowPayModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
                 </View>
-                <Text style={[styles.modalDesc, { color: colors.textMuted }]}>Contribute GH₵ {contribution} to the "{g?.name}" pot.</Text>
-
                 <View style={[styles.paymentMethod, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-                   <View style={[styles.methodIcon, { backgroundColor: colors.primary + '10' }]}>
-                      <Wallet size={20} color={colors.primary} />
-                   </View>
+                   <Wallet size={20} color={colors.primary} />
                    <View>
                       <Text style={[styles.methodTitle, { color: colors.text }]}>Oxygen Wallet</Text>
-                      <Text style={[styles.methodSub, { color: colors.textMuted }]}>Available: GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
+                      <Text style={[styles.methodSub, { color: colors.textMuted }]}>GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
                    </View>
                 </View>
-
-                <Button
-                  title="Confirm & Pay"
-                  size="lg"
-                  onPress={handlePay}
-                  loading={record.isPending}
-                />
+                <Button title="Confirm & Transmit" onPress={handlePay} loading={record.isPending} />
              </Card>
            </Animated.View>
         </View>
@@ -318,33 +317,14 @@ export default function GroupDetails() {
            <Animated.View entering={FadeInDown} style={{ width: '100%' }}>
              <Card style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <View style={styles.modalHeader}>
-                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <AlertCircle size={20} color={colors.destructive} />
-                      <Text style={[styles.modalTitle, { color: colors.destructive }]}>Exit Circle</Text>
-                   </View>
-                   <TouchableOpacity onPress={() => setShowExitModal(false)}>
-                      <X color={colors.textDim} />
-                   </TouchableOpacity>
+                   <Text style={[styles.modalTitle, { color: colors.destructive }]}>Exit Protocol</Text>
+                   <TouchableOpacity onPress={() => setShowExitModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
                 </View>
-
-                <View style={[styles.penaltyWarning, { backgroundColor: colors.gold + '10', borderColor: colors.gold + '20' }]}>
+                <View style={[styles.warningBox, { backgroundColor: colors.gold + '10', borderColor: colors.gold + '20' }]}>
                    <Info size={16} color={colors.gold} />
-                   <Text style={[styles.penaltyText, { color: colors.gold }]}>An exit penalty of <Text style={{ fontWeight: 'bold', color: colors.text }}>GH₵ 100.00</Text> will be deducted from your wallet.</Text>
+                   <Text style={[styles.warningText, { color: colors.gold }]}>Exit requires a GH₵ 100.00 penalty deduction.</Text>
                 </View>
-
-                <Text style={[styles.modalDesc, { color: colors.textMuted }]}>Are you sure you want to leave <Text style={{ color: colors.text, fontWeight: 'bold' }}>{g?.name}</Text>? This action is permanent.</Text>
-
-                <Button
-                  title="Pay Penalty & Exit"
-                  variant="destructive"
-                  size="lg"
-                  onPress={handleLeave}
-                  loading={leave.isPending}
-                />
-
-                <TouchableOpacity style={{ marginTop: 20, alignItems: 'center' }} onPress={() => setShowExitModal(false)}>
-                    <Text style={{ color: colors.textDim, fontSize: 12, fontWeight: 'bold' }}>STAY IN CIRCLE</Text>
-                </TouchableOpacity>
+                <Button title="Authorize Exit" variant="destructive" onPress={handleLeave} loading={leave.isPending} />
              </Card>
            </Animated.View>
         </View>
@@ -354,68 +334,61 @@ export default function GroupDetails() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
-  loaderContainer: { flex: 1, backgroundColor: '#080c0a', alignItems: 'center', justifyContent: 'center', padding: 40 },
-  scrollContent: { paddingTop: 100, paddingBottom: 150 },
-  headerBtn: { marginLeft: 16, marginRight: 16, height: 44, width: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  container: { flex: 1 },
+  loaderContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  scrollContent: { paddingBottom: 80 },
+  headerBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerSection: { marginBottom: 24 },
+  badge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 100 },
+  badgeText: { fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 1.5 },
+  headerTitle: { fontFamily: 'Display-Bold', fontSize: 32, marginTop: 8 },
+  roundStatusContainer: { flexDirection: 'row', padding: 20, borderRadius: 24, borderWidth: 1, marginBottom: 24, alignItems: 'center' },
+  roundInfo: { flex: 1 },
+  roundLabel: { fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 1.5, marginBottom: 4 },
+  roundNumber: { fontFamily: 'Display-Bold', fontSize: 28 },
+  roundDivider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.1)', marginHorizontal: 20 },
+  roundTarget: { flex: 2 },
+  roundWinner: { fontFamily: 'Display-Bold', fontSize: 18, marginTop: 2 },
+  summaryGrid: { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  summaryTile: { flex: 1, padding: 16, borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+  tileLabel: { fontFamily: 'Display-Bold', fontSize: 8, letterSpacing: 1 },
+  tileValue: { fontFamily: 'Display-Bold', fontSize: 16, marginTop: 4 },
+  paymentSection: { marginBottom: 32 },
+  paymentCard: { padding: 20, borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
+  paymentRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  paymentLabel: { fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 1 },
+  paymentAmount: { fontFamily: 'Display-Bold', fontSize: 24, marginTop: 2 },
+  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 14 },
+  verifiedText: { fontFamily: 'Display-Bold', fontSize: 12, fontWeight: '900' },
+  payBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14 },
+  payBtnText: { color: '#000', fontFamily: 'Display-Bold', fontSize: 12, fontWeight: '900' },
   section: { marginBottom: 32 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16, marginLeft: 8 },
-  sectionTitle: { color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 10, letterSpacing: 3, textTransform: 'uppercase' },
-  potCard: { backgroundColor: '#10b981', padding: 24, borderRadius: 32, overflow: 'hidden', marginBottom: 10 },
-  potLabel: { color: 'rgba(255,255,255,0.7)', fontWeight: '900', fontSize: 10, letterSpacing: 2 },
-  potValue: { fontFamily: 'Display-Bold', color: 'white', fontSize: 36, marginTop: 4 },
-  potFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 100 },
-  tagText: { color: "#fff", fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
-  potSub: { color: 'white', fontSize: 11, fontWeight: '600', opacity: 0.8 },
-  potIcon: { position: 'absolute', right: -40, bottom: -40, opacity: 0.15, transform: [{ rotate: '-15deg' }] },
-  statusCard: { padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  statusInfo: { gap: 4 },
-  statusLabel: { color: '#7d8a84', fontSize: 11, fontWeight: 'bold' },
-  statusValue: { color: 'white', fontFamily: 'Display-Bold', fontSize: 20 },
-  paidBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(16,185,129,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 },
-  paidText: { color: '#10b981', fontWeight: '900', fontSize: 12 },
-  memberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  avatar: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: 'white', fontWeight: 'bold' },
-  memberName: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  memberSub: { color: '#7d8a84', fontSize: 10 },
-  checkCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: '#10b98130', alignItems: 'center', justifyContent: 'center' },
-  addMemberBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16, opacity: 0.6 },
-  addMemberText: { color: '#7d8a84', fontWeight: 'bold', fontSize: 13 },
-  crownMini: { position: 'absolute', top: -8, right: -8, backgroundColor: '#f59e0b', padding: 4, borderRadius: 100 },
-  historyItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.03)' },
-  historyLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  historyIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
-  historyUser: { color: 'white', fontWeight: 'bold', fontSize: 13 },
-  historyDate: { color: '#405045', fontSize: 10 },
-  historyAmount: { color: '#10b981', fontWeight: 'bold', fontSize: 14 },
-  exitBtnContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 20 },
-  exitBtnText: { color: '#ef4444', fontWeight: '900', fontSize: 11, letterSpacing: 1 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 24 },
-  modalContent: { padding: 24 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { color: 'white', fontFamily: 'Display-Bold', fontSize: 20 },
-  modalDesc: { color: '#7d8a84', fontSize: 14, marginBottom: 24, lineHeight: 20 },
-  paymentMethod: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.03)', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  methodIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(16,185,129,0.1)', alignItems: 'center', justifyContent: 'center' },
-  methodTitle: { color: 'white', fontWeight: 'bold', fontSize: 14 },
-  methodSub: { color: '#7d8a84', fontSize: 11 },
-  penaltyWarning: { flexDirection: 'row', gap: 12, backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: 16, borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(245, 158, 11, 0.2)' },
-  penaltyText: { color: '#f59e0b', fontSize: 12, flex: 1, lineHeight: 18 },
-  premiumPayBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  premiumPayBtnText: {
-    color: '#000',
-    fontFamily: 'Display-Bold',
-    fontSize: 11,
-    letterSpacing: 1,
-  }
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  sectionTitle: { fontFamily: 'Display-Bold', fontSize: 9, letterSpacing: 2 },
+  listContainer: { borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
+  memberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
+  avatar: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: 'Display-Bold', fontSize: 14 },
+  memberName: { fontFamily: 'Display-Bold', fontSize: 14 },
+  memberSub: { fontFamily: 'Display-Bold', fontSize: 8, opacity: 0.5, marginTop: 2 },
+  historyRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1 },
+  historyIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  historyLabel: { fontFamily: 'Display-Bold', fontSize: 13 },
+  historyDate: { fontFamily: 'Display-Bold', fontSize: 9, opacity: 0.5 },
+  historyAmount: { fontFamily: 'Display-Bold', fontSize: 14 },
+  exitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, height: 60, borderRadius: 20, borderWidth: 1 },
+  exitBtnText: { fontFamily: 'Display-Bold', fontSize: 11, letterSpacing: 1.5, fontWeight: '900' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end', padding: 20 },
+  modalContent: { padding: 24, borderTopLeftRadius: 32, borderTopRightRadius: 32 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontFamily: 'Display-Bold', fontSize: 20 },
+  paymentMethod: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1 },
+  methodTitle: { fontFamily: 'Display-Bold', fontSize: 14 },
+  methodSub: { fontSize: 11, opacity: 0.6 },
+  warningBox: { flexDirection: 'row', gap: 12, padding: 16, borderRadius: 12, marginBottom: 24, borderWidth: 1 },
+  warningText: { fontSize: 12, flex: 1, lineHeight: 18 },
+  returnBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, borderWidth: 1, marginTop: 24 },
+  crownMini: { position: 'absolute', top: -6, right: -6, padding: 3, borderRadius: 100 },
+  payoutBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginRight: 8 }
 });

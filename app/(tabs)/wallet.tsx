@@ -10,6 +10,7 @@ import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
 import { useLanguage } from "@/context/language-context";
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KenteBackground } from "@/components/native/effects/kente-pattern";
 import Animated, {
   FadeInDown,
@@ -97,9 +98,11 @@ function FloatingCurrency({ delay = 0 }: { delay: number }) {
 
 export default function WalletScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors, theme } = useTheme();
   const { t } = useLanguage();
-  const { data: profile, isLoading, refetch } = useProfile();
+  const profileQuery = useProfile();
+  const profile = profileQuery.data;
   const { data: history } = useTransactionHistory();
   const updateProfile = useUpdateProfile();
 
@@ -152,8 +155,8 @@ export default function WalletScreen() {
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={refetch} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+        refreshControl={<RefreshControl refreshing={profileQuery.isRefetching} tintColor={colors.primary} onRefresh={() => profileQuery.refetch()} progressViewOffset={insets.top + 20} />}
       >
         <View style={{ paddingHorizontal: 20 }}>
 
@@ -161,7 +164,7 @@ export default function WalletScreen() {
             <View>
               <View style={styles.supHeaderRow}>
                 <View style={[styles.statusDot, { backgroundColor: colors.primary }]} />
-                <Text style={[styles.supHeaderText, { color: colors.primary }]}>VAULT PROTOCOL v4.2</Text>
+                <Text style={[styles.supHeaderText, { color: colors.primary }]}>{t.vault_protocol_ver}</Text>
               </View>
               <Text style={[styles.headerTitle, { color: colors.text }]}>{t.wallet}</Text>
             </View>
@@ -208,7 +211,7 @@ export default function WalletScreen() {
                         <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
                         <Text style={[styles.verifiedText, { color: colors.primary }]}>{t.secure_vault}</Text>
                     </View>
-                    <Text style={[styles.accountType, { color: colors.textDim }]}>INSTITUTIONAL v4.2</Text>
+                    <Text style={[styles.accountType, { color: colors.textDim }]}>{t.inst_ver}</Text>
                     </View>
                 </BlurView>
             </Animated.View>
@@ -258,7 +261,7 @@ export default function WalletScreen() {
 
           {/* Transaction Section */}
           <View style={styles.sectionHeader}>
-            <Animated.Text entering={FadeInRight.delay(600)} style={[styles.sectionTitle, { color: colors.textDim }]}>{t.ledger.toUpperCase()} ACTIVITY</Animated.Text>
+            <Animated.Text entering={FadeInRight.delay(600)} style={[styles.sectionTitle, { color: colors.textDim }]}>{t.ledger_activity.toUpperCase()}</Animated.Text>
             <TouchableOpacity onPress={() => router.push("/history")} style={styles.seeAllBtn}>
               <Text style={{ color: colors.primary, fontFamily: 'Display-Bold', fontSize: 11 }}>{t.view_all}</Text>
               <ChevronRight size={12} color={colors.primary} />
@@ -307,7 +310,7 @@ export default function WalletScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: 140, paddingTop: Platform.OS === 'ios' ? 60 : 40 },
+  scrollContent: { paddingBottom: 140 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, paddingHorizontal: 4 },
   supHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   statusDot: { width: 5, height: 5, borderRadius: 2.5 },

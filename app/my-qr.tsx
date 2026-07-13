@@ -36,9 +36,9 @@ export default function MyQRScreen() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <Lucide.ArrowLeft size={20} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 
@@ -86,7 +86,7 @@ export default function MyQRScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginLeft: 24 },
+  headerBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginLeft: 24 },
   qrContainer: { alignItems: 'center', marginTop: 40 },
   qrWrapper: { padding: 40, borderRadius: 40, borderWidth: 1, alignItems: 'center', width: '100%', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, elevation: 5 },
   qrBorder: { padding: 12, backgroundColor: '#fff', borderRadius: 20 },

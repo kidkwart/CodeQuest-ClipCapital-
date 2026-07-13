@@ -1,17 +1,20 @@
 import React, { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Modal, RefreshControl } from "react-native";
 import { Stack, useRouter } from "expo-router";
+import { BouncyTap } from "@/components/native/bouncy-tap";
 import * as Lucide from "lucide-react-native";
 import { useAcademyContent, useAcademyProgress, useCompleteLesson } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { Button } from "@/components/native/button";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "@/context/language-context";
 
 export default function AcademyScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
+  const { t } = useLanguage();
   const { data: content, isLoading: loadingContent, refetch, error } = useAcademyContent();
   const { data: progress, isLoading: loadingProgress } = useAcademyProgress();
   const completeLesson = useCompleteLesson();
@@ -22,7 +25,7 @@ export default function AcademyScreen() {
     try {
       await completeLesson.mutateAsync(id);
       setSelectedLesson(null);
-      Alert.alert("Knowledge Unlocked! 🏆", "Your ClipScore has been boosted for completing this lesson.");
+      Alert.alert(t.knowledge_unlocked, t.knowledge_unlocked_desc);
     } catch (e: any) {
       Alert.alert("Error", "You may have already completed this lesson.");
     }
@@ -41,15 +44,15 @@ export default function AcademyScreen() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <Lucide.ArrowLeft size={20} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         ),
         headerRight: () => (
           <View style={{ flexDirection: 'row', gap: 12, marginRight: 20 }}>
-            <TouchableOpacity onPress={() => router.push("/support")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <BouncyTap onPress={() => router.push("/support")} style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
               <Lucide.HelpCircle size={20} color={colors.primary} />
-            </TouchableOpacity>
+            </BouncyTap>
           </View>
         )
       }} />
@@ -59,26 +62,26 @@ export default function AcademyScreen() {
         refreshControl={<RefreshControl refreshing={loadingContent} onRefresh={refetch} tintColor={colors.primary} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
-          <PremiumHeader title="Academy" subtitle="Master Your Business" />
+          <PremiumHeader title={t.academy} subtitle={t.biz_growth} />
 
           <View style={styles.statsRow}>
             <Card style={[styles.statBox, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: colors.primary }]}>{progress?.length || 0}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>COMPLETED</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.completed}</Text>
             </Card>
             <Card style={[styles.statBox, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: colors.gold }]}>{(progress?.length || 0) * 5}</Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted }]}>POINTS</Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]}>{t.points}</Text>
             </Card>
           </View>
 
-          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Available Modules</Text>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{t.available_modules}</Text>
 
           {(!content || content.length === 0) ? (
             <View style={styles.emptyState}>
               <Lucide.BookOpen size={48} color={colors.textDim} />
               <Text style={{ color: colors.text, marginTop: 16, textAlign: 'center', opacity: 0.7 }}>
-                {error ? "Connection issue. Please ensure database tables are set up." : "No lessons available yet. Check back soon!"}
+                {error ? t.connection_issue : t.no_lessons_available}
               </Text>
             </View>
           ) : (
@@ -108,7 +111,7 @@ export default function AcademyScreen() {
       <Modal visible={!!selectedLesson} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelectedLesson(null)}>
           <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
               <View style={styles.modalTop}>
-                  <Text style={[styles.modalTitle, { color: colors.text }]}>Learning Module</Text>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>{t.learning_module}</Text>
                   <TouchableOpacity onPress={() => setSelectedLesson(null)}><Lucide.X color={colors.text} /></TouchableOpacity>
               </View>
 
@@ -122,12 +125,12 @@ export default function AcademyScreen() {
 
                   <View style={styles.rewardBox}>
                       <Lucide.Trophy size={20} color={colors.gold} />
-                      <Text style={{ color: colors.text, fontWeight: 'bold' }}>Reward: +{selectedLesson?.score_reward} ClipScore Points</Text>
+                      <Text style={{ color: colors.text, fontWeight: 'bold' }}>{t.reward}: +{selectedLesson?.score_reward} ClipScore Points</Text>
                   </View>
 
                   {!progress?.includes(selectedLesson?.id) && (
                     <Button
-                        title="Complete Lesson"
+                        title={t.complete_lesson}
                         onPress={() => handleComplete(selectedLesson.id)}
                         loading={completeLesson.isPending}
                     />
@@ -142,7 +145,7 @@ export default function AcademyScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 40 },
-  headerBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  headerBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 32 },
   statBox: { flex: 1, padding: 16, alignItems: 'center', borderRadius: 20 },
   statValue: { fontSize: 24, fontFamily: 'Display-Bold' },

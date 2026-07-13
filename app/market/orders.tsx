@@ -5,11 +5,13 @@ import { useMyOrders } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, ShoppingBag, Package } from "lucide-react-native";
+import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
 
 export default function MyOrdersScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
   const { data: orders, isLoading, refetch } = useMyOrders();
 
   const getStatusColor = (status: string) => {
@@ -28,9 +30,9 @@ export default function MyOrdersScreen() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <ArrowLeft size={20} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 
@@ -102,7 +104,7 @@ export default function MyOrdersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 40 },
-  headerBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  headerBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   loader: { paddingVertical: 80, alignItems: 'center', gap: 16 },
   loaderText: { fontWeight: '900', letterSpacing: 2, fontSize: 10 },
   emptyState: { paddingVertical: 80, alignItems: 'center', opacity: 0.5 },

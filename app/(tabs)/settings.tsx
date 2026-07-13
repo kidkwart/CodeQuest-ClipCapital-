@@ -4,13 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile, useUpdateProfile } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
 import { PremiumHeader } from "@/components/native/premium-header";
-import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X, Eye, EyeOff, Smartphone, BellRing, Fingerprint, Key, Palette, Camera, HelpCircle, Share2, FileText, Globe, Info, Activity } from "lucide-react-native";
+import { LogOut, User, Bell, Shield, Phone, Building, ChevronRight, Lock, CreditCard, BadgeCheck, Save, Check, UserX, X, Eye, EyeOff, Smartphone, BellRing, Fingerprint, Key, Palette, Camera, HelpCircle, Share2, FileText, Globe, Info, Activity, Zap, Clock } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useRouter } from "expo-router";
 import { ThemeType } from "@/lib/theme";
 import { useTheme } from "@/context/theme-context";
 import { useLanguage } from "@/context/language-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LanguageType } from "@/lib/translations";
 import { getDeviceSecureID } from "@/lib/security-module";
 import { getBatteryLevel, getSystemUptime, getAndroidVersion, showNativeToast } from "@/lib/device-module";
@@ -23,9 +24,11 @@ try {
 
 export default function Settings() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors, theme, toggleTheme } = useTheme();
   const { language, t, setLanguage } = useLanguage();
-  const { data: profile, refetch, isLoading } = useProfile();
+  const profileQuery = useProfile();
+  const profile = profileQuery.data;
   const updateProfile = useUpdateProfile();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -57,21 +60,39 @@ export default function Settings() {
   });
 
   useEffect(() => {
+    let batteryListener: any = null;
+
     const loadDeviceInfo = async () => {
-      const id = await getDeviceSecureID();
-      setDeviceId(id);
+      try {
+        const id = await getDeviceSecureID();
+        setDeviceId(id);
 
-      const batt = await getBatteryLevel();
-      setBatteryLevel(batt);
+        const batt = await getBatteryLevel();
+        setBatteryLevel(batt);
 
-      const up = await getSystemUptime();
-      setUptime(up);
+        const up = await getSystemUptime();
+        setUptime(up);
 
-      const ver = await getAndroidVersion();
-      setAndroidVer(ver);
+        const ver = await getAndroidVersion();
+        setAndroidVer(ver);
+      } catch (e) {
+        console.error("Device Info Error:", e);
+      }
     };
+
+    const setupListeners = async () => {
+        if (Platform.OS !== 'web') {
+            const Battery = require('expo-battery');
+            batteryListener = Battery.addBatteryLevelListener(({ batteryLevel }: any) => {
+                setBatteryLevel(Math.round(batteryLevel * 100));
+            });
+        }
+    };
+
     checkBiometrics();
     loadDeviceInfo();
+    setupListeners();
+
     if (profile) {
       setPayoutData({
         bank_name: profile.bank_name || "",
@@ -88,6 +109,10 @@ export default function Settings() {
         theme_preference: (profile.theme_preference as ThemeType) || "dark",
       });
     }
+
+    return () => {
+        if (batteryListener) batteryListener.remove();
+    };
   }, [profile]);
 
   const checkBiometrics = async () => {
@@ -109,13 +134,9 @@ export default function Settings() {
 
       setPrefs(p => ({ ...p, theme_preference: nextTheme }));
       toggleTheme();
-      Vibration.vibrate(Platform.OS === 'ios' ? 1 : 10);
 
-      try {
-        await updateProfile.mutateAsync({ theme_preference: nextTheme });
-      } catch (e: any) {
-        Alert.alert("Sync Error", "Theme choice not saved: " + e.message);
-      }
+      // Fire and forget the sync so it doesn't block the UI
+      updateProfile.mutate({ theme_preference: nextTheme });
       return;
     }
 
@@ -168,16 +189,23 @@ export default function Settings() {
   };
 
   const handleSignOut = async () => {
+    // Immediate haptic feedback
+    Vibration.vibrate(Platform.OS === 'ios' ? 1 : 10);
+
     Alert.alert(
-      "Confirm Logout",
-      "Terminate current session?",
+      t.confirm_logout,
+      t.terminate_session_q,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t.cancel, style: "cancel" },
         {
-          text: "Logout",
+          text: t.logout,
           style: "destructive",
-          onPress: async () => {
-            await supabase.auth.signOut();
+          onPress: () => {
+            // Initiate sign out without awaiting to trigger immediate listener response
+            supabase.auth.signOut().catch(console.error);
+            // Optionally clear the query client to force a clean slate
+            const { useQueryClient } = require("@tanstack/react-query");
+            // Since we can't use hooks here, we rely on the auth listener in _layout
           }
         }
       ]
@@ -185,38 +213,43 @@ export default function Settings() {
   };
 
   const handleDeleteAccount = async () => {
+    // Immediate haptic feedback
+    Vibration.vibrate(Platform.OS === 'ios' ? 1 : 20);
+
     const performDelete = async () => {
       try {
         const { error } = await supabase.rpc('delete_user_account');
         if (error) throw error;
         await supabase.auth.signOut();
-        alert("Account successfully purged.");
+        alert("Account successfully deleted.");
       } catch (e: any) {
-        alert("Action restricted: " + e.message);
+        alert(t.action_restricted + ": " + e.message);
       }
     };
 
-    Alert.alert("Institutional Purge", "Permanently delete account?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "DELETE PERMANENTLY", style: "destructive", onPress: performDelete }
+    Alert.alert(t.purge, t.delete_account_confirm, [
+      { text: t.cancel, style: "cancel" },
+      { text: t.delete_account_btn, style: "destructive", onPress: performDelete }
     ]);
   };
 
   const SettingRow = ({ icon: Icon, label, color = colors.primary, onPress, value }: any) => (
-    <TouchableOpacity
+    <BouncyTap
       onPress={onPress}
-      activeOpacity={0.7}
-      style={[styles.settingRow, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
+      vibrate
+      style={{ marginBottom: 12 }}
     >
-      <View style={[styles.settingIconBox, { backgroundColor: `${color}15` }]}>
-        <Icon size={18} color={color} />
+      <View style={[styles.settingRow, { backgroundColor: colors.cardBg, borderColor: colors.border, marginBottom: 0 }]}>
+        <View style={[styles.settingIconBox, { backgroundColor: `${color}15` }]}>
+          <Icon size={18} color={color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
+          {value ? <Text style={[styles.settingValueText, { color: colors.textDim }]}>{value}</Text> : null}
+        </View>
+        <ChevronRight size={14} color={colors.textDim} />
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
-        {value ? <Text style={[styles.settingValueText, { color: colors.textDim }]}>{value}</Text> : null}
-      </View>
-      <ChevronRight size={14} color={colors.textDim} />
-    </TouchableOpacity>
+    </BouncyTap>
   );
 
   return (
@@ -224,8 +257,8 @@ export default function Settings() {
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isLoading} tintColor={colors.primary} onRefresh={onRefresh} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+        refreshControl={<RefreshControl refreshing={profileQuery.isRefetching} tintColor={colors.primary} onRefresh={() => profileQuery.refetch()} progressViewOffset={insets.top + 20} />}
       >
         <View style={{ paddingHorizontal: 24 }}>
           <PremiumHeader title={t.settings} subtitle={t.merchant_portal} />
@@ -260,7 +293,7 @@ export default function Settings() {
               icon={Palette}
               label={t.display_mode}
               color="#3b82f6"
-              value={prefs.theme_preference === 'dark' ? "Midnight Emerald" : "Pristine White"}
+              value={prefs.theme_preference === 'dark' ? t.midnight_emerald : t.pristine_white}
               onPress={() => handleTogglePref('theme_preference')}
             />
 
@@ -281,14 +314,14 @@ export default function Settings() {
             <SettingRow
               icon={Bell}
               label={t.alerts}
-              value={prefs.notifications_enabled ? "Active" : "Muted"}
+              value={prefs.notifications_enabled ? t.active : t.muted}
               onPress={() => setShowNotifModal(true)}
             />
 
             <SettingRow
               icon={Shield}
               label={t.security}
-              value={prefs.security_2fa_enabled ? "High Security" : "Standard"}
+              value={prefs.security_2fa_enabled ? t.high_security : t.standard}
               onPress={() => setShowSecurityModal(true)}
             />
           </View>
@@ -299,9 +332,9 @@ export default function Settings() {
 
             <SettingRow
               icon={CreditCard}
-              label={t.payout_destination || "Payout Destination"}
+              label={t.payout_dest}
               color={colors.gold}
-              value={profile?.account_number ? `${profile.bank_name} • ${profile.account_number}` : "Not configured"}
+              value={profile?.account_number ? `${profile.bank_name} • ${profile.account_number}` : t.not_configured}
               onPress={() => setShowPayoutModal(true)}
             />
 
@@ -309,7 +342,7 @@ export default function Settings() {
               icon={Share2}
               label={t.invite}
               color="#8b5cf6"
-              value="Expand the community"
+              value={t.expand_community}
               onPress={onShare}
             />
           </View>
@@ -329,7 +362,36 @@ export default function Settings() {
               icon={FileText}
               label={t.legal}
               color={colors.textDim}
-              onPress={() => Alert.alert("Legal Manifest", "Terms of Service and Privacy Policy v4.2 are synchronized with Ghanaian financial regulations.")}
+              onPress={() => Alert.alert(t.legal, t.legal_manifest_desc)}
+            />
+          </View>
+
+          {/* Device Analytics Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.device_analytics}</Text>
+
+            <SettingRow
+              icon={Smartphone}
+              label="OS Version"
+              value={androidVer}
+              color="#f472b6"
+              onPress={() => showNativeToast(`System: ${androidVer}`)}
+            />
+
+            <SettingRow
+              icon={Zap}
+              label="Battery Health"
+              value={batteryLevel === -1 || batteryLevel === "..." ? "..." : `${batteryLevel}%`}
+              color="#fbbf24"
+              onPress={() => showNativeToast(`Current Battery Level: ${batteryLevel}%`)}
+            />
+
+            <SettingRow
+              icon={Clock}
+              label="System Uptime"
+              value={uptime}
+              color="#38bdf8"
+              onPress={() => showNativeToast(`System has been up for: ${uptime}`)}
             />
           </View>
 
@@ -351,55 +413,29 @@ export default function Settings() {
             </View>
           </View>
 
-          {/* Native Java Diagnostics Section */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Native System Diagnostics (JAVA)</Text>
-
-            <SettingRow
-              icon={Smartphone}
-              label="OS Version"
-              value={androidVer}
-              color="#f472b6"
-              onPress={() => showNativeToast(`Android System: ${androidVer}`)}
-            />
-
-            <SettingRow
-              icon={Zap}
-              label="Battery Health"
-              value={`${batteryLevel}%`}
-              color="#fbbf24"
-              onPress={() => showNativeToast(`Current Battery Level: ${batteryLevel}%`)}
-            />
-
-            <SettingRow
-              icon={Clock}
-              label="System Uptime"
-              value={uptime}
-              color="#38bdf8"
-              onPress={() => showNativeToast(`System has been up for: ${uptime}`)}
-            />
-          </View>
-
           {/* Account Actions */}
           <View style={{ marginBottom: 40 }}>
-            <TouchableOpacity onPress={handleSignOut} style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: colors.border }]}>
-              <View style={styles.actionIconBox}>
-                <LogOut size={20} color={colors.text} />
+            <BouncyTap onPress={handleSignOut}>
+              <View style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.03)', borderColor: colors.border }]}>
+                <View style={styles.actionIconBox}>
+                  <LogOut size={20} color={colors.text} />
+                </View>
+                <Text style={[styles.actionBtnText, { color: colors.text }]}>{t.sign_out}</Text>
               </View>
-              <Text style={[styles.actionBtnText, { color: colors.text }]}>{t.sign_out}</Text>
-            </TouchableOpacity>
+            </BouncyTap>
           </View>
 
           <View style={{ marginBottom: 120 }}>
-            <TouchableOpacity
-              onPress={handleDeleteAccount}
-              style={[styles.actionBtn, { backgroundColor: colors.destructive + '05', borderColor: colors.destructive + '10' }]}
-            >
-              <View style={[styles.actionIconBox, { backgroundColor: colors.destructive + '10' }]}>
-                <UserX size={20} color={colors.destructive} />
+            <BouncyTap onPress={handleDeleteAccount}>
+              <View
+                style={[styles.actionBtn, { backgroundColor: colors.destructive + '05', borderColor: colors.destructive + '10' }]}
+              >
+                <View style={[styles.actionIconBox, { backgroundColor: colors.destructive + '10' }]}>
+                  <UserX size={20} color={colors.destructive} />
+                </View>
+                <Text style={[styles.actionBtnText, { color: colors.destructive }]}>{t.purge}</Text>
               </View>
-              <Text style={[styles.actionBtnText, { color: colors.destructive }]}>{t.purge}</Text>
-            </TouchableOpacity>
+            </BouncyTap>
           </View>
         </View>
       </ScrollView>
@@ -439,7 +475,7 @@ export default function Settings() {
               <View style={[styles.pinSection, { backgroundColor: colors.background, borderColor: colors.border, marginTop: -12 }]}>
                  <View style={styles.pinHeader}>
                     <Smartphone size={16} color={colors.primary} />
-                    <Text style={[styles.pinLabel, { color: colors.textDim }]}>SECURE DEVICE ID (JAVA)</Text>
+                    <Text style={[styles.pinLabel, { color: colors.textDim }]}>SECURE DEVICE ID ({Platform.OS.toUpperCase()})</Text>
                  </View>
                  <Text style={{ color: colors.text, fontFamily: 'Display-Bold', fontSize: 14 }}>{deviceId}</Text>
               </View>
@@ -503,7 +539,7 @@ export default function Settings() {
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Payout Destination</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t.payout_dest}</Text>
               <TouchableOpacity onPress={() => setShowPayoutModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -511,7 +547,7 @@ export default function Settings() {
               <TextInput value={payoutData.account_number} onChangeText={(t) => setPayoutData({...payoutData, account_number: t})} placeholder="ACCOUNT NUMBER" placeholderTextColor={colors.textDim} keyboardType="numeric" style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceElevated, marginTop: 16 }]} />
               <TextInput value={payoutData.account_name} onChangeText={(t) => setPayoutData({...payoutData, account_name: t})} placeholder="FULL ACCOUNT NAME" placeholderTextColor={colors.textDim} style={[styles.modalInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceElevated, marginTop: 16, marginBottom: 32 }]} />
               <BouncyTap onPress={handleSavePayout} style={{ backgroundColor: colors.primary, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: '#000', fontFamily: 'Display-Bold', fontSize: 14 }}>AUTHORIZE PAYOUT UPDATE</Text>
+                <Text style={{ color: '#000', fontFamily: 'Display-Bold', fontSize: 14 }}>{t.authorize_payout_update}</Text>
               </BouncyTap>
             </ScrollView>
           </View>
@@ -524,12 +560,12 @@ export default function Settings() {
           <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={[styles.modalContent, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Alert Preferences</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t.alert_preferences}</Text>
               <TouchableOpacity onPress={() => setShowNotifModal(false)}><X size={24} color={colors.textDim} /></TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <ToggleRow icon={BellRing} label="Push Notifications" desc="Get real-time updates" value={prefs.notifications_enabled} onToggle={() => handleTogglePref('notifications_enabled')} />
-              <ToggleRow icon={Smartphone} label="SMS Backup" desc="Receive SMS for security events" value={prefs.sms_backup_enabled} onToggle={() => handleTogglePref('sms_backup_enabled')} />
+              <ToggleRow icon={BellRing} label={t.push_notifications} desc={t.push_notif_desc} value={prefs.notifications_enabled} onToggle={() => handleTogglePref('notifications_enabled')} />
+              <ToggleRow icon={Smartphone} label={t.sms_backup} desc={t.sms_backup_desc} value={prefs.sms_backup_enabled} onToggle={() => handleTogglePref('sms_backup_enabled')} />
             </ScrollView>
           </View>
         </View>
@@ -556,7 +592,7 @@ const ToggleRow = ({ icon: Icon, label, desc, value, onToggle }: any) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: 160, paddingTop: 60 },
+  scrollContent: { paddingBottom: 160 },
   statusCard: { marginBottom: 40, padding: 24, borderWidth: 1, borderRadius: 32 },
   statusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   avatarBox: { width: 50, height: 50, borderRadius: 25, borderWidth: 1, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

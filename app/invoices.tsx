@@ -68,9 +68,9 @@ export default function InvoicesScreen() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <Lucide.ArrowLeft size={20} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 
@@ -192,7 +192,7 @@ export default function InvoicesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 40 },
-  headerBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginLeft: 24 },
+  headerBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginLeft: 24 },
   summaryCard: { padding: 24, borderRadius: 28, borderWidth: 1, marginBottom: 32 },
   label: { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 },
   value: { fontFamily: 'Display-Bold', fontSize: 32 },

@@ -13,6 +13,7 @@ export function useProfile() {
       if (error) throw error;
       return data;
     },
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }
 
@@ -45,11 +46,11 @@ export function useUpdateProfile() {
       if (!authUser) throw new Error("No active session");
 
       const { error } = await supabase.from("profiles")
-        .update({
+        .upsert({
+          id: authUser.id,
           ...v,
           updated_at: new Date().toISOString()
-        })
-        .eq("id", authUser.id);
+        });
 
       if (error) throw error;
     },
@@ -206,9 +207,9 @@ export function useApplyLoan() {
       // Fetch current interest rate from system settings
       const { data: settings } = await supabase.from("system_settings").select("interest_rate").single();
       const baseRate = Number(settings?.interest_rate || 15);
-      const insuranceRate = v.insurance_enabled ? 2.5 : 0; // 2.5% flat insurance fee
 
-      const rateMultiplier = 1 + ((baseRate + insuranceRate) / 100);
+      // Calculate total repayable balance
+      const rateMultiplier = 1 + (baseRate / 100);
 
       const { data, error } = await supabase.from("loan_applications").insert({
         user_id: user.id,
@@ -217,8 +218,6 @@ export function useApplyLoan() {
         status: 'pending',
         purpose: v.purpose,
         duration_days: v.duration_days,
-        insurance_enabled: v.insurance_enabled || false,
-        insurance_premium: v.insurance_enabled ? Math.round(v.amount * 0.025 * 100) / 100 : 0,
         term_months: 1
       }).select().single();
 
@@ -1222,12 +1221,24 @@ export function useSendMessageToAdmin() {
   const { user } = useCurrentUser();
   return useMutation({
     mutationFn: async (message: string) => {
-      const { error } = await supabase.from("admin_messages").insert({
-        user_id: user!.id,
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase.from("admin_messages").insert({
+        user_id: user.id,
         message,
         is_from_admin: false
-      });
+      }).select().single();
+
       if (error) throw error;
+
+      // Sync with system logs
+      await supabase.from("system_logs").insert({
+        user_id: user.id,
+        action: 'support_message_sent',
+        details: { message_id: data.id }
+      });
+
+      return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-messages"] }),
   });
@@ -1471,6 +1482,7 @@ export function useWeeklyPerformance() {
         isPositive: growth >= 0
       };
     },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 }
 

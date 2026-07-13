@@ -20,14 +20,21 @@ export const encryptWithJava = async (data: string): Promise<string> => {
 };
 
 export const getDeviceSecureID = async (): Promise<string> => {
-    if (Platform.OS !== 'android') {
-        return "SIMULATED-DEVICE-ID";
+    if (Platform.OS === 'android') {
+        try {
+            return await SecurityModule.getDeviceSecureID();
+        } catch (error) {
+            console.error("Java Device ID Error:", error);
+            return "UNKNOWN-ID";
+        }
     }
 
+    // iOS Implementation: Use a persistent vendor ID
     try {
-        return await SecurityModule.getDeviceSecureID();
-    } catch (error) {
-        console.error("Java Device ID Error:", error);
-        return "UNKNOWN-ID";
+        const Application = require('expo-application');
+        const id = await Application.getIosIdForVendorAsync();
+        return id || "IOS-SECURE-VAULT-ID";
+    } catch (e) {
+        return "IOS-INSTITUTIONAL-ID";
     }
 };

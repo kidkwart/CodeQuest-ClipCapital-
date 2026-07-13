@@ -38,6 +38,8 @@ dist-ssr
 *.jks
 *.p12
 *.key
+*.keystore
+android/app/*.keystore
 *.mobileprovision
 *.orig.*
 web-build/

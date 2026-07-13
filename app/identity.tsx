@@ -25,8 +25,10 @@ export default function IdentityScreen() {
     display_name: "",
     username: "",
     business_name: "",
+    business_type: "",
     location: "",
     phone_number: "",
+    bio: "",
   });
 
   useEffect(() => {
@@ -35,8 +37,10 @@ export default function IdentityScreen() {
         display_name: profile.display_name || "",
         username: profile.username || "",
         business_name: profile.business_name || "",
+        business_type: profile.business_type || "",
         location: profile.location || "",
         phone_number: profile.phone_number || "",
+        bio: profile.bio || "",
       });
     }
   }, [profile]);
@@ -44,7 +48,7 @@ export default function IdentityScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Denied', 'Media access is required to update identity photo.');
+      Alert.alert(t.media_permission_denied, t.media_access_required);
       return;
     }
 
@@ -90,7 +94,7 @@ export default function IdentityScreen() {
       await updateProfile.mutateAsync({ avatar_url: publicUrl });
       Vibration.vibrate(10);
     } catch (error: any) {
-      Alert.alert("Upload Failed", error.message);
+      Alert.alert(t.upload_failed, error.message);
     } finally {
       setUploading(false);
     }
@@ -104,7 +108,7 @@ export default function IdentityScreen() {
         { text: t.view_all, onPress: () => router.back() }
       ]);
     } catch (e: any) {
-      Alert.alert("Sync Error", e.message);
+      Alert.alert(t.sync_error, e.message);
     }
   };
 
@@ -115,7 +119,7 @@ export default function IdentityScreen() {
         title: "",
         headerTransparent: true,
         headerLeft: () => (
-          <BouncyTap onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
         ),
@@ -158,35 +162,50 @@ export default function IdentityScreen() {
               <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.credentials}</Text>
               <Card style={[styles.formCard, { backgroundColor: colors.cardBg }]}>
                 <Input
-                  label="Display Name"
+                  label={t.display_name_label}
                   value={formData.display_name}
                   onChangeText={(t) => setFormData({...formData, display_name: t})}
                   containerClassName="mb-6"
                 />
                 <Input
-                  label="Unique Username"
+                  label={t.unique_username_label}
                   value={formData.username}
                   onChangeText={(t) => setFormData({...formData, username: t.toLowerCase().replace(/[^a-z0-9_]/g, '')})}
                   containerClassName="mb-6"
                 />
                 <Input
-                  label="Registered Business"
+                  label={t.registered_business_label}
                   value={formData.business_name}
                   onChangeText={(t) => setFormData({...formData, business_name: t})}
                   containerClassName="mb-6"
                 />
                 <Input
-                  label="Business Location"
-                  value={formData.location}
-                  onChangeText={(t) => setFormData({...formData, location: t})}
-                  placeholder="e.g. Accra, Madina Market"
+                  label={t.business_category_label}
+                  value={formData.business_type}
+                  onChangeText={(t) => setFormData({...formData, business_type: t})}
+                  placeholder={t.business_category_placeholder}
                   containerClassName="mb-6"
                 />
                 <Input
-                  label="Merchant Contact"
+                  label={t.business_location_label}
+                  value={formData.location}
+                  onChangeText={(t) => setFormData({...formData, location: t})}
+                  placeholder={t.business_loc_placeholder}
+                  containerClassName="mb-6"
+                />
+                <Input
+                  label={t.merchant_contact_label}
                   value={formData.phone_number}
                   onChangeText={(t) => setFormData({...formData, phone_number: t})}
                   keyboardType="phone-pad"
+                  containerClassName="mb-6"
+                />
+                <Input
+                  label={t.professional_bio_label}
+                  value={formData.bio}
+                  onChangeText={(t) => setFormData({...formData, bio: t})}
+                  placeholder={t.professional_bio_placeholder}
+                  multiline
                   containerClassName="mb-8"
                 />
 
@@ -212,7 +231,7 @@ export default function IdentityScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 60, paddingTop: 100 },
-  backBtn: { marginLeft: 16, width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  backBtn: { marginLeft: 16, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   avatarSection: { alignItems: 'center', marginBottom: 40 },
   avatarContainer: { width: 120, height: 120, borderRadius: 60, borderWidth: 2, padding: 4, position: 'relative' },
   avatarImage: { width: '100%', height: '100%', borderRadius: 60 },

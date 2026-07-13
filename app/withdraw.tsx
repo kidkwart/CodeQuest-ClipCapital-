@@ -9,10 +9,12 @@ import { ArrowLeft, History, Clock, CheckCircle2, AlertCircle, Landmark, Chevron
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "@/context/language-context";
 
 export default function WithdrawScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
   const { data: profile, isLoading: loadingProfile } = useProfile();
   const { data: withdrawals, isLoading: loadingHistory, refetch } = useMyWithdrawals();
   const request = useRequestWithdrawal();
@@ -86,11 +88,11 @@ export default function WithdrawScreen() {
           refreshControl={<RefreshControl refreshing={loadingHistory || loadingProfile} tintColor={colors.primary} onRefresh={refetch} />}
         >
           <View style={{ paddingHorizontal: 24 }}>
-            <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
                 <ArrowLeft size={20} color={colors.text} />
             </BouncyTap>
 
-            <PremiumHeader title="Withdraw" subtitle="Liquidate Capital" />
+            <PremiumHeader title={t.payout} subtitle="Liquidate Capital" />
 
             {/* Account Card */}
             <LinearGradient
@@ -99,7 +101,7 @@ export default function WithdrawScreen() {
             >
               <View style={{ zIndex: 2 }}>
                 <View style={styles.cardHeader}>
-                  <Text style={[styles.cardLabel, { color: colors.textMuted }]}>PAYOUT DESTINATION</Text>
+                  <Text style={[styles.cardLabel, { color: colors.textMuted }]}>{t.payout_dest.toUpperCase()}</Text>
                   <ShieldCheck size={14} color={colors.primary} />
                 </View>
                 {profile?.account_number ? (
@@ -110,7 +112,7 @@ export default function WithdrawScreen() {
                   </View>
                 ) : (
                   <TouchableOpacity onPress={() => router.push("/settings")} style={[styles.setupBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-                    <Text style={[styles.setupText, { color: colors.text }]}>Setup Payout Account</Text>
+                    <Text style={[styles.setupText, { color: colors.text }]}>{t.not_configured}</Text>
                     <ChevronRight size={14} color={colors.text} />
                   </TouchableOpacity>
                 )}
@@ -121,7 +123,7 @@ export default function WithdrawScreen() {
             {/* Balance Preview */}
             <View style={styles.balanceRow}>
               <View style={styles.balanceInfo}>
-                <Text style={[styles.balanceLabel, { color: colors.textDim }]}>AVAILABLE LIQUIDITY</Text>
+                <Text style={[styles.balanceLabel, { color: colors.textDim }]}>{t.available_liquidity}</Text>
                 <Text style={[styles.balanceValue, { color: colors.text }]}>
                   {isPrivate ? "••••••" : `GH₵ ${balance.toLocaleString()}`}
                 </Text>
@@ -132,17 +134,17 @@ export default function WithdrawScreen() {
                   style={styles.premiumAddBtn}
                 >
                   <Plus size={14} color="#000" strokeWidth={3} />
-                  <Text style={styles.premiumAddBtnText}>DEPOSIT</Text>
+                  <Text style={styles.premiumAddBtnText}>{t.add_funds}</Text>
                 </LinearGradient>
               </BouncyTap>
             </View>
 
             {/* Withdrawal Form */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Withdrawal Protocol</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.support_protocol}</Text>
               <Card style={[styles.formCard, { backgroundColor: colors.cardBg }]}>
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.textMuted }]}>AMOUNT TO LIQUIDATE (GHS)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textMuted }]}>{t.amount.toUpperCase()} (GHS)</Text>
                   <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
                      <TextInput
                         style={[styles.input, { color: colors.text }]}
@@ -160,7 +162,7 @@ export default function WithdrawScreen() {
                 {parsedAmount > 0 && (
                   <View style={[styles.calcBox, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '15' }]}>
                     <View style={styles.calcRow}>
-                      <Text style={[styles.calcLabel, { color: colors.textMuted }]}>Vault Balance After Protocol</Text>
+                      <Text style={[styles.calcLabel, { color: colors.textMuted }]}>{t.remaining_balance}</Text>
                       <Text style={[styles.calcValue, { color: colors.primary }, remainingBalance < 0 && { color: colors.destructive }]}>
                         GH₵ {remainingBalance.toLocaleString()}
                       </Text>
@@ -185,7 +187,7 @@ export default function WithdrawScreen() {
                      {request.isPending ? (
                        <ActivityIndicator color="#000" />
                      ) : (
-                       <Text style={styles.mainConfirmBtnText}>CONFIRM LIQUIDATION</Text>
+                       <Text style={styles.mainConfirmBtnText}>{t.authorize_payout_update}</Text>
                      )}
                    </LinearGradient>
                 </BouncyTap>
@@ -196,13 +198,13 @@ export default function WithdrawScreen() {
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <History size={12} color={colors.primary} />
-                <Text style={[styles.sectionTitle, { color: colors.textDim }]}>Liquidation History</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.history}</Text>
               </View>
 
               {(withdrawals ?? []).length === 0 ? (
                 <View style={styles.emptyState}>
                    <Clock size={40} color={colors.textDim} />
-                   <Text style={[styles.emptyText, { color: colors.text }]}>No liquidation records found.</Text>
+                   <Text style={[styles.emptyText, { color: colors.text }]}>{t.no_transactions}</Text>
                 </View>
               ) : (
                 withdrawals?.map((w) => (
@@ -230,7 +232,7 @@ export default function WithdrawScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 60, paddingBottom: 60 },
-  headerBtn: { height: 48, width: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 1 },
+  headerBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 1 },
   accountCard: { padding: 24, borderRadius: 28, overflow: 'hidden', marginBottom: 32, borderWidth: 1 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   cardLabel: { fontWeight: '900', fontSize: 9, letterSpacing: 3 },

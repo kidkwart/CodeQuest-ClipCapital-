@@ -8,6 +8,7 @@ import { ArrowLeft, ShieldCheck, CheckCircle2, FlaskConical, Zap, ChevronRight }
 import { LinearGradient } from 'expo-linear-gradient';
 import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
+import { useLanguage } from "@/context/language-context";
 
 // Defensive import for Paystack
 let Paystack: any = null;
@@ -20,6 +21,7 @@ try {
 export default function TopUpScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
   const { data: profile, refetch: refetchProfile } = useProfile();
   const deposit = useDeposit();
 
@@ -48,7 +50,7 @@ export default function TopUpScreen() {
       Vibration.vibrate(Platform.OS === 'ios' ? 0 : 50);
     } catch (e: any) {
       console.error("Deposit Error:", e);
-      Alert.alert("Error", "Wallet update failed. Please contact support.");
+      Alert.alert(t.sync_error, "Wallet update failed. Please contact support.");
     } finally {
       setIsProcessing(false);
     }
@@ -90,7 +92,7 @@ export default function TopUpScreen() {
               }
             },
             { text: "SIMULATION (TEST)", onPress: simulateSuccess },
-            { text: "CANCEL", style: "cancel" }
+            { text: t.cancel, style: "cancel" }
         ]
     );
   };
@@ -104,10 +106,10 @@ export default function TopUpScreen() {
         >
           <CheckCircle2 size={48} color="#000" strokeWidth={2.5} />
         </LinearGradient>
-        <Text style={[styles.successTitle, { color: colors.text }]}>Protocol Complete</Text>
-        <Text style={[styles.successSub, { color: colors.textMuted }]}>GH₵ {parseFloat(amount).toLocaleString()} has been added to your vault.</Text>
+        <Text style={[styles.successTitle, { color: colors.text }]}>{t.protocol_complete}</Text>
+        <Text style={[styles.successSub, { color: colors.textDim }]}>GH₵ {parseFloat(amount).toLocaleString()} {t.vault_addition_success}</Text>
         <BouncyTap style={[styles.returnBtn, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]} onPress={() => router.replace("/(tabs)/wallet")}>
-          <Text style={[styles.returnBtnText, { color: colors.text }]}>RETURN TO VAULT</Text>
+          <Text style={[styles.returnBtnText, { color: colors.text }]}>{t.return_to_vault}</Text>
         </BouncyTap>
       </View>
     );
@@ -134,7 +136,7 @@ export default function TopUpScreen() {
       {isProcessing && (
         <View style={[styles.overlay, { backgroundColor: theme === 'dark' ? 'rgba(8,12,10,0.95)' : 'rgba(255,255,255,0.95)' }]}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.overlayText, { color: colors.primary }]}>SYNCING VAULT...</Text>
+          <Text style={[styles.overlayText, { color: colors.primary }]}>{t.syncing_vault}</Text>
         </View>
       )}
 
@@ -148,21 +150,21 @@ export default function TopUpScreen() {
             <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
 
-          <PremiumHeader title="Add Funds" subtitle="Capital Injection" />
+          <PremiumHeader title={t.add_funds} subtitle={t.capital_injection} />
 
           <LinearGradient
             colors={theme === 'dark' ? ['#1e2923', '#0f1714'] : ['#ffffff', '#f1f5f9']}
             style={[styles.vaultCard, { borderColor: colors.border }]}
           >
             <View style={styles.vaultHeader}>
-              <Text style={[styles.smallLabel, { color: colors.textMuted }]}>CURRENT LIQUIDITY</Text>
+              <Text style={[styles.smallLabel, { color: colors.textDim }]}>{t.current_liquidity}</Text>
               <Zap size={14} color={colors.gold} fill={colors.gold} />
             </View>
             <Text style={[styles.balanceValue, { color: colors.text }]}>GH₵ {profile?.wallet_balance?.toLocaleString() || '0.00'}</Text>
           </LinearGradient>
 
           <View style={styles.inputSection}>
-            <Text style={[styles.label, { color: colors.textDim }]}>TRANSACTION AMOUNT (GHS)</Text>
+            <Text style={[styles.label, { color: colors.textDim }]}>{t.trans_amount}</Text>
             <View style={[styles.inputWrapper, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.input, { color: colors.text }]}
@@ -185,14 +187,14 @@ export default function TopUpScreen() {
             style={{ marginTop: 20 }}
           >
             <LinearGradient
-              colors={['#10b981', '#059669']}
+              colors={[colors.primary, "#059669"]}
               style={styles.mainBtnPremium}
             >
               {isProcessing ? (
                 <ActivityIndicator color="#000" />
               ) : (
                 <View style={styles.btnContent}>
-                  <Text style={styles.mainBtnText}>INITIATE TRANSFER</Text>
+                  <Text style={styles.mainBtnText}>{t.initiate_transfer}</Text>
                   <ChevronRight size={18} color="#000" strokeWidth={3} />
                 </View>
               )}
@@ -200,13 +202,13 @@ export default function TopUpScreen() {
           </BouncyTap>
 
           <View style={styles.footerNote}>
-            <ShieldCheck size={14} color="#405045" />
-            <Text style={styles.footerText}>ENCRYPTED TRANSACTION CHANNEL</Text>
+            <ShieldCheck size={14} color={colors.textDim} />
+            <Text style={[styles.footerText, { color: colors.textDim }]}>{t.encrypted_channel}</Text>
           </View>
 
           <View style={styles.devBox}>
-             <FlaskConical size={12} color="#f59e0b" />
-             <Text style={styles.devText}>SIMULATION PROTOCOL AVAILABLE</Text>
+             <FlaskConical size={12} color={colors.gold} />
+             <Text style={[styles.devText, { color: colors.gold }]}>{t.simulation_available}</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -215,32 +217,32 @@ export default function TopUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
+  container: { flex: 1 },
   scrollContent: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 40 },
-  backBtn: { height: 48, width: 48, borderRadius: 16, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  centerContainer: { flex: 1, backgroundColor: '#080c0a', alignItems: 'center', justifyContent: 'center', padding: 40 },
-  successIconCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 32, shadowColor: '#10b981', shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
-  successTitle: { color: 'white', fontFamily: 'Display-Bold', fontSize: 32, marginBottom: 12, textAlign: 'center' },
-  successSub: { color: '#7d8a84', textAlign: 'center', marginBottom: 48, fontSize: 15, lineHeight: 22 },
-  returnBtn: { backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 32, paddingVertical: 18, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  returnBtnText: { color: 'white', fontWeight: '900', fontSize: 11, letterSpacing: 2 },
-  vaultCard: { borderRadius: 28, padding: 24, marginBottom: 40, borderWidth: 1, borderColor: 'rgba(16,185,129,0.1)' },
+  backBtn: { height: 48, width: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 1 },
+  centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  successIconCircle: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 32 },
+  successTitle: { fontFamily: 'Display-Bold', fontSize: 32, marginBottom: 12, textAlign: 'center' },
+  successSub: { textAlign: 'center', marginBottom: 48, fontSize: 15, lineHeight: 22, fontFamily: 'Display-Bold' },
+  returnBtn: { paddingHorizontal: 32, paddingVertical: 18, borderRadius: 20, borderWidth: 1 },
+  returnBtnText: { fontWeight: '900', fontSize: 11, letterSpacing: 2, fontFamily: 'Display-Bold' },
+  vaultCard: { borderRadius: 28, padding: 24, marginBottom: 40, borderWidth: 1 },
   vaultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  smallLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '900', letterSpacing: 3 },
-  balanceValue: { color: 'white', fontFamily: 'Display-Bold', fontSize: 28 },
+  smallLabel: { fontSize: 9, fontWeight: '900', letterSpacing: 3, fontFamily: 'Display-Bold' },
+  balanceValue: { fontFamily: 'Display-Bold', fontSize: 28 },
   inputSection: { marginBottom: 32 },
-  label: { color: 'rgba(252,252,252,0.3)', fontWeight: '900', fontSize: 10, letterSpacing: 3, marginBottom: 16, marginLeft: 4 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 24, height: 72 },
-  input: { flex: 1, fontFamily: 'Display-Bold', color: 'white', fontSize: 28, padding: 0 },
-  currencyBadge: { backgroundColor: 'rgba(16,185,129,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
-  currencyText: { color: '#10b981', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  mainBtnPremium: { height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#10b981', shadowOpacity: 0.2, shadowRadius: 15, elevation: 8 },
+  label: { fontWeight: '900', fontSize: 10, letterSpacing: 3, marginBottom: 16, marginLeft: 4, fontFamily: 'Display-Bold' },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderRadius: 24, borderWidth: 1, paddingHorizontal: 24, height: 72 },
+  input: { flex: 1, fontFamily: 'Display-Bold', fontSize: 28, padding: 0 },
+  currencyBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  currencyText: { fontSize: 9, fontWeight: '900', letterSpacing: 1, fontFamily: 'Display-Bold' },
+  mainBtnPremium: { height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   btnContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  mainBtnText: { color: '#000', fontWeight: '900', fontSize: 13, letterSpacing: 1.5 },
+  mainBtnText: { color: '#000', fontWeight: '900', fontSize: 13, letterSpacing: 1.5, fontFamily: 'Display-Bold' },
   footerNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 40, opacity: 0.4 },
-  footerText: { color: '#7d8a84', fontSize: 8, fontWeight: 'bold', letterSpacing: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,12,10,0.95)', zIndex: 1000, alignItems: 'center', justifyContent: 'center' },
-  overlayText: { color: '#10b981', marginTop: 24, fontWeight: '900', letterSpacing: 3, fontSize: 10 },
+  footerText: { fontSize: 8, fontWeight: 'bold', letterSpacing: 1, fontFamily: 'Display-Bold' },
+  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 1000, alignItems: 'center', justifyContent: 'center' },
+  overlayText: { marginTop: 24, fontWeight: '900', letterSpacing: 3, fontSize: 10, fontFamily: 'Display-Bold' },
   devBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, opacity: 0.3 },
-  devText: { color: '#f59e0b', fontSize: 8, fontWeight: 'bold', letterSpacing: 1 }
+  devText: { fontSize: 8, fontWeight: 'bold', letterSpacing: 1, fontFamily: 'Display-Bold' }
 });

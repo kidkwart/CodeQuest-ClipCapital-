@@ -4,6 +4,7 @@ import { Stack, useRouter } from "expo-router";
 import * as Lucide from "lucide-react-native";
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTheme } from "@/context/theme-context";
+import { BouncyTap } from "@/components/native/bouncy-tap";
 
 const { width } = Dimensions.get('window');
 
@@ -71,9 +72,9 @@ export default function ScanScreen() {
         headerShown: true, title: "Scan QR", headerTransparent: true,
         headerTintColor: '#fff',
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+          <BouncyTap onPress={() => router.back()} style={styles.headerBtn}>
             <Lucide.ArrowLeft size={20} color="#fff" />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 
@@ -107,7 +108,7 @@ export default function ScanScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', marginLeft: 20 },
+  headerBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', marginLeft: 20 },
   overlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,

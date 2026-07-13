@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Keyboard, Switch, RefreshControl, Modal, TouchableWithoutFeedback, Dimensions } from "react-native";
 import { useProfile, useLoans, useApplyLoan, useClipScore, useRecordRepayment, useSystemSettings } from "@/lib/app-queries";
 import { Card } from "@/components/native/card";
@@ -11,17 +11,78 @@ import { Paystack } from 'react-native-paystack-webview';
 import { useTheme } from "@/context/theme-context";
 import { useLanguage } from "@/context/language-context";
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KenteBackground } from "@/components/native/effects/kente-pattern";
-import Animated, { FadeInDown, FadeInRight, FadeIn } from "react-native-reanimated";
+import { AnimatedNumber } from "@/components/native/animated-number";
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  FadeIn,
+  Layout,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  Easing,
+  withSpring,
+  interpolate,
+  Extrapolate
+} from "react-native-reanimated";
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+
+// --- Ambient Credit Particle ---
+function LoanParticle({ delay = 0 }: { delay: number }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(0.5);
+
+  const startX = useMemo(() => (Math.random() * width) - width / 2, []);
+  const startY = useMemo(() => (Math.random() * 400) - 200, []);
+
+  useEffect(() => {
+    opacity.value = withDelay(delay, withRepeat(
+      withSequence(withTiming(0.1, { duration: 2000 }), withTiming(0, { duration: 2000 })),
+      -1, false
+    ));
+    translateY.value = withDelay(delay, withRepeat(
+      withTiming(-100, { duration: 10000, easing: Easing.linear }),
+      -1, false
+    ));
+    scale.value = withDelay(delay, withRepeat(
+      withSequence(withTiming(1, { duration: 2000 }), withTiming(0.5, { duration: 2000 })),
+      -1, true
+    ));
+  }, []);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: startY,
+    marginLeft: startX,
+  }));
+
+  return (
+    <Animated.View style={style}>
+      <TrendingUp size={12} color="#10b981" opacity={0.4} />
+    </Animated.View>
+  );
+}
 
 export default function LoansScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors, theme } = useTheme();
   const { t } = useLanguage();
   const { data: profile } = useProfile();
-  const { data: loans, isLoading: isLoansLoading, refetch } = useLoans();
+  const loansQuery = useLoans();
+  const loans = loansQuery.data;
   const { settings } = useSystemSettings();
   const { score } = useClipScore();
   const applyLoan = useApplyLoan();
@@ -43,6 +104,43 @@ export default function LoansScreen() {
   const isPrivate = profile?.privacy_mode_enabled ?? false;
   const isDark = theme === 'dark';
   const PAYSTACK_KEY = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY || "pk_test_824b3afe0f0c6cdd1bc0e053adb97f56499796a3";
+
+  // Active Card Pulse
+  const cardScale = useSharedValue(1);
+  const rotateX = useSharedValue(0);
+  const rotateY = useSharedValue(0);
+  const progressWidth = useSharedValue(0);
+
+  useEffect(() => {
+    cardScale.value = withRepeat(
+      withSequence(withTiming(1.01, { duration: 2500, easing: Easing.inOut(Easing.sin) }), withTiming(1, { duration: 2500 })),
+      -1, true
+    );
+    progressWidth.value = withDelay(500, withSpring(100, { damping: 12 }));
+  }, []);
+
+  const gesture = Gesture.Pan()
+    .onUpdate((event) => {
+      rotateX.value = interpolate(event.y, [-height / 2, height / 2], [5, -5], Extrapolate.CLAMP);
+      rotateY.value = interpolate(event.x, [-width / 2, width / 2], [-5, 5], Extrapolate.CLAMP);
+    })
+    .onEnd(() => {
+      rotateX.value = withSpring(0);
+      rotateY.value = withSpring(0);
+    });
+
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { perspective: 1000 },
+      { rotateX: `${rotateX.value}deg` },
+      { rotateY: `${rotateY.value}deg` },
+      { scale: cardScale.value }
+    ]
+  }));
+
+  const animatedProgressStyle = useAnimatedStyle(() => ({
+    width: `${progressWidth.value}%`
+  }));
 
   // 1. Fixed Multiplier (10x Score)
   const currentScore = score || 100;
@@ -66,9 +164,8 @@ export default function LoansScreen() {
   };
 
   const parsedAmount = parseFloat(amount.replace(/[^0-9.]/g, '')) || 0;
-  const insuranceAmount = insuranceEnabled ? parsedAmount * 0.025 : 0;
   const interestAmount = parsedAmount * interestRate;
-  const totalRepayable = parsedAmount + interestAmount + insuranceAmount;
+  const totalRepayable = parsedAmount + interestAmount;
 
   const handleApply = async () => {
     setStatusMessage({ text: "", type: "" });
@@ -104,17 +201,15 @@ export default function LoansScreen() {
       await applyLoan.mutateAsync({
         amount: parsedAmount,
         duration_days: 30,
-        purpose: purpose.trim(),
-        insurance_enabled: insuranceEnabled
+        purpose: purpose.trim()
       });
 
       setStatusMessage({ text: "Success! Application sent.", type: "success" });
       setAmount("");
       setPurpose("");
       setAgreed(false);
-      setInsuranceEnabled(false);
       Alert.alert("Success", "Credit request sent! It will be reviewed shortly.");
-      refetch();
+      loansQuery.refetch();
     } catch (e: any) {
       setStatusMessage({ text: e.message || "Failed to submit.", type: "error" });
     } finally {
@@ -139,7 +234,7 @@ export default function LoansScreen() {
       Alert.alert("Success! 🎉", "Your loan balance has been updated.");
       setShowRepayModal(false);
       setRepayAmount("");
-      refetch();
+      loansQuery.refetch();
     } catch (e: any) {
       Alert.alert("Error", e.message || "Repayment record failed.");
     } finally {
@@ -201,7 +296,7 @@ export default function LoansScreen() {
     }
   };
 
-  if (isLoansLoading) {
+  if (loansQuery.isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -213,6 +308,13 @@ export default function LoansScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KenteBackground />
       <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Background Particles */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <LoanParticle key={i} delay={i * 800} />
+        ))}
+      </View>
 
       {/* Paystack Layer */}
       {showPaystack && Platform.OS !== 'web' && (
@@ -235,13 +337,13 @@ export default function LoansScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={isLoansLoading} onRefresh={refetch} tintColor={colors.primary} progressViewOffset={Platform.OS === 'ios' ? 110 : 0} />}
+          refreshControl={<RefreshControl refreshing={loansQuery.isRefetching} onRefresh={() => loansQuery.refetch()} tintColor={colors.primary} progressViewOffset={insets.top + 20} />}
         >
           <View style={{ paddingHorizontal: 20 }}>
 
-            <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
+            <Animated.View entering={FadeInDown.delay(100).duration(800)} style={styles.header}>
               <View>
                 <View style={styles.supHeaderRow}>
                   <View style={[styles.statusDot, { backgroundColor: colors.primary }]} />
@@ -251,66 +353,88 @@ export default function LoansScreen() {
               </View>
             </Animated.View>
 
-            {/* ACTIVE LOAN CARD */}
-            {currentActiveLoan ? (
-               <Animated.View entering={FadeInDown.delay(200)}>
-                  <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={[styles.activeLoanCard, { borderColor: colors.primary + '40' }]}>
-                    <View style={styles.activeHeader}>
-                       <View style={styles.activeLabelRow}>
-                          <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
-                          <Text style={[styles.activeTag, { color: colors.primary }]}>{t.active_loan}</Text>
-                       </View>
-                       <Text style={[styles.remainingDays, { color: colors.gold }]}>
-                          {getRemainingDays(currentActiveLoan.disbursed_at, currentActiveLoan.duration_days || 30)} {t.days_left}
-                       </Text>
-                    </View>
+            {/* ACTIVE LOAN CARD / LIMIT CARD with 3D Tilt */}
+            <GestureDetector gesture={gesture}>
+               <Animated.View entering={FadeInDown.delay(200)} style={animatedCardStyle}>
+                  {currentActiveLoan ? (
+                     <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={[styles.activeLoanCard, { borderColor: colors.primary + '40' }]}>
+                        <View style={styles.activeHeader}>
+                           <View style={styles.activeLabelRow}>
+                              <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
+                              <Text style={[styles.activeTag, { color: colors.primary }]}>{t.active_loan_facility}</Text>
+                           </View>
+                           <Text style={[styles.remainingDays, { color: colors.gold }]}>
+                              {getRemainingDays(currentActiveLoan.disbursed_at, currentActiveLoan.duration_days || 30)} {t.days_left}
+                           </Text>
+                        </View>
 
-                    <Text style={[styles.activeAmount, { color: colors.text }]}>
-                       {isPrivate ? "••••••" : `GH₵ ${(currentActiveLoan.balance || 0).toLocaleString()}`}
-                    </Text>
-                    <Text style={[styles.activeSub, { color: colors.textDim }]}>{t.remaining_balance}</Text>
+                        <View style={{ height: 50, justifyContent: 'center' }}>
+                            {isPrivate ? (
+                                <Text style={[styles.activeAmount, { color: colors.text, letterSpacing: 8 }]}>••••••</Text>
+                            ) : (
+                                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                                    <Text style={{ color: colors.textDim, fontSize: 18, fontFamily: 'Display-Bold', marginRight: 8 }}>GH₵</Text>
+                                    <AnimatedNumber
+                                        value={currentActiveLoan.balance || 0}
+                                        style={[styles.activeAmount, { color: colors.text, marginBottom: 0 }]}
+                                    />
+                                </View>
+                            )}
+                        </View>
+                        <Text style={[styles.activeSub, { color: colors.textDim }]}>{t.remaining_balance}</Text>
 
-                    <View style={[styles.activeDetails, { borderTopColor: colors.border }]}>
-                       <View style={styles.detailItem}>
-                          <Clock size={12} color={colors.textDim} />
-                          <Text style={[styles.detailText, { color: colors.textDim }]}>{t.due}: {new Date(new Date(currentActiveLoan.disbursed_at || Date.now()).getTime() + (currentActiveLoan.duration_days || 30) * 86400000).toLocaleDateString('en-GB')}</Text>
-                       </View>
-                       <BouncyTap onPress={() => setShowRepayModal(true)}>
-                          <LinearGradient
-                            colors={[colors.primary, "#059669"]}
-                            style={styles.premiumRepayBtn}
-                          >
-                             <Text style={styles.repayBtnText}>{t.repay_now}</Text>
-                          </LinearGradient>
-                       </BouncyTap>
-                    </View>
-                  </BlurView>
+                        <View style={[styles.activeDetails, { borderTopColor: colors.border }]}>
+                           <View style={styles.detailItem}>
+                              <Clock size={12} color={colors.textDim} />
+                              <Text style={[styles.detailText, { color: colors.textDim }]}>{t.due}: {new Date(new Date(currentActiveLoan.disbursed_at || Date.now()).getTime() + (currentActiveLoan.duration_days || 30) * 86400000).toLocaleDateString('en-GB')}</Text>
+                           </View>
+                           <BouncyTap onPress={() => setShowRepayModal(true)}>
+                              <LinearGradient
+                                colors={[colors.primary, "#059669"]}
+                                style={styles.premiumRepayBtn}
+                              >
+                                 <Text style={styles.repayBtnText}>{t.repay_now}</Text>
+                              </LinearGradient>
+                           </BouncyTap>
+                        </View>
+                     </BlurView>
+                  ) : (
+                     <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={[styles.limitCard, { borderColor: colors.border }]}>
+                        <View style={styles.limitHeader}>
+                        <View>
+                           <Text style={[styles.limitLabel, { color: colors.textDim }]}>{t.available_credit}</Text>
+                           <View style={{ height: 44, justifyContent: 'center' }}>
+                                {isPrivate ? (
+                                    <Text style={[styles.limitAmount, { color: colors.text, letterSpacing: 8 }]}>••••••</Text>
+                                ) : (
+                                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                                        <Text style={{ color: colors.textDim, fontSize: 16, fontFamily: 'Display-Bold', marginRight: 6 }}>GH₵</Text>
+                                        <AnimatedNumber
+                                            value={maxLoan}
+                                            style={[styles.limitAmount, { color: colors.text, marginBottom: 0 }]}
+                                        />
+                                    </View>
+                                )}
+                           </View>
+                        </View>
+                        <View style={[styles.scoreBadge, { backgroundColor: colors.gold + '15' }]}>
+                           <Zap size={12} color={colors.gold} fill={colors.gold} />
+                           <Text style={[styles.scoreText, { color: colors.gold }]}>{currentScore} {t.score}</Text>
+                        </View>
+                        </View>
+                        <View style={[styles.progressContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
+                           <Animated.View style={[styles.progressBar, { backgroundColor: colors.primary }, animatedProgressStyle]} />
+                        </View>
+                        <Text style={[styles.limitHint, { color: colors.textDim }]}>{t.boost_clipscore_hint}</Text>
+                     </BlurView>
+                  )}
                </Animated.View>
-            ) : (
-              <Animated.View entering={FadeInDown.delay(200)}>
-                <BlurView intensity={isDark ? 30 : 60} tint={isDark ? "dark" : "light"} style={[styles.limitCard, { borderColor: colors.border }]}>
-                  <View style={styles.limitHeader}>
-                    <View>
-                      <Text style={[styles.limitLabel, { color: colors.textDim }]}>{t.available_credit}</Text>
-                      <Text style={[styles.limitAmount, { color: colors.text }]}>{isPrivate ? "••••••" : `GH₵ ${maxLoan.toLocaleString()}`}</Text>
-                    </View>
-                    <View style={[styles.scoreBadge, { backgroundColor: colors.gold + '15' }]}>
-                      <Zap size={12} color={colors.gold} fill={colors.gold} />
-                      <Text style={[styles.scoreText, { color: colors.gold }]}>{currentScore} {t.score}</Text>
-                    </View>
-                  </View>
-                  <View style={[styles.progressContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
-                    <View style={[styles.progressBar, { backgroundColor: colors.primary, width: '100%' }]} />
-                  </View>
-                  <Text style={[styles.limitHint, { color: colors.textDim }]}>Boost your ClipScore by logging sales and paying on time.</Text>
-                </BlurView>
-              </Animated.View>
-            )}
+            </GestureDetector>
 
             {/* Application Section */}
             {!currentActiveLoan && (
-               <View style={styles.section}>
-               <Animated.Text entering={FadeInRight.delay(300)} style={[styles.sectionTitle, { color: colors.textDim }]}>{t.request_credit}</Animated.Text>
+               <Animated.View entering={FadeInDown.delay(300)} style={styles.section}>
+               <Animated.Text entering={FadeInRight.delay(400)} style={[styles.sectionTitle, { color: colors.textDim }]}>{t.request_credit}</Animated.Text>
                <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.formCard, { borderColor: colors.border }]}>
                  <View style={styles.inputGroup}>
                    <Text style={[styles.inputLabel, { color: colors.textDim }]}>{t.amount} (GH₵)</Text>
@@ -327,7 +451,7 @@ export default function LoansScreen() {
                    <Text style={[styles.inputLabel, { color: colors.textDim }]}>{t.purpose}</Text>
                    <TextInput
                     style={[styles.input, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', color: colors.text, borderColor: colors.border, fontSize: 16 }]}
-                    placeholder="e.g. New Equipment"
+                    placeholder={t.business_loc_placeholder}
                     placeholderTextColor={colors.textDim}
                     value={purpose}
                     onChangeText={setPurpose}
@@ -335,31 +459,17 @@ export default function LoansScreen() {
                  </View>
 
                  {parsedAmount > 0 && (
-                   <View style={[styles.estimateBox, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '15' }]}>
+                   <Animated.View entering={FadeIn.duration(400)} style={[styles.estimateBox, { backgroundColor: colors.primary + '08', borderColor: colors.primary + '15' }]}>
                      <View style={styles.estimateRow}>
                        <Text style={[styles.estimateLabel, { color: colors.textDim }]}>{t.interest} ({rawRate}%)</Text>
                        <Text style={[styles.estimateValue, { color: colors.text }]}>+ GH₵ {interestAmount.toLocaleString()}</Text>
                      </View>
-                     {insuranceEnabled && (
-                       <View style={styles.estimateRow}>
-                        <Text style={[styles.estimateLabel, { color: colors.textDim }]}>{t.insurance} (2.5%)</Text>
-                        <Text style={[styles.estimateValue, { color: colors.text }]}>+ GH₵ {insuranceAmount.toLocaleString()}</Text>
-                      </View>
-                     )}
                      <View style={styles.estimateRow}>
                        <Text style={[styles.estimateLabel, { color: colors.textDim }]}>{t.total_repay}</Text>
                        <Text style={[styles.totalValue, { color: colors.primary }]}>GH₵ {totalRepayable.toLocaleString()}</Text>
                      </View>
-                   </View>
+                   </Animated.View>
                  )}
-
-                 <View style={[styles.termsRow, { marginBottom: 12 }]}>
-                    <Switch value={insuranceEnabled} onValueChange={setInsuranceEnabled} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
-                    <View style={{ flex: 1, marginLeft: 8 }}>
-                        <Text style={[styles.termsText, { color: colors.text, fontFamily: 'Display-Bold', fontSize: 12 }]}>{t.enable_protection}</Text>
-                        <Text style={[styles.termsText, { color: colors.textDim, fontSize: 10 }]}>Insure your loan against business disruptions.</Text>
-                    </View>
-                 </View>
 
                  <View style={styles.termsRow}>
                     <Switch value={agreed} onValueChange={setAgreed} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
@@ -367,9 +477,9 @@ export default function LoansScreen() {
                  </View>
 
                  {statusMessage.text !== "" && (
-                   <View style={[styles.statusBox, { borderColor: statusMessage.type === 'success' ? colors.primary + '40' : colors.destructive + '40', backgroundColor: (statusMessage.type === 'success' ? colors.primary : colors.destructive) + '10' }]}>
+                   <Animated.View entering={FadeIn.duration(300)} style={[styles.statusBox, { borderColor: statusMessage.type === 'success' ? colors.primary + '40' : colors.destructive + '40', backgroundColor: (statusMessage.type === 'success' ? colors.primary : colors.destructive) + '10' }]}>
                      <Text style={[styles.statusText, { color: statusMessage.type === 'success' ? colors.primary : colors.destructive }]}>{statusMessage.text.toUpperCase()}</Text>
-                   </View>
+                   </Animated.View>
                  )}
 
                 <BouncyTap
@@ -392,7 +502,7 @@ export default function LoansScreen() {
                    </LinearGradient>
                 </BouncyTap>
                </BlurView>
-             </View>
+             </Animated.View>
             )}
 
             {/* History */}
@@ -401,13 +511,19 @@ export default function LoansScreen() {
                 <Animated.Text entering={FadeInRight.delay(400)} style={[styles.sectionTitle, { color: colors.textDim }]}>{t.credit_history}</Animated.Text>
               </View>
               {(!loans || loans.length === 0) ? (
-                <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.emptyCard, { borderColor: colors.border }]}>
-                   <History size={40} color={colors.textDim} />
-                   <Text style={[styles.emptyText, { color: colors.textDim }]}>{t.no_history}</Text>
-                </BlurView>
+                <Animated.View entering={FadeInDown.delay(500)}>
+                  <BlurView intensity={isDark ? 20 : 40} tint={isDark ? "dark" : "light"} style={[styles.emptyCard, { borderColor: colors.border }]}>
+                    <History size={40} color={colors.textDim} />
+                    <Text style={[styles.emptyText, { color: colors.textDim }]}>{t.no_history}</Text>
+                  </BlurView>
+                </Animated.View>
               ) : (
                 loans.map((loan, idx) => (
-                  <Animated.View key={loan.id} entering={FadeInDown.delay(500 + (idx * 50))}>
+                  <Animated.View
+                    key={loan.id}
+                    entering={FadeInDown.delay(500 + (idx * 50))}
+                    layout={Layout.springify().damping(15)}
+                  >
                       <BlurView intensity={isDark ? 15 : 30} tint={isDark ? "dark" : "light"} style={[styles.activityItem, { borderColor: colors.border, marginBottom: 12 }]}>
                         <View style={[styles.activityIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)' }]}>
                             <TrendingUp size={16} color={colors.primary} />
@@ -460,12 +576,12 @@ export default function LoansScreen() {
                     style={{ marginTop: 12 }}
                     onPress={() => setRepayAmount(currentActiveLoan?.balance?.toString() || "0")}
                   >
-                    <Text style={{ color: colors.primary, fontSize: 10, fontFamily: 'Display-Bold' }}>FULL BALANCE: GH₵ {currentActiveLoan?.balance?.toLocaleString()}</Text>
+                    <Text style={{ color: colors.primary, fontSize: 10, fontFamily: 'Display-Bold' }}>{t.repay_full_balance} {currentActiveLoan?.balance?.toLocaleString()}</Text>
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.inputLabel, { color: colors.textDim }]}>FUNDING SOURCE</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textDim }]}>{t.funding_source}</Text>
                   <View style={{ gap: 12 }}>
                     <TouchableOpacity
                       onPress={() => setRepayMethod('wallet')}
@@ -474,7 +590,7 @@ export default function LoansScreen() {
                       <Wallet size={18} color={repayMethod === 'wallet' ? colors.primary : colors.textDim} />
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.methodTitle, { color: colors.text, fontFamily: 'Display-Bold' }]}>{t.wallet.toUpperCase()}</Text>
-                        <Text style={[styles.methodSub, { color: colors.textDim }]}>AVAILABLE: GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
+                        <Text style={[styles.methodSub, { color: colors.textDim }]}>{t.available_liquidity}: GH₵ {profile?.wallet_balance?.toLocaleString()}</Text>
                       </View>
                       {repayMethod === 'wallet' && <CheckCircle2 size={16} color={colors.primary} />}
                     </TouchableOpacity>
@@ -509,7 +625,7 @@ export default function LoansScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: 140 },
+  scrollContent: { paddingBottom: 140 },
   header: { marginBottom: 32, paddingHorizontal: 4, marginTop: 10 },
   supHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   statusDot: { width: 5, height: 5, borderRadius: 2.5 },

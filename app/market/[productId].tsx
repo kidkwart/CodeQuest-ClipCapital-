@@ -13,6 +13,8 @@ import { FALLBACK_PRODUCTS } from './index';
 
 const { width } = Dimensions.get('window');
 
+import { BouncyTap } from '@/components/native/bouncy-tap';
+
 export default function ProductDetails() {
   const { productId } = useLocalSearchParams();
   const router = useRouter();
@@ -58,16 +60,16 @@ export default function ProductDetails() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <ArrowLeft size={18} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         ),
         headerRight: () => (
           <View style={{ flexDirection: 'row', gap: 10, marginRight: 16 }}>
-            <TouchableOpacity onPress={() => router.push("/market/orders")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <BouncyTap onPress={() => router.push("/market/orders")} style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
               <ClipboardList size={18} color={colors.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push("/market/cart")} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            </BouncyTap>
+            <BouncyTap onPress={() => router.push("/market/cart")} style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
               <View>
                  <ShoppingCart size={18} color={colors.text} />
                  {totalItems > 0 && (
@@ -76,7 +78,7 @@ export default function ProductDetails() {
                    </View>
                  )}
               </View>
-            </TouchableOpacity>
+            </BouncyTap>
           </View>
         )
       }} />
@@ -183,9 +185,9 @@ export default function ProductDetails() {
 
 const styles = StyleSheet.create({
   headerBtn: {
-    height: 40,
-    width: 40,
-    borderRadius: 12,
+    height: 44,
+    width: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

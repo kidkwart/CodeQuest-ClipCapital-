@@ -14,7 +14,8 @@ import { AnimatedNumber } from "@/components/native/animated-number";
 
 export default function VaultScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
   const { data: goals, isLoading, refetch } = useSavingsGoals();
   const { data: profile } = useProfile();
   const createGoal = useCreateSavingsGoal();
@@ -58,9 +59,9 @@ export default function VaultScreen() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={[styles.backButton, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.backButton, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <Lucide.ArrowLeft size={20} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 
@@ -166,7 +167,8 @@ export default function VaultScreen() {
 }
 
 function AnimatedGoalCard({ goal, index, onDeposit }: { goal: any, index: number, onDeposit: () => void }) {
-    const { colors } = useTheme();
+    const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
     const progressVal = (goal.current_amount / goal.target_amount);
     const animatedWidth = useSharedValue(0);
 
@@ -207,7 +209,7 @@ function AnimatedGoalCard({ goal, index, onDeposit }: { goal: any, index: number
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 40 },
-  backButton: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", marginLeft: 24, marginBottom: 12, borderWidth: 1 },
+  backButton: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginLeft: 24, marginBottom: 12, borderWidth: 1 },
   balanceCard: { padding: 24, marginBottom: 32, borderRadius: 24, borderWidth: 1 },
   balanceLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 8 },
   balanceValue: { fontFamily: 'Display-Bold', fontSize: 32 },

@@ -67,6 +67,7 @@ export const FALLBACK_PRODUCTS = [
 export default function Marketplace() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const { t } = useLanguage();
   const { data: dbProducts, isLoading, refetch } = useProducts();
   const { data: profile } = useProfile();
   const cart = useCart();
@@ -133,13 +134,13 @@ export default function Marketplace() {
           <View style={styles.headerSection}>
             <Text style={[styles.supTitle, { color: colors.primary }]}>CLIPCAPITAL PREMIUM</Text>
             <View style={styles.titleRow}>
-               <Text style={[styles.mainTitle, { color: colors.text }]}>Marketplace</Text>
+               <Text style={[styles.mainTitle, { color: colors.text }]}>{t.marketplace}</Text>
                <View style={[styles.verifiedTag, { backgroundColor: colors.primary }]}>
                   <Star size={10} color="#000" fill="#000" />
-                  <Text style={styles.verifiedText}>OFFICIAL</Text>
+                  <Text style={styles.verifiedText}>{t.official}</Text>
                </View>
             </View>
-            <Text style={[styles.subTitle, { color: colors.textMuted }]}>Authorized professional equipment supply chain.</Text>
+            <Text style={[styles.subTitle, { color: colors.textMuted }]}>{t.market_subtitle}</Text>
           </View>
 
           {/* Functional Search Bar */}
@@ -147,7 +148,7 @@ export default function Marketplace() {
              <Search size={18} color={searchQuery ? colors.primary : colors.textDim} />
              <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search for tools, furniture..."
+                placeholder={t.search_placeholder}
                 placeholderTextColor={colors.textDim}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -171,13 +172,13 @@ export default function Marketplace() {
                <View style={styles.bannerPattern} />
                <View style={styles.bannerContent}>
                   <View style={styles.bannerHeader}>
-                     <Text style={styles.bannerLabel}>OXYGEN CREDIT LINE</Text>
+                     <Text style={styles.bannerLabel}>{t.credit_line}</Text>
                      <Zap size={16} color="white" fill="white" />
                   </View>
-                  <Text style={styles.bannerMain}>Scale Your Business</Text>
-                  <Text style={styles.bannerDesc}>Use your ClipScore to unlock interest-free equipment financing. Pay as you earn.</Text>
+                  <Text style={styles.bannerMain}>{t.scale_business}</Text>
+                  <Text style={styles.bannerDesc}>{t.credit_banner_desc}</Text>
                   <View style={styles.bannerFooter}>
-                     <Text style={styles.bannerLink}>VIEW LIMIT</Text>
+                     <Text style={styles.bannerLink}>{t.view_limit}</Text>
                      <ChevronRight size={14} color="white" />
                   </View>
                </View>
@@ -185,19 +186,19 @@ export default function Marketplace() {
           </BouncyTap>
 
           <View style={styles.sectionDivider}>
-             <Text style={[styles.sectionTitle, { color: colors.textDim }]}>CURATED FOR MASTER BARBERS</Text>
+             <Text style={[styles.sectionTitle, { color: colors.textDim }]}>{t.curated_for}</Text>
              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
           {isLoading && (!dbProducts || dbProducts.length === 0) ? (
              <View style={styles.loader}>
                 <ActivityIndicator color={colors.primary} />
-                <Text style={[styles.loaderText, { color: colors.primary }]}>SYNCING INVENTORY...</Text>
+                <Text style={[styles.loaderText, { color: colors.primary }]}>{t.syncing_inventory}</Text>
              </View>
           ) : filteredProducts.length === 0 ? (
              <View style={styles.emptyState}>
                 <Search size={40} color={colors.surfaceElevated} />
-                <Text style={[styles.emptyText, { color: colors.text }]}>No matches found for "{searchQuery}"</Text>
+                <Text style={[styles.emptyText, { color: colors.text }]}>{t.no_matches} "{searchQuery}"</Text>
              </View>
           ) : (
             <View style={styles.grid}>
@@ -241,11 +242,11 @@ export default function Marketplace() {
                             {isJustAdded ? (
                               <Check size={18} color={colors.primary} />
                             ) : qty > 0 ? (
-                              <Text style={[styles.buyBtnTextActive, { color: colors.primary }]}>IN CART ({qty})</Text>
+                              <Text style={[styles.buyBtnTextActive, { color: colors.primary }]}>{t.in_cart} ({qty})</Text>
                             ) : (
                               <View style={styles.btnRow}>
                                 <ShoppingBag size={14} color="#000" strokeWidth={2.5} />
-                                <Text style={[styles.buyBtnText, { color: '#0d1310' }]}>BUY NOW</Text>
+                                <Text style={[styles.buyBtnText, { color: '#0d1310' }]}>{t.buy_now}</Text>
                               </View>
                             )}
                           </TouchableOpacity>

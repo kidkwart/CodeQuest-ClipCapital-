@@ -8,6 +8,7 @@ import { Button } from "@/components/native/button";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, Trash2, ShoppingBag, Wallet, CreditCard, Banknote, CheckCircle2, AlertCircle, Plus, Minus, ArrowRight, ArrowLeftCircle, Sparkles, X } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
+import { BouncyTap } from "@/components/native/bouncy-tap";
 import { useTheme } from "@/context/theme-context";
 
 // Safer conditional import for Paystack
@@ -16,6 +17,7 @@ const PaystackComponent = Platform.OS !== 'web' ? require('react-native-paystack
 export default function CartScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
   const cart = useCart();
   const place = usePlaceOrder();
   const { data: profile } = useProfile();
@@ -219,9 +221,9 @@ export default function CartScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            <BouncyTap onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
               <ArrowLeft size={20} color={colors.text} />
-            </TouchableOpacity>
+            </BouncyTap>
             <TouchableOpacity onPress={handleClearCart} style={styles.clearBtn}>
                <Trash2 size={18} color={colors.destructive} />
                <Text style={[styles.clearText, { color: colors.destructive }]}>CLEAR</Text>
@@ -315,7 +317,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingTop: 60, paddingHorizontal: 24, paddingBottom: 100 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  backBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  backBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   clearBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
   clearText: { fontWeight: '900', fontSize: 10, letterSpacing: 1 },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },

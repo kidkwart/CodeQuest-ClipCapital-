@@ -18,7 +18,7 @@ import {
   Image,
 } from "react-native";
 import { BlurView } from 'expo-blur';
-import { market, supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { useRouter } from "expo-router";
 import * as Linking from 'expo-linking';
 import {

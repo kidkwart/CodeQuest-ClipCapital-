@@ -11,6 +11,7 @@ import { CreditCapacityGauge } from "@/components/native/credit-capacity-gauge";
 import { useTheme } from "@/context/theme-context";
 import { useLanguage } from "@/context/language-context";
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KenteBackground } from "@/components/native/effects/kente-pattern";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, FadeInRight, Layout, FadeIn, useSharedValue, useAnimatedStyle, withSequence, withTiming, interpolateColor } from "react-native-reanimated";
@@ -21,9 +22,11 @@ const { width } = Dimensions.get("window");
 
 export default function Dashboard() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { colors, theme } = useTheme();
   const { t } = useLanguage();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  const profileQuery = useProfile();
+  const profile = profileQuery.data;
   const roles = useMyRoles();
   const { user } = useCurrentUser();
   const { score } = useClipScore();
@@ -36,14 +39,9 @@ export default function Dashboard() {
   const [isLogged, setIsLogged] = useState(false);
   const [showScoreAudit, setShowScoreAudit] = useState(false);
 
-<<<<<<< HEAD
-  const isAdmin = roles.data?.includes("admin");
-=======
+  const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
   // Animation for success feedback
   const successPulse = useSharedValue(0);
-
-  const isAdmin = roles.data?.includes("admin") || user?.email === "bernardyawkwarteng8@gmail.com";
->>>>>>> 132121a (Enhancement: Added Java Native Module, Multi-language support (6 languages), and UI overhaul for Susu and Settings pages)
   const [localPrivate, setLocalPrivate] = useState<boolean | null>(null);
   const isPrivate = localPrivate ?? (profile?.privacy_mode_enabled ?? false);
   const isDark = theme === 'dark';
@@ -59,6 +57,23 @@ export default function Dashboard() {
     }
   };
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    Vibration.vibrate(Platform.OS === 'ios' ? 1 : 10);
+    try {
+      await Promise.all([
+        profileQuery.refetch(),
+        performance.refetch(),
+        activity.refetch(),
+        health.refetch()
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const todayTotal = performance.data?.revenueData?.[performance.data?.todayIndex] || 0;
 
   const handleLogIncome = async () => {
@@ -70,7 +85,7 @@ export default function Dashboard() {
       const localDate = new Date().toLocaleDateString('en-CA');
       await addIncome.mutateAsync({
         amount: Number(incomeAmt),
-        note: "Daily Revenue Log",
+        note: t.revenue_log_note,
         entry_date: localDate
       });
 
@@ -84,7 +99,7 @@ export default function Dashboard() {
       setIsLogged(true);
       setTimeout(() => setIsLogged(false), 3000);
     } catch (e: any) {
-      alert(e.message || "Failed to log income");
+      alert(e.message || t.failed_log_income);
     }
   };
 
@@ -103,7 +118,7 @@ export default function Dashboard() {
     const isToday = date.toDateString() === today.toDateString();
 
     if (isToday) {
-      return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${t.today}, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   };
@@ -117,8 +132,15 @@ export default function Dashboard() {
       <ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isProfileLoading || performance.isLoading} tintColor={colors.primary} />}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 20 }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            tintColor={colors.primary}
+            onRefresh={onRefresh}
+            progressViewOffset={insets.top + 20}
+          />
+        }
       >
         <View style={{ paddingHorizontal: 20 }}>
 
@@ -130,7 +152,7 @@ export default function Dashboard() {
                 <Text style={[styles.supHeaderText, { color: colors.primary }]}>{t.institutional_grade}</Text>
               </View>
               <Text numberOfLines={1} style={[styles.greetingText, { color: colors.text }]}>
-                {t.greeting}, {profile?.display_name?.split(' ')[0] || "Artisan"}
+                {t.greeting}, {profile?.display_name?.split(' ')[0] || t.artisan}
               </Text>
               {profile?.location && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
@@ -154,7 +176,7 @@ export default function Dashboard() {
             <CreditCapacityGauge
               score={score}
               limit={score * 10}
-              loading={isProfileLoading}
+              loading={profileQuery.isLoading}
               onAudit={() => setShowScoreAudit(!showScoreAudit)}
             />
           </Animated.View>
@@ -317,7 +339,7 @@ function ToolItem({ icon: Icon, label, onPress, color, index, vibrate }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: 140, paddingTop: Platform.OS === 'ios' ? 60 : 40 },
+  scrollContent: { paddingBottom: 140 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, marginTop: 10 },
   supHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   statusDot: { width: 5, height: 5, borderRadius: 2.5 },

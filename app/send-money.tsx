@@ -10,7 +10,8 @@ import { BouncyTap } from "@/components/native/bouncy-tap";
 
 export default function SendMoneyScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
   const params = useLocalSearchParams();
   const recipientId = params.recipientId as string;
   const name = params.name as string;
@@ -70,9 +71,9 @@ export default function SendMoneyScreen() {
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+          <BouncyTap onPress={() => router.back()} style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}>
             <Lucide.ArrowLeft size={20} color={colors.text} />
-          </TouchableOpacity>
+          </BouncyTap>
         )
       }} />
 
@@ -139,5 +140,5 @@ export default function SendMoneyScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerBtn: { height: 44, width: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginLeft: 24 },
+  headerBtn: { height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, marginLeft: 24 },
 });

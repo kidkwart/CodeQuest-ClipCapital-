@@ -41,7 +41,7 @@ export default function HistoryScreen() {
         headerLeft: () => (
           <BouncyTap
             onPress={() => router.back()}
-            style={[styles.headerBtn, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
+            style={[styles.headerBtn, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', borderColor: colors.border }]}
           >
             <ArrowLeft size={20} color={colors.text} />
           </BouncyTap>
@@ -136,9 +136,9 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080c0a' },
+  container: { flex: 1 },
   scrollContent: { paddingTop: 100, paddingBottom: 40 },
-  headerBtn: { marginLeft: 16, height: 44, width: 44, borderRadius: 14, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  headerBtn: { marginLeft: 16, height: 44, width: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   summaryRow: { flexDirection: 'row', gap: 12, marginBottom: 32 },
   summaryCard: { flex: 1, padding: 20, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' },
   summaryLabel: { color: '#7d8a84', fontSize: 9, fontWeight: '900', letterSpacing: 2, marginBottom: 8 },

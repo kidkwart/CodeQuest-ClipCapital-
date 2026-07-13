@@ -7,16 +7,20 @@ import { Button } from "@/components/native/button";
 import { Input } from "@/components/native/input";
 import { PremiumHeader } from "@/components/native/premium-header";
 import { ArrowLeft, Trash2, TrendingUp, Clock } from "lucide-react-native";
-import { cn } from "@/lib/utils";
+import { BouncyTap } from "@/components/native/bouncy-tap";
+import { useTheme } from "@/context/theme-context";
 
 export default function IncomeScreen() {
   const router = useRouter();
+  const { colors, theme } = useTheme();
   const { data: incomeList, isLoading, refetch } = useIncome();
   const addIncome = useAddIncome();
   const deleteIncome = useDeleteIncome();
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+
+  const isDark = theme === 'dark';
 
   const handleAdd = async () => {
     if (!amount) return;
@@ -35,13 +39,13 @@ export default function IncomeScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#080c0a' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{
         headerShown: true, title: "", headerTransparent: true,
         headerLeft: () => (
-          <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 16, height: 40, width: 40, borderRadius: 12, backgroundColor: '#0f1714', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-            <ArrowLeft size={20} color="#FFFFFF" />
-          </TouchableOpacity>
+          <BouncyTap onPress={() => router.back()} style={{ marginLeft: 16, height: 44, width: 44, borderRadius: 22, backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+            <ArrowLeft size={20} color={colors.text} />
+          </BouncyTap>
         )
       }} />
 
