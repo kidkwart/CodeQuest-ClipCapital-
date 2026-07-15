@@ -1,11 +1,11 @@
 # ClipCapital Backend — CI Pipeline
-# Runs on every push/PR to main and feature/lead-dev-architecture
+# Runs on every push/PR to main and the Agyark branch
 
 name: CI
 
 on:
   push:
-    branches: [main, feature/lead-dev-architecture]
+    branches: [main, Agyark]
   pull_request:
     branches: [main]
 
