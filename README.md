@@ -36,17 +36,18 @@ Built with a sophisticated UI that adapts to your environment:
 *   **Framework:** [React Native](https://reactnative.dev/) / [Expo](https://expo.dev/)
 *   **Routing:** [Expo Router](https://docs.expo.dev/router/introduction/) (File-based)
 *   **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) via NativeWind
-*   **Backend & Auth:** [Supabase](https://supabase.com/)
-*   **State Management:** [TanStack Query v5](https://tanstack.com/query/latest)
+*   **Frontend State:** [TanStack Query v5](https://tanstack.com/query/latest)
 *   **Animations:** [React Native Reanimated](https://www.reanimated.org/)
-*   **Package Manager:** [Bun](https://bun.sh/)
+*   **Backend API:** [Node.js](https://nodejs.org/) / [Express](https://expressjs.com/) (JWT auth, Paystack MoMo, loans & ClipScore services)
+*   **Database & Auth:** [Supabase](https://supabase.com/) (migrations in `more/supabase`) + Flyway
+*   **Deployment:** GitHub Pages (web) + Docker / [Fly.io](https://fly.io/) (API)
 
 ---
 
 ## 🛠️ Local Development
 
 ### 1. Prerequisites
-Ensure you have **Bun** installed:
+Ensure you have **Node.js 20+** (and **Bun** if you prefer the frontend):
 ```bash
 curl -fsSL https://bun.sh/install | bash
 ```
@@ -54,30 +55,41 @@ curl -fsSL https://bun.sh/install | bash
 ### 2. Setup
 ```bash
 # Clone the repository
-git clone https://github.com/kidkwart/clipcapital.git
-cd clipcapital
+git clone https://github.com/kidkwart/CodeQuest-App.git
+cd CodeQuest-App
 
 # Install dependencies
-bun install
+npm --prefix frontend install
+npm --prefix backend install
 ```
 
 ### 3. Environment Configuration
-Create a `.env` file in the root directory:
+Create a `.env` file in the `frontend/` directory:
 ```env
-VITE_SUPABASE_URL=your_project_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
-VITE_PAYSTACK_PUBLIC_KEY=your_paystack_key
+EXPO_PUBLIC_SUPABASE_URL=your_project_url
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY=your_paystack_key
 ```
 
 ### 4. Database Setup
-Initialize your database using the Supabase CLI:
+Initialize the Supabase database using the Supabase CLI (migrations live in `more/supabase`):
 ```bash
 supabase db reset
 ```
 
 ### 5. Launch
 ```bash
-bun dev
+# Frontend (Expo app)
+npm --prefix frontend run start
+
+# Backend API
+npm --prefix backend run dev
+```
+
+### 6. Verify
+```bash
+npm run typecheck   # type-checks frontend + backend
+npm run test:backend
 ```
 
 ---
@@ -85,16 +97,24 @@ bun dev
 ## 📂 Project Structure
 
 ```text
-src/
- ├── components/     # Atomic UI components & Native elements
- ├── hooks/          # Custom React hooks (logic & state)
- ├── context/        # Theme & Global state providers
- ├── lib/            # API, Supabase client, and utility functions
-app/
- ├── (auth)/         # Authentication flow (Login/Signup)
- ├── (tabs)/         # Core app navigation (Dashboard, Wallet, etc.)
- ├── market/         # Marketplace & Order management
- └── admin/          # Exclusive Admin Command Center
+frontend/               # Expo React Native app
+ ├── app/               # Expo Router screens (auth, tabs, market, susu, admin...)
+ ├── src/               # Components, hooks, context, lib & Supabase client
+ ├── android/           # Native Android project (Java/Kotlin modules)
+ ├── public/            # Web assets
+ └── package.json       # Expo config (app.json, eas.json, metro, tailwind...)
+
+backend/                # Node.js API (Auth, Gateway, Paystack, Loans, ClipScore)
+ ├── src/               # Express services & routes
+ ├── database/          # Flyway migrations
+ ├── Dockerfile
+ └── package.json
+
+more/                   # Infrastructure & docs
+ ├── supabase/          # Supabase migrations & config
+ └── commits.txt
+
+.github/workflows/      # CI/CD (backend CI, Fly.io deploy, Pages deploy)
 ```
 
 ---
